@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "programs/credmesh-escrow",
+    "programs/credmesh-reputation",
+    "programs/credmesh-receivable-oracle",
+]
+
+[workspace.dependencies]
+anchor-lang = "0.30.1"
+anchor-spl = "0.30.1"
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1
