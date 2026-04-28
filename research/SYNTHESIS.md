@@ -2,7 +2,11 @@
 
 End-to-end architecture proposal, reconciled from the four parallel research reports. Read this first; the four numbered docs are the supporting detail.
 
-> **⚠ Read [REVIEW.md](./REVIEW.md) before acting on this document.** A critical pass found 6 material errors (CCTP date, Kora vs facilitator naming, first-depositor defense, 8004-solana production-readiness overstated, etc.) and 5 disagreements with the recommendations below. Where this doc and REVIEW.md conflict, REVIEW.md takes precedence.
+> **⚠ Read [REVIEW.md](./REVIEW.md) and [CONTRARIAN.md](./CONTRARIAN.md) before acting on this document.**
+> - REVIEW.md found 6 material errors and 5 disagreements with the recommendations below.
+> - CONTRARIAN.md found 7 places where this doc is reflexively porting EVM design when a Solana-native primitive (Squads v4 SpendingLimits, Light Protocol compressed PDAs, Kora fee-payer, SAS attestations, ed25519 precompile receivables) would materially win.
+>
+> Where these docs conflict with SYNTHESIS, the later document takes precedence.
 
 ## TL;DR
 

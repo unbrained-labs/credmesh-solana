@@ -16,9 +16,13 @@ research/
   04-payments-oracles.md   x402 equivalent, fiat ramps, receivable oracles, atomic repayment
   SYNTHESIS.md             End-to-end architecture, EVM→Solana mapping, phased plan
   REVIEW.md                Critical pass on SYNTHESIS — supersedes it where they conflict
+  CONTRARIAN.md            Solana-native redesign opportunities (Squads SpendingLimits,
+                           compressed PDAs, ed25519 receivables, etc.)
 ```
 
-**Read order**: REVIEW.md first → SYNTHESIS.md → numbered reports for detail.
+**Read order**: CONTRARIAN.md → REVIEW.md → SYNTHESIS.md → numbered reports for detail.
+
+The synthesis was a faithful port; the review found errors; the contrarian found seven places where being faithful to the EVM design is itself the mistake.
 
 ## Research method
 
