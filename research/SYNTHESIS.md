@@ -2,6 +2,8 @@
 
 End-to-end architecture proposal, reconciled from the four parallel research reports. Read this first; the four numbered docs are the supporting detail.
 
+> **⚠ Read [REVIEW.md](./REVIEW.md) before acting on this document.** A critical pass found 6 material errors (CCTP date, Kora vs facilitator naming, first-depositor defense, 8004-solana production-readiness overstated, etc.) and 5 disagreements with the recommendations below. Where this doc and REVIEW.md conflict, REVIEW.md takes precedence.
+
 ## TL;DR
 
 Build CredMesh on Solana as **three on-chain programs + one off-chain worker + a forked dashboard**, and reuse the Solana ecosystem wherever possible:

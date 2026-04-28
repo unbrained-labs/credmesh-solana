@@ -13,9 +13,12 @@ research/
   01-vault-escrow.md       On-chain vault, escrow, advance issuance, oracle composability, governance
   02-identity-reputation.md ERC-8004 → Solana Agent Registry; permissionless reputation w/ rolling digest
   03-offchain-infra.md     [pending] Auth, tx submission, multi-cluster config, dashboard wallet adapter
-  04-payments-oracles.md   [pending] x402 equivalent, fiat ramps, receivable oracles, atomic repayment
-  SYNTHESIS.md             [pending] Recommended end-to-end architecture, written after all four return
+  04-payments-oracles.md   x402 equivalent, fiat ramps, receivable oracles, atomic repayment
+  SYNTHESIS.md             End-to-end architecture, EVM→Solana mapping, phased plan
+  REVIEW.md                Critical pass on SYNTHESIS — supersedes it where they conflict
 ```
+
+**Read order**: REVIEW.md first → SYNTHESIS.md → numbered reports for detail.
 
 ## Research method
 
