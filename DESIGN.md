@@ -4,6 +4,8 @@ This is the implementer spec, written after CONTRARIAN.md. It locks in defaults 
 
 **Status**: pre-implementation. The Anchor workspace under `programs/` is scaffolded but not feature-complete. Use this doc + the scaffolded source as the starting point for the first Anchor sprint.
 
+> **⚠ Read [AUDIT.md](./AUDIT.md) before writing any handler bodies.** Three independent reviews of this DESIGN + scaffold found 6 P0 (fund-loss) issues, 6 P1 issues, and 8 design-level questions that need team decisions. Mechanical fixes are applied in the scaffold; design questions (MPL Agent Registry vs SATI, Squads onboarding flow, Sybil mitigation, Kora self-host vs hosted) are listed in AUDIT.md "Open design questions" and must be resolved before coding handlers.
+
 ---
 
 ## 1. Decisions taken (the 7 open questions, defaulted)
@@ -214,9 +216,11 @@ Withdraws accumulated `Pool.accrued_protocol_fees` to a governance-specified ATA
 
 - `usdc_vault.amount + deployed_amount >= total_assets` (with virtual-shares math, shares can never out-redeem real assets)
 - `withdraw(s)` always satisfies `usdc_vault.amount >= preview_redeem(s)` or fails atomically
-- `request_advance` is unreachable when `paused=true` if and only if pause was applied to issuance — **per default decision, advance issuance has no pause**
-- `consumed_pda` init/close is the only mechanism for receivable_id uniqueness
+- `request_advance` has no pause path. Advance issuance is never gated by governance.
+- `consumed_pda` is **permanent** (audit P0-5). `init` failure on duplicate `receivable_id` is the sole replay-protection mechanism. Closing it would allow close-then-reinit replay in a single tx.
 - Waterfall transfers in `claim_and_settle` always sum to `received` (no rounding drift; remainder rounds to agent)
+- `Advance` survives `liquidate` with `state = Liquidated` for audit trail (audit AM-7).
+- **Early-liquidation lever** (audit AM-8): a permissionless cranker MAY call `liquidate` at `expires_at + 14 days`. The off-chain server SHOULD prioritize `claim_and_settle` whenever a payment is observed, even partial, to prevent unnecessary defaults.
 
 ### 3.6 Errors
 
@@ -377,6 +381,10 @@ The Hono backend stays. Diff vs current:
 
 Each phase is independently shippable. Audit happens after phase 6.
 
+## 8.5 v2 sharding plan (audit AM-9)
+
+The single `Pool` PDA write-locks every advance issuance, settle, and liquidate. Realistic v1 ceiling is ~30–80 advances/sec — well above expected demand. v2 sharding is straightforward: change the Pool seed from `[POOL_SEED, asset_mint]` to `[POOL_SEED, asset_mint, tier_id]` so risk-band pools parallelize on Sealevel. Document now, ship at the v2 boundary.
+
 ## 9. What is explicitly **not** in v1
 
 - ML-derived credit curves (defaulted-out)
@@ -387,3 +395,20 @@ Each phase is independently shippable. Audit happens after phase 6.
 - Multi-asset pools (USDC only)
 - Per-instruction-type timelock granularity (Squads multisig has global timelock — accept for v1)
 - Token-2022 USDC migration handling (Circle hasn't moved; revisit when they do)
+- Embedded-wallet (Phantom Portal) auth — SIWS detached signing isn't supported (per audit integration review).
+- Permissionless `claim_and_settle` cranking — v1 requires `cranker == advance.agent` (audit P0-3/P0-4). Permissionless settle requires a future payer-pre-authorized signing pattern.
+
+## 10. Threat model and key topology (audit Q7)
+
+CredMesh requires **three logically separate keys**, never the same:
+
+1. **Fee-payer key** (Kora signer or hosted facilitator). Hot, low value, rotates aggressively. Pays SOL for `request_advance` and `claim_and_settle` when the agent flow goes through CredMesh's relayer. Compromise = griefing only (sponsor txs that fail).
+2. **Oracle worker authority** (`OracleConfig.worker_authority`). Writes `Receivable` PDAs for `source_kind = Worker`. **Highest-value key in the system.** Compromise = inflate receivables, request advance, drain LP capital. Mitigations:
+   - Per-tx cap (`worker_max_per_tx`) and per-period cap (`worker_max_per_period`) on `OracleConfig`.
+   - Rotation flow via `governance` (Squads multisig).
+   - **Must not be co-located with the fee-payer key.**
+3. **Reputation provider key** (only if Q5 = "yes/v1.5"). Signs `ReputationScoreV3` SAS attestations. Compromise = inflate reputation; capped by Sybil mitigation (Q4).
+
+**Governance** is a Squads v4 multisig PDA. It is not a Signer — it executes on-chain by CPI from the Squads program. The `governance: Signer` constraint on `propose_params` / `skim_protocol_fees` / `add_allowed_signer` is currently a placeholder until Q3 is resolved (3-tx onboarding flow vs Controlled-Multisig).
+
+**Key rotation**: the Squads multisig holds upgrade authority on all three programs and the `OracleConfig.worker_authority` setter. Rotation = a Squads-approved tx that updates the relevant authority field; takes the configured timelock_seconds to execute.

@@ -1,8 +1,6 @@
 use anchor_lang::prelude::*;
 
-pub const RECEIVABLE_SEED: &[u8] = b"receivable";
-pub const ALLOWED_SIGNER_SEED: &[u8] = b"allowed_signer";
-pub const ORACLE_CONFIG_SEED: &[u8] = b"oracle_config";
+pub use credmesh_shared::seeds::{ALLOWED_SIGNER_SEED, ORACLE_CONFIG_SEED, RECEIVABLE_SEED};
 
 pub const MAX_STALENESS_SLOTS: u64 = 5_400;
 

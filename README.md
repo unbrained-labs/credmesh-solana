@@ -31,19 +31,21 @@ credmesh-solana/
 
 ## Read order
 
-1. **`DESIGN.md`** — the locked-in v0 spec; what we're building.
-2. `research/CONTRARIAN.md` — why we're building it this way (vs literal EVM port).
-3. `research/REVIEW.md` — what we got wrong in the first pass.
-4. `research/SYNTHESIS.md` — original mapping (superseded by DESIGN.md where they conflict).
-5. `research/01–04` — supporting detail.
+1. **`AUDIT.md`** — three independent reviews of DESIGN + scaffold; 6 P0 fund-loss findings, 8 open design questions. Read this first.
+2. **`DESIGN.md`** — the v0 spec.
+3. `research/CONTRARIAN.md` — why we're building it this way (vs literal EVM port).
+4. `research/REVIEW.md` — what we got wrong in the first research pass.
+5. `research/SYNTHESIS.md` — original mapping (superseded where they conflict).
+6. `research/01–04` — supporting detail.
 
 ## Programs
 
 | Program | Purpose | Status |
 |---|---|---|
-| `credmesh-escrow` | Pool vault + share-mint, `request_advance`, `claim_and_settle`, governance | Scaffold + bodies stubbed |
-| `credmesh-reputation` | 8004-shape per-agent rolling-digest reputation | Scaffold + bodies stubbed |
-| `credmesh-receivable-oracle` | Worker-attested + ed25519 payer-signed receivables, allowed-signer registry | Scaffold + bodies stubbed |
+| `credmesh-shared` | Shared seed constants, program IDs, ed25519 message layout | Scaffold |
+| `credmesh-escrow` | Pool vault + share-mint, `request_advance`, `claim_and_settle`, governance | Scaffold + audit fixes applied |
+| `credmesh-reputation` | 8004-shape per-agent rolling-digest reputation | Scaffold + audit fixes applied |
+| `credmesh-receivable-oracle` | Worker-attested + ed25519 payer-signed receivables, allowed-signer registry | Scaffold + audit fixes applied |
 
 External programs CredMesh **uses** but does not deploy: Squads v4 (agent vaults + governance), Solana Agent Registry (Metaplex Core asset), SPL Token, ed25519 native, Memo program.
 

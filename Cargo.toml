@@ -1,14 +1,16 @@
 [workspace]
 resolver = "2"
 members = [
+    "programs/credmesh-shared",
     "programs/credmesh-escrow",
     "programs/credmesh-reputation",
     "programs/credmesh-receivable-oracle",
 ]
 
 [workspace.dependencies]
-anchor-lang = "0.30.1"
+anchor-lang = { version = "0.30.1", features = ["init-if-needed"] }
 anchor-spl = "0.30.1"
+credmesh-shared = { path = "programs/credmesh-shared" }
 
 [profile.release]
 overflow-checks = true

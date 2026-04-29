@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
 
 pub mod errors;
 pub mod events;
@@ -31,11 +32,19 @@ pub mod credmesh_receivable_oracle {
 
     pub fn ed25519_record_receivable(
         ctx: Context<Ed25519RecordReceivable>,
+        signer_pubkey: Pubkey,
         source_id: [u8; 32],
         amount: u64,
         expires_at: i64,
     ) -> Result<()> {
-        let _ = (ctx, source_id, amount, expires_at);
+        // AUDIT AM-5: lazy period reset — top of handler should set
+        //   if now >= signer.period_start + signer.period_seconds {
+        //     signer.period_start = now; signer.period_used = 0;
+        //   }
+        // Then check per-receivable + per-period caps.
+        // AUDIT integration #2: also verify the ed25519 ix offsets all point
+        // at the verify ix itself (not at attacker-controlled bytes elsewhere).
+        let _ = (ctx, signer_pubkey, source_id, amount, expires_at);
         Ok(())
     }
 
@@ -58,6 +67,7 @@ pub mod credmesh_receivable_oracle {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct InitOracleParams {
+    pub governance: Pubkey,
     pub worker_authority: Pubkey,
     pub worker_max_per_tx: u64,
     pub worker_max_per_period: u64,
@@ -67,10 +77,10 @@ pub struct InitOracleParams {
 #[derive(Accounts)]
 pub struct InitOracle<'info> {
     #[account(mut)]
-    pub governance: Signer<'info>,
+    pub deployer: Signer<'info>,
     #[account(
         init,
-        payer = governance,
+        payer = deployer,
         space = OracleConfig::SIZE,
         seeds = [ORACLE_CONFIG_SEED],
         bump
@@ -105,15 +115,20 @@ pub struct WorkerUpdateReceivable<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(source_id: [u8; 32])]
+#[instruction(signer_pubkey: Pubkey, source_id: [u8; 32])]
 pub struct Ed25519RecordReceivable<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     /// CHECK: Just an address used as a seed.
     pub agent: UncheckedAccount<'info>,
+    /// AUDIT P1-4: seed sourced from the ix arg, not the account's own field.
+    /// Handler must additionally verify allowed_signer.signer == signer_pubkey
+    /// AND that the ed25519 verify instruction signed-by matches signer_pubkey.
     #[account(
-        seeds = [ALLOWED_SIGNER_SEED, allowed_signer.signer.as_ref()],
-        bump = allowed_signer.bump
+        mut,
+        seeds = [ALLOWED_SIGNER_SEED, signer_pubkey.as_ref()],
+        bump = allowed_signer.bump,
+        constraint = allowed_signer.signer == signer_pubkey @ OracleError::SignerNotAllowed
     )]
     pub allowed_signer: Account<'info, AllowedSigner>,
     #[account(
@@ -124,7 +139,8 @@ pub struct Ed25519RecordReceivable<'info> {
         bump
     )]
     pub receivable: Account<'info, Receivable>,
-    /// CHECK: Sysvar instructions, used to introspect the prior ed25519 verification ix.
+    /// CHECK: AUDIT P1-2 — pinned to the canonical sysvar instructions account.
+    #[account(address = sysvar_instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }

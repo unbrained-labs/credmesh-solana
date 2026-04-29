@@ -1,9 +1,6 @@
 use anchor_lang::prelude::*;
 
-pub const POOL_SEED: &[u8] = b"pool";
-pub const ADVANCE_SEED: &[u8] = b"advance";
-pub const CONSUMED_SEED: &[u8] = b"consumed";
-pub const TREASURY_SEED: &[u8] = b"treasury";
+pub use credmesh_shared::seeds::{ADVANCE_SEED, CONSUMED_SEED, POOL_SEED, TREASURY_SEED};
 
 pub const PROTOCOL_FEE_BPS: u16 = 1500;
 pub const BPS_DENOMINATOR: u64 = 10_000;
@@ -14,12 +11,15 @@ pub const LIQUIDATION_GRACE_SECONDS: i64 = 14 * 24 * 60 * 60;
 pub const VIRTUAL_ASSETS_OFFSET: u64 = 1_000_000;
 pub const VIRTUAL_SHARES_OFFSET: u64 = 1_000_000_000;
 
+pub const MAX_LATE_DAYS: u32 = 365;
+
 #[account]
 pub struct Pool {
     pub bump: u8,
     pub asset_mint: Pubkey,
     pub usdc_vault: Pubkey,
     pub share_mint: Pubkey,
+    pub treasury_ata: Pubkey,
     pub governance: Pubkey,
     pub total_assets: u64,
     pub total_shares: u64,
@@ -30,20 +30,18 @@ pub struct Pool {
     pub max_advance_abs: u64,
     pub timelock_seconds: i64,
     pub pending_params: Option<PendingParams>,
-    pub paused: bool,
 }
 
 impl Pool {
     pub const SIZE: usize = 8
         + 1
-        + 32 * 4
+        + 32 * 5
         + 8 * 4
         + FeeCurve::SIZE
         + 2
         + 8
         + 8
         + 1 + PendingParams::SIZE
-        + 1
         + 64;
 }
 
@@ -114,6 +112,8 @@ impl Default for AdvanceState {
     }
 }
 
+/// **Permanent** PDA per receivable_id. Never closed — closing it would re-open
+/// a replay channel via close-then-reinit in the same tx (audit P0-5).
 #[account]
 pub struct ConsumedPayment {
     pub bump: u8,

@@ -20,6 +20,12 @@ pub mod credmesh_reputation {
     }
 
     pub fn give_feedback(ctx: Context<GiveFeedback>, input: FeedbackInput) -> Result<()> {
+        // AUDIT P1-5 / Q4: Sybil mitigation policy is undecided.
+        // Until Q4 is resolved (allowlist / stake-weighted / single-writer),
+        // this handler must NOT update score_ema based on permissionless writes
+        // alone. Recommended interim: only allow input.score to update score_ema
+        // when ctx.accounts.attestor.key() is in a Pool-stored allowlist (Option A
+        // in AUDIT.md) or matches a single CredMesh-controlled writer (Option C).
         let _ = (ctx, input);
         Ok(())
     }
@@ -44,7 +50,8 @@ pub mod credmesh_reputation {
 pub struct InitReputation<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    /// CHECK: Solana Agent Registry asset; just a key seed.
+    /// CHECK: Agent registry asset; just a key seed. Q1 will determine which
+    /// program owns this account; once Q1 lands, add `owner = agent_registry::ID`.
     pub agent_asset: UncheckedAccount<'info>,
     #[account(
         init,

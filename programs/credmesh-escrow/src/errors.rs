@@ -16,14 +16,24 @@ pub enum CredmeshError {
     ReputationPdaMismatch,
     #[msg("Provided receivable PDA does not match expected derivation")]
     ReceivablePdaMismatch,
+    #[msg("Agent asset is not owned by the recognized agent registry program")]
+    InvalidAgentAsset,
+    #[msg("Signer is not the owner or delegate of agent_asset")]
+    AgentBindingMismatch,
     #[msg("ed25519 verification missing or wrong format in tx")]
     Ed25519Missing,
     #[msg("ed25519 verified signer is not in CredMesh allowlist")]
     Ed25519SignerUnknown,
+    #[msg("ed25519 offsets reference a different instruction than the verify ix")]
+    Ed25519OffsetMismatch,
+    #[msg("ed25519 message bytes do not match expected (receivable_id || agent || amount || expires_at || nonce)")]
+    Ed25519MessageMismatch,
     #[msg("Memo nonce in payment tx does not match consumed PDA nonce")]
     MemoNonceMismatch,
     #[msg("Memo program instruction not found in tx")]
     MemoMissing,
+    #[msg("Cranker is not authorized to call this instruction")]
+    InvalidPayer,
     #[msg("Advance not yet within settlement window")]
     NotSettleable,
     #[msg("Advance not yet within liquidation grace period")]
@@ -36,16 +46,14 @@ pub enum CredmeshError {
     PendingParamsNotReady,
     #[msg("No pending params to execute")]
     NoPendingParams,
-    #[msg("Replay detected: ConsumedPayment PDA already exists for this receivable_id")]
+    #[msg("Replay detected: ConsumedPayment PDA does not match advance.agent or already exists")]
     ReplayDetected,
     #[msg("Advance already settled or liquidated")]
     InvalidAdvanceState,
-    #[msg("Pool is paused — only init/withdraw allowed; advance issuance is never paused")]
-    PoolPaused,
-    #[msg("Pause cannot be applied to advance issuance — design invariant")]
-    PauseScopeViolation,
     #[msg("Source signer caps exceeded for ed25519 path")]
     SignerCapsExceeded,
     #[msg("Waterfall sum mismatch — rounding drift detected")]
     WaterfallSumMismatch,
+    #[msg("Late days exceed maximum cap")]
+    LateDaysExceeded,
 }

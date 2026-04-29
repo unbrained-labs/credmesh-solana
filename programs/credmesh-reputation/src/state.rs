@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-pub const REPUTATION_SEED: &[u8] = b"agent_reputation";
+pub use credmesh_shared::seeds::REPUTATION_SEED;
 
 pub const SCORE_DECIMALS: u8 = 18;
 pub const EMA_WINDOW: u64 = 50;

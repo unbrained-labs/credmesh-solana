@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 pub mod errors;
@@ -37,6 +38,10 @@ pub mod credmesh_escrow {
         source_kind: u8,
         nonce: [u8; 16],
     ) -> Result<()> {
+        // AUDIT P0-2 / Q1: handler must enforce that `agent: Signer` is the
+        // authorized owner/delegate of `agent_asset` per the chosen
+        // identity registry (MPL Agent Registry vs SATI). Without this, any
+        // keypair can claim any agent_asset and read its reputation.
         let _ = (ctx, receivable_id, amount, source_kind, nonce);
         Ok(())
     }
@@ -73,15 +78,20 @@ pub struct InitPoolParams {
     pub max_advance_pct_bps: u16,
     pub max_advance_abs: u64,
     pub timelock_seconds: i64,
+    /// AUDIT P1-6 / Q3: must be a Squads vault PDA. Wiring is currently a stored
+    /// pubkey because Squads vaults are PDAs and can't be Signers; subsequent
+    /// governance instructions must verify a Squads-CPI signed by this address.
+    pub governance: Pubkey,
+    pub treasury_ata: Pubkey,
 }
 
 #[derive(Accounts)]
 pub struct InitPool<'info> {
     #[account(mut)]
-    pub governance: Signer<'info>,
+    pub deployer: Signer<'info>,
     #[account(
         init,
-        payer = governance,
+        payer = deployer,
         space = Pool::SIZE,
         seeds = [POOL_SEED, asset_mint.key().as_ref()],
         bump
@@ -90,7 +100,7 @@ pub struct InitPool<'info> {
     pub asset_mint: Account<'info, Mint>,
     #[account(
         init,
-        payer = governance,
+        payer = deployer,
         mint::decimals = 6,
         mint::authority = pool,
         mint::freeze_authority = pool
@@ -98,7 +108,7 @@ pub struct InitPool<'info> {
     pub share_mint: Account<'info, Mint>,
     #[account(
         init,
-        payer = governance,
+        payer = deployer,
         token::mint = asset_mint,
         token::authority = pool
     )]
@@ -116,11 +126,19 @@ pub struct Deposit<'info> {
     pub pool: Account<'info, Pool>,
     #[account(mut, address = pool.usdc_vault)]
     pub usdc_vault: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = pool.asset_mint,
+        token::authority = lp
+    )]
     pub lp_usdc_ata: Account<'info, TokenAccount>,
     #[account(mut, address = pool.share_mint)]
     pub share_mint: Account<'info, Mint>,
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = pool.share_mint,
+        token::authority = lp
+    )]
     pub lp_share_ata: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
 }
@@ -133,11 +151,19 @@ pub struct Withdraw<'info> {
     pub pool: Account<'info, Pool>,
     #[account(mut, address = pool.usdc_vault)]
     pub usdc_vault: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = pool.asset_mint,
+        token::authority = lp
+    )]
     pub lp_usdc_ata: Account<'info, TokenAccount>,
     #[account(mut, address = pool.share_mint)]
     pub share_mint: Account<'info, Mint>,
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = pool.share_mint,
+        token::authority = lp
+    )]
     pub lp_share_ata: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
 }
@@ -147,11 +173,19 @@ pub struct Withdraw<'info> {
 pub struct RequestAdvance<'info> {
     #[account(mut)]
     pub agent: Signer<'info>,
-    /// CHECK: Solana Agent Registry asset (Metaplex Core); read-only, validated by reputation PDA derivation.
+    /// CHECK: AUDIT P0-2 / Q1 — must be constrained to the chosen agent registry
+    /// program ID once Q1 is resolved (`owner == 1DREG…` for MPL Agent Registry,
+    /// or the equivalent for SATI). The handler must additionally verify that
+    /// `agent.key()` is the asset's owner or a registered delegate.
     pub agent_asset: UncheckedAccount<'info>,
-    /// CHECK: AgentReputation PDA owned by credmesh-reputation program. Address re-derived in handler.
+    /// CHECK: AgentReputation PDA (owned by credmesh-reputation).
+    /// Handler must: verify owner == credmesh_shared::program_ids::REPUTATION,
+    /// re-derive [REPUTATION_SEED, agent_asset.key()], check 8-byte discriminator,
+    /// then deserialize.
     pub agent_reputation_pda: UncheckedAccount<'info>,
-    /// CHECK: Receivable PDA owned by credmesh-receivable-oracle. Required iff source_kind=0.
+    /// CHECK: Receivable PDA (owned by credmesh-receivable-oracle), required iff source_kind=Worker.
+    /// For ed25519 / x402 paths the handler verifies via instruction-introspection
+    /// instead of reading this account.
     pub receivable_pda: UncheckedAccount<'info>,
     #[account(mut, seeds = [POOL_SEED, pool.asset_mint.as_ref()], bump = pool.bump)]
     pub pool: Account<'info, Pool>,
@@ -159,65 +193,94 @@ pub struct RequestAdvance<'info> {
         init,
         payer = agent,
         space = Advance::SIZE,
-        seeds = [ADVANCE_SEED, agent.key().as_ref(), receivable_id.as_ref()],
+        seeds = [ADVANCE_SEED, pool.key().as_ref(), agent.key().as_ref(), receivable_id.as_ref()],
         bump
     )]
     pub advance: Account<'info, Advance>,
+    /// AUDIT P0-5: ConsumedPayment is permanent. Never closed.
+    /// `init` failure is the replay-protection mechanism.
     #[account(
         init,
         payer = agent,
         space = ConsumedPayment::SIZE,
-        seeds = [CONSUMED_SEED, receivable_id.as_ref()],
+        seeds = [CONSUMED_SEED, pool.key().as_ref(), receivable_id.as_ref()],
         bump
     )]
     pub consumed: Account<'info, ConsumedPayment>,
     #[account(mut, address = pool.usdc_vault)]
     pub pool_usdc_vault: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        init_if_needed,
+        payer = agent,
+        associated_token::mint = usdc_mint,
+        associated_token::authority = agent
+    )]
     pub agent_usdc_ata: Account<'info, TokenAccount>,
     #[account(address = pool.asset_mint)]
     pub usdc_mint: Account<'info, Mint>,
-    /// CHECK: Sysvar instructions account, required for ed25519 introspection (source_kind=1/2).
+    /// CHECK: AUDIT P1-2 — pinned to the canonical sysvar instructions account.
+    /// Handler uses `sysvar_instructions::load_instruction_at_checked` for
+    /// ed25519/memo introspection.
+    #[account(address = sysvar_instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, anchor_spl::associated_token::AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct ClaimAndSettle<'info> {
-    #[account(mut)]
+    /// AUDIT P0-3/P0-4: in v1, the cranker MUST be the agent so the source-of-funds
+    /// transfer is signer-authorized. Permissionless cranking deferred to a future
+    /// version that introduces a payer-pre-authorized signing pattern.
+    #[account(
+        mut,
+        constraint = cranker.key() == advance.agent @ CredmeshError::InvalidPayer
+    )]
     pub cranker: Signer<'info>,
     #[account(
         mut,
-        close = agent,
-        seeds = [ADVANCE_SEED, advance.agent.as_ref(), advance.receivable_id.as_ref()],
-        bump = advance.bump
+        seeds = [ADVANCE_SEED, pool.key().as_ref(), advance.agent.as_ref(), advance.receivable_id.as_ref()],
+        bump = advance.bump,
+        constraint = advance.state == AdvanceState::Issued @ CredmeshError::InvalidAdvanceState,
+        close = agent
     )]
     pub advance: Account<'info, Advance>,
+    /// AUDIT P0-5: ConsumedPayment is NOT closed here (would enable replay).
     #[account(
-        mut,
-        close = agent,
-        seeds = [CONSUMED_SEED, advance.receivable_id.as_ref()],
+        seeds = [CONSUMED_SEED, pool.key().as_ref(), advance.receivable_id.as_ref()],
         bump = consumed.bump,
-        constraint = consumed.agent == advance.agent
+        constraint = consumed.agent == advance.agent @ CredmeshError::ReplayDetected
     )]
     pub consumed: Account<'info, ConsumedPayment>,
-    /// CHECK: Validated by Advance.agent constraint above. Receives rent refund and agent_net.
+    /// CHECK: Address-constrained to `advance.agent`. Receives rent refund from
+    /// closing `advance` (via `close = agent`) plus the `agent_net` USDC transfer.
     #[account(mut, address = advance.agent)]
     pub agent: UncheckedAccount<'info>,
     #[account(mut, seeds = [POOL_SEED, pool.asset_mint.as_ref()], bump = pool.bump)]
     pub pool: Account<'info, Pool>,
     #[account(mut, address = pool.usdc_vault)]
     pub pool_usdc_vault: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        token::mint = pool.asset_mint,
+        token::authority = advance.agent
+    )]
     pub agent_usdc_ata: Account<'info, TokenAccount>,
-    #[account(mut)]
+    /// AUDIT P0-3: pinned to the Pool's stored treasury ATA.
+    #[account(mut, address = pool.treasury_ata)]
     pub protocol_treasury_ata: Account<'info, TokenAccount>,
-    #[account(mut)]
+    /// AUDIT P0-4: payer ATA must be authority-bound to the cranker (= agent in v1).
+    #[account(
+        mut,
+        token::mint = pool.asset_mint,
+        token::authority = cranker
+    )]
     pub payer_usdc_ata: Account<'info, TokenAccount>,
     #[account(address = pool.asset_mint)]
     pub usdc_mint: Account<'info, Mint>,
-    /// CHECK: Sysvar instructions, required for memo introspection.
+    /// CHECK: AUDIT P1-2 — pinned to the canonical sysvar instructions account.
+    #[account(address = sysvar_instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
 }
@@ -226,29 +289,34 @@ pub struct ClaimAndSettle<'info> {
 pub struct Liquidate<'info> {
     #[account(mut)]
     pub cranker: Signer<'info>,
+    /// AUDIT AM-7: keep `Advance` alive after liquidation for audit trail.
+    /// Only `state` mutates to `Liquidated`. Closure happens via a separate
+    /// admin-grace-period cleanup ix in a future version.
     #[account(
         mut,
-        close = agent,
-        seeds = [ADVANCE_SEED, advance.agent.as_ref(), advance.receivable_id.as_ref()],
-        bump = advance.bump
+        seeds = [ADVANCE_SEED, pool.key().as_ref(), advance.agent.as_ref(), advance.receivable_id.as_ref()],
+        bump = advance.bump,
+        constraint = advance.state == AdvanceState::Issued @ CredmeshError::InvalidAdvanceState
     )]
     pub advance: Account<'info, Advance>,
+    /// AUDIT P0-1: bind consumed.agent == advance.agent (was missing).
+    /// AUDIT P0-5: ConsumedPayment is NOT closed.
     #[account(
-        mut,
-        close = agent,
-        seeds = [CONSUMED_SEED, advance.receivable_id.as_ref()],
-        bump = consumed.bump
+        seeds = [CONSUMED_SEED, pool.key().as_ref(), advance.receivable_id.as_ref()],
+        bump = consumed.bump,
+        constraint = consumed.agent == advance.agent @ CredmeshError::ReplayDetected
     )]
     pub consumed: Account<'info, ConsumedPayment>,
-    /// CHECK: Address-constrained to advance.agent. Receives only rent refund (no proceeds on default).
-    #[account(mut, address = advance.agent)]
-    pub agent: UncheckedAccount<'info>,
     #[account(mut, seeds = [POOL_SEED, pool.asset_mint.as_ref()], bump = pool.bump)]
     pub pool: Account<'info, Pool>,
 }
 
 #[derive(Accounts)]
 pub struct ProposeParams<'info> {
+    /// AUDIT P1-6 / Q3: until Squads-CPI integration lands, this is the address
+    /// stored on Pool.governance — Squads vault PDAs cannot be Signers, so the
+    /// program here must verify a Squads CPI by checking the calling program ID.
+    /// Marked as a stored pubkey check, not a real Signer.
     pub governance: Signer<'info>,
     #[account(
         mut,
@@ -282,7 +350,10 @@ pub struct SkimProtocolFees<'info> {
     pub pool: Account<'info, Pool>,
     #[account(mut, address = pool.usdc_vault)]
     pub pool_usdc_vault: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        address = pool.treasury_ata
+    )]
     pub recipient_ata: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
 }
