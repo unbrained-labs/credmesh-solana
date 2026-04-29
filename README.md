@@ -43,21 +43,33 @@ credmesh-solana/
 
 | Program | Purpose | Status |
 |---|---|---|
-| `credmesh-shared` | Shared seed constants, program IDs, ed25519 message layout | Scaffold |
-| `credmesh-escrow` | Pool vault + share-mint, `request_advance`, `claim_and_settle`, governance | Scaffold + audit fixes applied |
-| `credmesh-reputation` | 8004-shape per-agent rolling-digest reputation | Scaffold + audit fixes applied |
-| `credmesh-receivable-oracle` | Worker-attested + ed25519 payer-signed receivables, allowed-signer registry | Scaffold + audit fixes applied |
+| `credmesh-shared` | Seed constants, program IDs, ed25519 message layout, `mpl_identity` + `cross_program` + `ix_introspection` helper modules | Implemented |
+| `credmesh-escrow` | Pool vault + share-mint, advance issuance, settlement waterfall, governance | All v1 handlers implemented (not compile-verified) |
+| `credmesh-reputation` | 8004-shape per-agent rolling-digest reputation; writer-gated EMA | Core handlers implemented; `append_response`/`revoke_feedback` stubbed |
+| `credmesh-receivable-oracle` | Worker-attested + ed25519 payer-signed receivables, allowed-signer registry | All v1 handlers implemented |
 
 External programs CredMesh **uses** but does not deploy: Squads v4 (agent vaults + governance), Solana Agent Registry (Metaplex Core asset), SPL Token, ed25519 native, Memo program.
 
 ## Building
 
 ```bash
-# (once Anchor toolchain is installed)
+# Install toolchains (Rust 1.79+, Solana 1.18.26, Anchor 0.30.1).
+# See CONTRIBUTING.md for the exact commands.
+
 anchor build
+npm install
+npm test           # ts-mocha + anchor-bankrun
 ```
 
-Tests will run against `anchor-bankrun` (unit/integration) and `litesvm` (fuzz) per `DESIGN.md` §7.
+Test layout follows DESIGN §7. Bankrun scaffold under `tests/bankrun/`:
+- `escrow/init_pool.test.ts`, `escrow/deposit_withdraw.test.ts` — happy paths.
+- `attacks/consumed_close_reinit.test.ts` — AUDIT P0-5 fixture.
+- `attacks/ata_substitution.test.ts` — AUDIT P0-3 fixture.
+- `attacks/sysvar_spoofing.test.ts` — AUDIT P1-2 fixture.
+- `attacks/cross_agent_replay.test.ts` — asymmetric.re-class fix fixture.
+
+Bodies are stubbed with the intended assertions in comments; they activate
+once the IDL is generated.
 
 ## Deployment targets
 
