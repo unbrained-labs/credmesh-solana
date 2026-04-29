@@ -17,7 +17,36 @@ pub mod credmesh_escrow {
     use super::*;
 
     pub fn init_pool(ctx: Context<InitPool>, params: InitPoolParams) -> Result<()> {
-        let _ = (ctx, params);
+        require!(
+            params.max_advance_pct_bps as u64 <= BPS_DENOMINATOR,
+            CredmeshError::AdvanceExceedsCap
+        );
+        require!(params.timelock_seconds >= 0, CredmeshError::MathOverflow);
+
+        let pool = &mut ctx.accounts.pool;
+        pool.bump = ctx.bumps.pool;
+        pool.asset_mint = ctx.accounts.asset_mint.key();
+        pool.usdc_vault = ctx.accounts.usdc_vault.key();
+        pool.share_mint = ctx.accounts.share_mint.key();
+        pool.treasury_ata = params.treasury_ata;
+        pool.governance = params.governance;
+        pool.total_assets = 0;
+        pool.total_shares = 0;
+        pool.deployed_amount = 0;
+        pool.accrued_protocol_fees = 0;
+        pool.fee_curve = params.fee_curve;
+        pool.max_advance_pct_bps = params.max_advance_pct_bps;
+        pool.max_advance_abs = params.max_advance_abs;
+        pool.timelock_seconds = params.timelock_seconds;
+        pool.pending_params = None;
+
+        emit!(PoolInitialized {
+            pool: pool.key(),
+            asset_mint: pool.asset_mint,
+            share_mint: pool.share_mint,
+            governance: pool.governance,
+        });
+
         Ok(())
     }
 

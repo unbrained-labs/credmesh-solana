@@ -15,7 +15,20 @@ pub mod credmesh_reputation {
     use super::*;
 
     pub fn init_reputation(ctx: Context<InitReputation>) -> Result<()> {
-        let _ = ctx;
+        let reputation = &mut ctx.accounts.reputation;
+        reputation.bump = ctx.bumps.reputation;
+        reputation.agent_asset = ctx.accounts.agent_asset.key();
+        reputation.feedback_count = 0;
+        reputation.feedback_digest = [0u8; 32];
+        reputation.score_ema = 0;
+        reputation.default_count = 0;
+        reputation.last_event_slot = Clock::get()?.slot;
+
+        emit!(ReputationInitialized {
+            agent_asset: reputation.agent_asset,
+            reputation_pda: reputation.key(),
+        });
+
         Ok(())
     }
 

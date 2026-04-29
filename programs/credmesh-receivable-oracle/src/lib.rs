@@ -16,7 +16,33 @@ pub mod credmesh_receivable_oracle {
     use super::*;
 
     pub fn init_oracle(ctx: Context<InitOracle>, params: InitOracleParams) -> Result<()> {
-        let _ = (ctx, params);
+        require!(params.worker_period_seconds > 0, OracleError::MathOverflow);
+
+        let now = Clock::get()?.unix_timestamp;
+        let config = &mut ctx.accounts.config;
+        config.bump = ctx.bumps.config;
+        config.governance = params.governance;
+        config.worker_authority = params.worker_authority;
+        config.worker_max_per_tx = params.worker_max_per_tx;
+        config.worker_max_per_period = params.worker_max_per_period;
+        config.worker_period_seconds = params.worker_period_seconds;
+        config.worker_period_start = now;
+        config.worker_period_used = 0;
+        // DECISIONS Q4: reputation_writer_authority defaults to governance until
+        // a separate `set_reputation_writer` ix lands. Off-chain, this is rotated
+        // independently of the worker_authority — they MUST never be the same key.
+        config.reputation_writer_authority = params.governance;
+        config.reputation_max_per_tx_score = 100;
+        config.reputation_max_per_period_count = 1_000;
+        config.reputation_period_seconds = params.worker_period_seconds;
+        config.reputation_period_start = now;
+        config.reputation_period_used = 0;
+
+        emit!(OracleInitialized {
+            governance: config.governance,
+            worker_authority: config.worker_authority,
+        });
+
         Ok(())
     }
 
@@ -26,7 +52,57 @@ pub mod credmesh_receivable_oracle {
         amount: u64,
         expires_at: i64,
     ) -> Result<()> {
-        let _ = (ctx, source_id, amount, expires_at);
+        let now = Clock::get()?.unix_timestamp;
+        let slot = Clock::get()?.slot;
+
+        require!(expires_at > now, OracleError::ReceivableExpired);
+
+        let config = &mut ctx.accounts.config;
+
+        // Lazy per-period reset.
+        if now >= config.worker_period_start.saturating_add(config.worker_period_seconds) {
+            config.worker_period_start = now;
+            config.worker_period_used = 0;
+        }
+
+        // Per-tx cap.
+        require!(
+            amount <= config.worker_max_per_tx,
+            OracleError::PerReceivableCapExceeded
+        );
+
+        // Per-period cap.
+        let new_period_used = config
+            .worker_period_used
+            .checked_add(amount)
+            .ok_or(OracleError::MathOverflow)?;
+        require!(
+            new_period_used <= config.worker_max_per_period,
+            OracleError::PerPeriodCapExceeded
+        );
+        config.worker_period_used = new_period_used;
+
+        let receivable = &mut ctx.accounts.receivable;
+        receivable.bump = ctx.bumps.receivable;
+        receivable.agent = ctx.accounts.agent.key();
+        receivable.source_id = source_id;
+        receivable.source_kind = 0; // SourceKind::Worker
+        receivable.source_signer = None;
+        receivable.amount = amount;
+        receivable.expires_at = expires_at;
+        receivable.last_updated_slot = slot;
+        receivable.authority = ctx.accounts.worker.key();
+
+        emit!(ReceivableUpdated {
+            agent: receivable.agent,
+            source_id,
+            source_kind: 0,
+            source_signer: None,
+            amount,
+            expires_at,
+            authority: receivable.authority,
+        });
+
         Ok(())
     }
 
@@ -55,12 +131,33 @@ pub mod credmesh_receivable_oracle {
         max_per_period: u64,
         period_seconds: i64,
     ) -> Result<()> {
-        let _ = (ctx, kind, max_per_receivable, max_per_period, period_seconds);
+        require!(period_seconds > 0, OracleError::MathOverflow);
+        require!(kind == 1 || kind == 2, OracleError::SignerNotAllowed);
+
+        let now = Clock::get()?.unix_timestamp;
+        let signer = &mut ctx.accounts.allowed_signer;
+        signer.bump = ctx.bumps.allowed_signer;
+        signer.signer = ctx.accounts.signer_to_add.key();
+        signer.kind = kind;
+        signer.max_per_receivable = max_per_receivable;
+        signer.max_per_period = max_per_period;
+        signer.period_seconds = period_seconds;
+        signer.period_start = now;
+        signer.period_used = 0;
+
+        emit!(AllowedSignerAdded {
+            signer: signer.signer,
+            kind,
+            max_per_receivable,
+            max_per_period,
+        });
+
         Ok(())
     }
 
     pub fn remove_allowed_signer(ctx: Context<RemoveAllowedSigner>) -> Result<()> {
-        let _ = ctx;
+        let removed = ctx.accounts.allowed_signer.signer;
+        emit!(AllowedSignerRemoved { signer: removed });
         Ok(())
     }
 }
