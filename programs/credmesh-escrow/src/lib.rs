@@ -189,19 +189,385 @@ pub mod credmesh_escrow {
         source_kind: u8,
         nonce: [u8; 16],
     ) -> Result<()> {
-        // DECISIONS Q1: agent_asset is an MPL Agent Registry asset.
-        // Handler must verify:
-        //   1. agent_asset.owner == credmesh_shared::program_ids::MPL_AGENT_REGISTRY
-        //   2. agent.key() is the asset's owner OR a registered DelegateExecutionV1
-        //      delegate of the asset (read via MPL Agent Tools program).
-        // Step 1 is also enforced by an account constraint (added below).
-        // Step 2 must be runtime-verified.
-        let _ = (ctx, receivable_id, amount, source_kind, nonce);
+        require!(amount > 0, CredmeshError::MathOverflow);
+        let kind = credmesh_shared::SourceKind::from_u8(source_kind)
+            .ok_or(CredmeshError::ReceivableStale)?;
+
+        let now = Clock::get()?.unix_timestamp;
+        let slot = Clock::get()?.slot;
+
+        // (1) Verify agent identity (MPL Core asset + DelegateExecutionV1).
+        // Per DECISIONS Q1; account-read only, no CPI.
+        let exec_profile = ctx.accounts.executive_profile.as_ref().map(|a| a.as_ref());
+        let exec_record = ctx.accounts.execution_delegate_record.as_ref().map(|a| a.as_ref());
+        credmesh_shared::mpl_identity::verify_agent_signer(
+            &ctx.accounts.agent.key(),
+            &ctx.accounts.agent_asset.to_account_info(),
+            &ctx.accounts.agent_identity.to_account_info(),
+            exec_profile,
+            exec_record,
+        )
+        .map_err(|e| match e {
+            credmesh_shared::mpl_identity::IdentityError::NotACoreAsset
+            | credmesh_shared::mpl_identity::IdentityError::AgentNotRegistered => {
+                error!(CredmeshError::InvalidAgentAsset)
+            }
+            _ => error!(CredmeshError::AgentBindingMismatch),
+        })?;
+
+        // (2) Read AgentReputation cross-program.
+        let reputation_pda = credmesh_shared::cross_program::derive_pda(
+            &[
+                credmesh_reputation::REPUTATION_SEED,
+                ctx.accounts.agent_asset.key.as_ref(),
+            ],
+            &credmesh_shared::program_ids::REPUTATION,
+        );
+        let reputation = credmesh_shared::cross_program::read_cross_program_account::<
+            credmesh_reputation::AgentReputation,
+        >(
+            &ctx.accounts.agent_reputation_pda.to_account_info(),
+            &credmesh_shared::program_ids::REPUTATION,
+            &reputation_pda,
+        )
+        .map_err(|_| error!(CredmeshError::ReputationPdaMismatch))?;
+
+        // (3) Read Receivable cross-program (Worker path) OR verify ed25519
+        // signed receivable (Ed25519/X402 paths).
+        let (receivable_amount, receivable_expires_at, source_signer) = match kind {
+            credmesh_shared::SourceKind::Worker => {
+                let receivable_pda = credmesh_shared::cross_program::derive_pda(
+                    &[
+                        credmesh_receivable_oracle::RECEIVABLE_SEED,
+                        ctx.accounts.agent.key.as_ref(),
+                        receivable_id.as_ref(),
+                    ],
+                    &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
+                );
+                let receivable = credmesh_shared::cross_program::read_cross_program_account::<
+                    credmesh_receivable_oracle::Receivable,
+                >(
+                    &ctx.accounts.receivable_pda.to_account_info(),
+                    &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
+                    &receivable_pda,
+                )
+                .map_err(|_| error!(CredmeshError::ReceivablePdaMismatch))?;
+
+                let staleness =
+                    slot.saturating_sub(receivable.last_updated_slot);
+                require!(
+                    staleness <= credmesh_receivable_oracle::MAX_STALENESS_SLOTS,
+                    CredmeshError::ReceivableStale
+                );
+                (receivable.amount, receivable.expires_at, None)
+            }
+            credmesh_shared::SourceKind::Ed25519 | credmesh_shared::SourceKind::X402 => {
+                let (signed_pubkey, signed_msg) =
+                    credmesh_shared::ix_introspection::verify_prev_ed25519(
+                        &ctx.accounts.instructions_sysvar.to_account_info(),
+                    )
+                    .map_err(|e| match e {
+                        credmesh_shared::ix_introspection::IxIntrospectionError::Ed25519OffsetMismatch => {
+                            error!(CredmeshError::Ed25519MessageMismatch)
+                        }
+                        _ => error!(CredmeshError::Ed25519Missing),
+                    })?;
+
+                require!(
+                    signed_msg.len() == credmesh_shared::ed25519_message::TOTAL_LEN,
+                    CredmeshError::Ed25519MessageMismatch
+                );
+
+                use credmesh_shared::ed25519_message as M;
+                let msg_recv_id = &signed_msg[M::RECEIVABLE_ID_OFFSET
+                    ..M::RECEIVABLE_ID_OFFSET + M::RECEIVABLE_ID_LEN];
+                let msg_agent =
+                    &signed_msg[M::AGENT_OFFSET..M::AGENT_OFFSET + M::AGENT_LEN];
+                let mut amount_buf = [0u8; 8];
+                amount_buf.copy_from_slice(
+                    &signed_msg[M::AMOUNT_OFFSET..M::AMOUNT_OFFSET + M::AMOUNT_LEN],
+                );
+                let msg_amount = u64::from_le_bytes(amount_buf);
+                let mut expires_buf = [0u8; 8];
+                expires_buf.copy_from_slice(
+                    &signed_msg[M::EXPIRES_AT_OFFSET..M::EXPIRES_AT_OFFSET + M::EXPIRES_AT_LEN],
+                );
+                let msg_expires_at = i64::from_le_bytes(expires_buf);
+                let msg_nonce = &signed_msg[M::NONCE_OFFSET..M::NONCE_OFFSET + M::NONCE_LEN];
+
+                require!(
+                    msg_recv_id == receivable_id.as_ref(),
+                    CredmeshError::Ed25519MessageMismatch
+                );
+                require!(
+                    msg_agent == ctx.accounts.agent_asset.key().as_ref(),
+                    CredmeshError::Ed25519MessageMismatch
+                );
+                require!(msg_nonce == nonce.as_ref(), CredmeshError::Ed25519MessageMismatch);
+
+                (msg_amount, msg_expires_at, Some(signed_pubkey))
+            }
+        };
+
+        require!(receivable_expires_at > now, CredmeshError::ReceivableExpired);
+
+        // (4) Cap checks: amount <= min(receivable * pct_bps / 10000, abs_cap, credit_from_score).
+        let pool = &ctx.accounts.pool;
+        let pct_cap = (receivable_amount as u128)
+            .checked_mul(pool.max_advance_pct_bps as u128)
+            .ok_or(CredmeshError::MathOverflow)?
+            .checked_div(BPS_DENOMINATOR as u128)
+            .ok_or(CredmeshError::MathOverflow)?;
+        let pct_cap = u64::try_from(pct_cap).map_err(|_| error!(CredmeshError::MathOverflow))?;
+        require!(amount <= pct_cap, CredmeshError::AdvanceExceedsCap);
+        require!(amount <= pool.max_advance_abs, CredmeshError::AdvanceExceedsCap);
+
+        let credit_from_score = credit_from_score_ema(reputation.score_ema, &pool.fee_curve)?;
+        require!(amount <= credit_from_score, CredmeshError::AdvanceExceedsCredit);
+
+        // (5) Compute fee from the on-chain curve. The off-chain server's
+        // pricing.ts must produce the same number; tests assert the equality.
+        let duration_seconds = receivable_expires_at.saturating_sub(now).max(0) as u64;
+        let utilization = compute_utilization_bps(pool)?;
+        let fee_owed = compute_fee_amount(
+            amount,
+            duration_seconds,
+            utilization,
+            reputation.default_count,
+            &pool.fee_curve,
+        )?;
+
+        // (6) Transfer USDC vault → agent. PDA-signed.
+        let asset_mint = pool.asset_mint;
+        let pool_bump = pool.bump;
+        let bump_arr = [pool_bump];
+        let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
+        let signer_seeds = &[pool_seeds];
+
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.pool_usdc_vault.to_account_info(),
+                    to: ctx.accounts.agent_usdc_ata.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            amount,
+        )?;
+
+        // (7) Init Advance + ConsumedPayment (Anchor handled via `init`).
+        let advance = &mut ctx.accounts.advance;
+        advance.bump = ctx.bumps.advance;
+        advance.agent = ctx.accounts.agent.key();
+        advance.receivable_id = receivable_id;
+        advance.principal = amount;
+        advance.fee_owed = fee_owed;
+        advance.late_penalty_per_day = compute_late_penalty_per_day(amount, &pool.fee_curve)?;
+        advance.issued_at = now;
+        advance.expires_at = receivable_expires_at;
+        advance.source_kind = source_kind;
+        advance.source_signer = source_signer;
+        advance.state = AdvanceState::Issued;
+        let advance_key = advance.key();
+
+        let consumed = &mut ctx.accounts.consumed;
+        consumed.bump = ctx.bumps.consumed;
+        consumed.nonce = nonce;
+        consumed.agent = ctx.accounts.agent.key();
+        consumed.created_at = now;
+
+        // (8) Update Pool deployed_amount.
+        let pool = &mut ctx.accounts.pool;
+        pool.deployed_amount = pool
+            .deployed_amount
+            .checked_add(amount)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        // Post-state invariant: deployed never exceeds total_assets.
+        require!(
+            pool.deployed_amount <= pool.total_assets,
+            CredmeshError::InsufficientIdleLiquidity
+        );
+
+        emit!(AdvanceIssued {
+            pool: pool.key(),
+            agent: ctx.accounts.agent.key(),
+            advance: advance_key,
+            principal: amount,
+            fee_owed,
+            expires_at: receivable_expires_at,
+            source_kind,
+        });
+
         Ok(())
     }
 
     pub fn claim_and_settle(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> {
-        let _ = (ctx, payment_amount);
+        let now = Clock::get()?.unix_timestamp;
+
+        // Settlement window opens at `expires_at - CLAIM_WINDOW_SECONDS`.
+        let claim_window_start = ctx
+            .accounts
+            .advance
+            .expires_at
+            .checked_sub(CLAIM_WINDOW_SECONDS)
+            .ok_or(CredmeshError::MathOverflow)?;
+        require!(now >= claim_window_start, CredmeshError::NotSettleable);
+
+        // Memo nonce binding: payment tx must include a memo with the
+        // ConsumedPayment.nonce bytes. Defends the "same TransferChecked
+        // re-wrapped in a different outer tx" replay vector flagged in audit.
+        let consumed_nonce = ctx.accounts.consumed.nonce;
+        credmesh_shared::ix_introspection::require_memo_nonce(
+            &ctx.accounts.instructions_sysvar.to_account_info(),
+            &consumed_nonce,
+        )
+        .map_err(|_| error!(CredmeshError::MemoNonceMismatch))?;
+
+        let principal = ctx.accounts.advance.principal;
+        let fee_owed = ctx.accounts.advance.fee_owed;
+        let late_penalty_per_day = ctx.accounts.advance.late_penalty_per_day;
+        let expires_at = ctx.accounts.advance.expires_at;
+
+        let late_seconds = (now - expires_at).max(0);
+        let mut late_days = (late_seconds / 86_400) as u64;
+        if late_days > MAX_LATE_DAYS as u64 {
+            late_days = MAX_LATE_DAYS as u64;
+        }
+        let late_penalty = late_days
+            .checked_mul(late_penalty_per_day)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        let total_owed = principal
+            .checked_add(fee_owed)
+            .ok_or(CredmeshError::MathOverflow)?
+            .checked_add(late_penalty)
+            .ok_or(CredmeshError::MathOverflow)?;
+        require!(payment_amount >= total_owed, CredmeshError::WaterfallSumMismatch);
+
+        // Compute three cuts. Fee + late penalty splits 15/85; principal
+        // returns to LP vault in full.
+        let total_fee = fee_owed
+            .checked_add(late_penalty)
+            .ok_or(CredmeshError::MathOverflow)?;
+        let protocol_cut_u128 = (total_fee as u128)
+            .checked_mul(PROTOCOL_FEE_BPS as u128)
+            .ok_or(CredmeshError::MathOverflow)?
+            .checked_div(BPS_DENOMINATOR as u128)
+            .ok_or(CredmeshError::MathOverflow)?;
+        let protocol_cut =
+            u64::try_from(protocol_cut_u128).map_err(|_| error!(CredmeshError::MathOverflow))?;
+        let lp_fee = total_fee
+            .checked_sub(protocol_cut)
+            .ok_or(CredmeshError::MathOverflow)?;
+        let lp_cut = principal
+            .checked_add(lp_fee)
+            .ok_or(CredmeshError::MathOverflow)?;
+        let agent_net = payment_amount
+            .checked_sub(protocol_cut)
+            .ok_or(CredmeshError::MathOverflow)?
+            .checked_sub(lp_cut)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        // Sum invariant check.
+        require!(
+            protocol_cut
+                .checked_add(lp_cut)
+                .and_then(|x| x.checked_add(agent_net))
+                == Some(payment_amount),
+            CredmeshError::WaterfallSumMismatch
+        );
+
+        // CPIs. Authority is the cranker (which == advance.agent in v1 per the
+        // account-struct constraint).
+        let cranker_ai = ctx.accounts.cranker.to_account_info();
+        let payer_ata_ai = ctx.accounts.payer_usdc_ata.to_account_info();
+        let token_program_ai = ctx.accounts.token_program.to_account_info();
+
+        if protocol_cut > 0 {
+            token::transfer(
+                CpiContext::new(
+                    token_program_ai.clone(),
+                    Transfer {
+                        from: payer_ata_ai.clone(),
+                        to: ctx.accounts.protocol_treasury_ata.to_account_info(),
+                        authority: cranker_ai.clone(),
+                    },
+                ),
+                protocol_cut,
+            )?;
+        }
+
+        if lp_cut > 0 {
+            token::transfer(
+                CpiContext::new(
+                    token_program_ai.clone(),
+                    Transfer {
+                        from: payer_ata_ai.clone(),
+                        to: ctx.accounts.pool_usdc_vault.to_account_info(),
+                        authority: cranker_ai.clone(),
+                    },
+                ),
+                lp_cut,
+            )?;
+        }
+
+        // agent_net: the cranker IS the agent in v1; if payer_usdc_ata ==
+        // agent_usdc_ata (typical), this is a self-transfer that we skip.
+        // If the payer ATA is distinct from the agent's USDC ATA, transfer.
+        if agent_net > 0
+            && ctx.accounts.payer_usdc_ata.key() != ctx.accounts.agent_usdc_ata.key()
+        {
+            token::transfer(
+                CpiContext::new(
+                    token_program_ai.clone(),
+                    Transfer {
+                        from: payer_ata_ai.clone(),
+                        to: ctx.accounts.agent_usdc_ata.to_account_info(),
+                        authority: cranker_ai.clone(),
+                    },
+                ),
+                agent_net,
+            )?;
+        }
+
+        // Update Pool: principal returns to vault, lp_fee accrues to LPs via
+        // share-price increase, protocol_cut is tracked for skim.
+        let pool = &mut ctx.accounts.pool;
+        pool.deployed_amount = pool
+            .deployed_amount
+            .checked_sub(principal)
+            .ok_or(CredmeshError::MathOverflow)?;
+        pool.total_assets = pool
+            .total_assets
+            .checked_add(lp_fee)
+            .ok_or(CredmeshError::MathOverflow)?;
+        pool.accrued_protocol_fees = pool
+            .accrued_protocol_fees
+            .checked_add(protocol_cut)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        let advance_key = ctx.accounts.advance.key();
+        let agent_key = ctx.accounts.advance.agent;
+
+        // The Anchor `close = agent` constraint on the Advance account
+        // closes it at end-of-handler; rent goes to agent (neutralizes MEV).
+        // We still set state for the (zero-data) post-close visibility.
+        ctx.accounts.advance.state = AdvanceState::Settled;
+
+        emit!(AdvanceSettled {
+            pool: pool.key(),
+            agent: agent_key,
+            advance: advance_key,
+            principal,
+            lp_cut,
+            protocol_cut,
+            agent_net,
+            late_days: late_days as u32,
+        });
+
         Ok(())
     }
 
@@ -246,12 +612,43 @@ pub mod credmesh_escrow {
     }
 
     pub fn propose_params(ctx: Context<ProposeParams>, params: PendingParams) -> Result<()> {
-        let _ = (ctx, params);
+        let now = Clock::get()?.unix_timestamp;
+        let pool = &mut ctx.accounts.pool;
+        let mut params = params;
+        params.execute_after = now
+            .checked_add(pool.timelock_seconds)
+            .ok_or(CredmeshError::MathOverflow)?;
+        pool.pending_params = Some(params);
+
+        emit!(ParamsProposed {
+            pool: pool.key(),
+            execute_after: pool
+                .pending_params
+                .as_ref()
+                .map(|p| p.execute_after)
+                .unwrap_or(0),
+        });
         Ok(())
     }
 
     pub fn execute_params(ctx: Context<ExecuteParams>) -> Result<()> {
-        let _ = ctx;
+        let now = Clock::get()?.unix_timestamp;
+        let pool = &mut ctx.accounts.pool;
+        let pending = pool
+            .pending_params
+            .clone()
+            .ok_or(CredmeshError::NoPendingParams)?;
+        require!(
+            now >= pending.execute_after,
+            CredmeshError::PendingParamsNotReady
+        );
+
+        pool.fee_curve = pending.fee_curve;
+        pool.max_advance_pct_bps = pending.max_advance_pct_bps;
+        pool.max_advance_abs = pending.max_advance_abs;
+        pool.pending_params = None;
+
+        emit!(ParamsExecuted { pool: pool.key() });
         Ok(())
     }
 
@@ -317,6 +714,109 @@ fn preview_deposit(amount: u64, total_assets: u64, total_shares: u64) -> Result<
         .checked_div(assets_off)
         .ok_or(CredmeshError::MathOverflow)?;
     u64::try_from(shares).map_err(|_| error!(CredmeshError::MathOverflow))
+}
+
+/// Map agent's reputation score (u128 with 18 decimals) into a max-credit cap
+/// in USDC atoms. Tier curve per DECISIONS Q6 (no ML in v1).
+///
+/// Curve: score 0 → $0; score 50 (10⁶ × 50 in 18-dec representation) → $25;
+///         score 80 → $100; score 95+ → $250 (KYC tier).
+/// Hard ceiling = pool.max_advance_abs.
+fn credit_from_score_ema(score_ema: u128, _curve: &FeeCurve) -> Result<u64> {
+    // score_ema is u128 with 18 decimals — divide by 10^18 to get integer 0..100.
+    let score_int = (score_ema / 1_000_000_000_000_000_000u128) as u64;
+    let credit_usd = match score_int {
+        0..=20 => 0u64,
+        21..=49 => 10_000_000,   // $10
+        50..=69 => 25_000_000,   // $25
+        70..=84 => 100_000_000,  // $100
+        85..=94 => 200_000_000,  // $200
+        _ => 250_000_000,        // $250 (95-100; KYC-tier-equivalent)
+    };
+    Ok(credit_usd)
+}
+
+/// Compute the per-issuance fee. Mirrors `pricing.ts` shape:
+/// utilization premium + duration premium + risk premium + (pool loss surcharge omitted in v1).
+/// Returns USDC atoms (6 decimals).
+fn compute_fee_amount(
+    principal: u64,
+    duration_seconds: u64,
+    utilization_bps: u64,
+    default_count: u32,
+    curve: &FeeCurve,
+) -> Result<u64> {
+    let mut rate_bps: u64 = curve.base_rate_bps as u64;
+
+    // Utilization kink (linear above kink → max).
+    let kink = curve.utilization_kink_bps as u64;
+    if utilization_bps > kink && (BPS_DENOMINATOR.saturating_sub(kink)) > 0 {
+        let extra = utilization_bps - kink;
+        let span = BPS_DENOMINATOR - kink;
+        let kink_to_max = curve.max_rate_bps as u64 - curve.kink_rate_bps as u64;
+        rate_bps = curve.kink_rate_bps as u64
+            + extra
+                .checked_mul(kink_to_max)
+                .ok_or(CredmeshError::MathOverflow)?
+                / span;
+    } else {
+        let scaled = utilization_bps
+            .checked_mul(curve.kink_rate_bps as u64 - curve.base_rate_bps as u64)
+            .ok_or(CredmeshError::MathOverflow)?;
+        rate_bps += if kink > 0 { scaled / kink } else { 0 };
+    }
+
+    // Duration premium.
+    let duration_days = duration_seconds / 86_400;
+    rate_bps = rate_bps
+        .checked_add(duration_days.saturating_mul(curve.duration_per_day_bps as u64))
+        .ok_or(CredmeshError::MathOverflow)?;
+
+    // Risk premium scales with default_count (clamped at 5).
+    let risk_factor = (default_count as u64).min(5);
+    rate_bps = rate_bps
+        .checked_add(risk_factor.saturating_mul(curve.risk_premium_bps as u64))
+        .ok_or(CredmeshError::MathOverflow)?;
+
+    rate_bps = rate_bps.min(curve.max_rate_bps as u64);
+
+    let fee_u128 = (principal as u128)
+        .checked_mul(rate_bps as u128)
+        .ok_or(CredmeshError::MathOverflow)?
+        .checked_div(BPS_DENOMINATOR as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    u64::try_from(fee_u128).map_err(|_| error!(CredmeshError::MathOverflow))
+}
+
+fn compute_late_penalty_per_day(principal: u64, curve: &FeeCurve) -> Result<u64> {
+    // 0.1% per day of principal, multiplied by pool_loss_surcharge_bps if active.
+    let base = (principal as u128)
+        .checked_mul(10) // 0.1% = 10 bps
+        .ok_or(CredmeshError::MathOverflow)?
+        .checked_div(BPS_DENOMINATOR as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let surcharge = curve.pool_loss_surcharge_bps as u128;
+    let total = if surcharge > 0 {
+        base.checked_mul(BPS_DENOMINATOR as u128 + surcharge)
+            .ok_or(CredmeshError::MathOverflow)?
+            .checked_div(BPS_DENOMINATOR as u128)
+            .ok_or(CredmeshError::MathOverflow)?
+    } else {
+        base
+    };
+    u64::try_from(total).map_err(|_| error!(CredmeshError::MathOverflow))
+}
+
+fn compute_utilization_bps(pool: &Pool) -> Result<u64> {
+    if pool.total_assets == 0 {
+        return Ok(BPS_DENOMINATOR);
+    }
+    let utilization_u128 = (pool.deployed_amount as u128)
+        .checked_mul(BPS_DENOMINATOR as u128)
+        .ok_or(CredmeshError::MathOverflow)?
+        .checked_div(pool.total_assets as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    Ok(u64::try_from(utilization_u128).unwrap_or(BPS_DENOMINATOR))
 }
 
 /// assets_returned = (shares * (total_assets + V_A)) / (total_shares + V_S)

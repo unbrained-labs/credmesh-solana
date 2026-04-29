@@ -20,3 +20,5 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-lang = { workspace = true }
 anchor-spl = { workspace = true, features = ["token"] }
 credmesh-shared = { workspace = true }
+credmesh-reputation = { path = "../credmesh-reputation", features = ["cpi"] }
+credmesh-receivable-oracle = { path = "../credmesh-receivable-oracle", features = ["cpi"] }
