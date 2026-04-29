@@ -1,5 +1,9 @@
 use anchor_lang::prelude::*;
 
+pub mod cross_program;
+pub mod ix_introspection;
+pub mod mpl_identity;
+
 declare_id!("CRED1shared1111111111111111111111111111111");
 
 pub mod seeds {
