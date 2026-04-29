@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, Transfer};
 
 pub mod errors;
 pub mod events;
@@ -51,12 +51,134 @@ pub mod credmesh_escrow {
     }
 
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
-        let _ = (ctx, amount);
+        require!(amount > 0, CredmeshError::MathOverflow);
+
+        let total_assets = ctx.accounts.pool.total_assets;
+        let total_shares = ctx.accounts.pool.total_shares;
+        let asset_mint = ctx.accounts.pool.asset_mint;
+        let pool_bump = ctx.accounts.pool.bump;
+
+        let shares_to_mint = preview_deposit(amount, total_assets, total_shares)?;
+        require!(shares_to_mint > 0, CredmeshError::MathOverflow);
+
+        // Transfer USDC LP → vault. Authority is the LP's signer.
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.lp_usdc_ata.to_account_info(),
+                    to: ctx.accounts.usdc_vault.to_account_info(),
+                    authority: ctx.accounts.lp.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
+
+        // Mint shares to LP. Authority is the Pool PDA, signed by seeds.
+        let bump_arr = [pool_bump];
+        let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
+        let signer_seeds = &[pool_seeds];
+
+        token::mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                MintTo {
+                    mint: ctx.accounts.share_mint.to_account_info(),
+                    to: ctx.accounts.lp_share_ata.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            shares_to_mint,
+        )?;
+
+        let pool = &mut ctx.accounts.pool;
+        pool.total_assets = pool
+            .total_assets
+            .checked_add(amount)
+            .ok_or(CredmeshError::MathOverflow)?;
+        pool.total_shares = pool
+            .total_shares
+            .checked_add(shares_to_mint)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        emit!(Deposited {
+            pool: pool.key(),
+            lp: ctx.accounts.lp.key(),
+            amount,
+            shares_minted: shares_to_mint,
+        });
+
         Ok(())
     }
 
     pub fn withdraw(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
-        let _ = (ctx, shares);
+        require!(shares > 0, CredmeshError::MathOverflow);
+
+        let total_assets = ctx.accounts.pool.total_assets;
+        let total_shares = ctx.accounts.pool.total_shares;
+        let asset_mint = ctx.accounts.pool.asset_mint;
+        let pool_bump = ctx.accounts.pool.bump;
+
+        let assets_to_return = preview_redeem(shares, total_assets, total_shares)?;
+        require!(assets_to_return > 0, CredmeshError::MathOverflow);
+
+        // Idle-only enforcement: deployed USDC has physically left the vault,
+        // so vault balance == idle. If shares would redeem more than is idle,
+        // fail atomically.
+        require!(
+            ctx.accounts.usdc_vault.amount >= assets_to_return,
+            CredmeshError::InsufficientIdleLiquidity
+        );
+
+        // Burn LP shares first (no signer needed; lp is authority).
+        token::burn(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Burn {
+                    mint: ctx.accounts.share_mint.to_account_info(),
+                    from: ctx.accounts.lp_share_ata.to_account_info(),
+                    authority: ctx.accounts.lp.to_account_info(),
+                },
+            ),
+            shares,
+        )?;
+
+        // Transfer USDC vault → LP. Authority is the Pool PDA.
+        let bump_arr = [pool_bump];
+        let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
+        let signer_seeds = &[pool_seeds];
+
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.usdc_vault.to_account_info(),
+                    to: ctx.accounts.lp_usdc_ata.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            assets_to_return,
+        )?;
+
+        let pool = &mut ctx.accounts.pool;
+        pool.total_assets = pool
+            .total_assets
+            .checked_sub(assets_to_return)
+            .ok_or(CredmeshError::MathOverflow)?;
+        pool.total_shares = pool
+            .total_shares
+            .checked_sub(shares)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        emit!(Withdrew {
+            pool: pool.key(),
+            lp: ctx.accounts.lp.key(),
+            shares_burned: shares,
+            assets_returned: assets_to_return,
+        });
+
         Ok(())
     }
 
@@ -84,7 +206,42 @@ pub mod credmesh_escrow {
     }
 
     pub fn liquidate(ctx: Context<Liquidate>) -> Result<()> {
-        let _ = ctx;
+        let now = Clock::get()?.unix_timestamp;
+        let liquidation_window_start = ctx
+            .accounts
+            .advance
+            .expires_at
+            .checked_add(LIQUIDATION_GRACE_SECONDS)
+            .ok_or(CredmeshError::MathOverflow)?;
+        require!(now >= liquidation_window_start, CredmeshError::NotLiquidatable);
+
+        let principal = ctx.accounts.advance.principal;
+        let agent = ctx.accounts.advance.agent;
+        let advance_key = ctx.accounts.advance.key();
+
+        // LPs eat the loss via share-price drop. Total assets decrease by the
+        // unrecovered principal; total_shares is unchanged.
+        let pool = &mut ctx.accounts.pool;
+        pool.deployed_amount = pool
+            .deployed_amount
+            .checked_sub(principal)
+            .ok_or(CredmeshError::MathOverflow)?;
+        pool.total_assets = pool
+            .total_assets
+            .checked_sub(principal)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        // AUDIT AM-7: keep `Advance` alive with state=Liquidated for audit trail.
+        let advance = &mut ctx.accounts.advance;
+        advance.state = AdvanceState::Liquidated;
+
+        emit!(AdvanceLiquidated {
+            pool: pool.key(),
+            agent,
+            advance: advance_key,
+            loss: principal,
+        });
+
         Ok(())
     }
 
@@ -99,9 +256,85 @@ pub mod credmesh_escrow {
     }
 
     pub fn skim_protocol_fees(ctx: Context<SkimProtocolFees>, amount: u64) -> Result<()> {
-        let _ = (ctx, amount);
+        require!(amount > 0, CredmeshError::MathOverflow);
+        require!(
+            amount <= ctx.accounts.pool.accrued_protocol_fees,
+            CredmeshError::MathOverflow
+        );
+
+        let asset_mint = ctx.accounts.pool.asset_mint;
+        let pool_bump = ctx.accounts.pool.bump;
+        let bump_arr = [pool_bump];
+        let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
+        let signer_seeds = &[pool_seeds];
+
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.pool_usdc_vault.to_account_info(),
+                    to: ctx.accounts.recipient_ata.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            amount,
+        )?;
+
+        let pool = &mut ctx.accounts.pool;
+        pool.accrued_protocol_fees = pool
+            .accrued_protocol_fees
+            .checked_sub(amount)
+            .ok_or(CredmeshError::MathOverflow)?;
+
+        emit!(ProtocolFeesSkimmed {
+            pool: pool.key(),
+            amount,
+            recipient: ctx.accounts.recipient_ata.key(),
+        });
+
         Ok(())
     }
+}
+
+/// Virtual-shares math (OZ ERC-4626 `_decimalsOffset` pattern, ported to u128
+/// to avoid intermediate overflow). With the offsets set in `state.rs`, a 1-atom
+/// inflation attack costs ≥10⁶× any extractable profit.
+///
+/// shares_minted = (amount * (total_shares + V_S)) / (total_assets + V_A)
+fn preview_deposit(amount: u64, total_assets: u64, total_shares: u64) -> Result<u64> {
+    let amount_u = amount as u128;
+    let shares_off = (total_shares as u128)
+        .checked_add(VIRTUAL_SHARES_OFFSET as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let assets_off = (total_assets as u128)
+        .checked_add(VIRTUAL_ASSETS_OFFSET as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let numerator = amount_u
+        .checked_mul(shares_off)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let shares = numerator
+        .checked_div(assets_off)
+        .ok_or(CredmeshError::MathOverflow)?;
+    u64::try_from(shares).map_err(|_| error!(CredmeshError::MathOverflow))
+}
+
+/// assets_returned = (shares * (total_assets + V_A)) / (total_shares + V_S)
+fn preview_redeem(shares: u64, total_assets: u64, total_shares: u64) -> Result<u64> {
+    let shares_u = shares as u128;
+    let assets_off = (total_assets as u128)
+        .checked_add(VIRTUAL_ASSETS_OFFSET as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let shares_off = (total_shares as u128)
+        .checked_add(VIRTUAL_SHARES_OFFSET as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let numerator = shares_u
+        .checked_mul(assets_off)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let assets = numerator
+        .checked_div(shares_off)
+        .ok_or(CredmeshError::MathOverflow)?;
+    u64::try_from(assets).map_err(|_| error!(CredmeshError::MathOverflow))
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
