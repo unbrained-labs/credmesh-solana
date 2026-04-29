@@ -8,7 +8,8 @@ pub use errors::ReputationError;
 pub use events::*;
 pub use state::*;
 
-declare_id!("CRED1rep1111111111111111111111111111111111");
+// PLACEHOLDER — replace before deploy via `anchor keys sync`. See DEPLOYMENT.md.
+declare_id!("11111111111111111111111111111113");
 
 #[program]
 pub mod credmesh_reputation {
@@ -42,12 +43,18 @@ pub mod credmesh_reputation {
         let now = Clock::get()?.unix_timestamp;
         let slot = Clock::get()?.slot;
 
-        // (1) Read OracleConfig cross-program for writer-gating policy.
+        // (1) Read OracleConfig cross-program ONLY for the writer-authority
+        // gate. Per-period cap state can NOT be persisted from this handler
+        // (we only own the AgentReputation PDA, not OracleConfig). v1 enforces
+        // reputation write rate-limits OFF-CHAIN at the worker — the on-chain
+        // gate is purely the writer-authority equality check below.
+        // v1.5 will move the per-period state to a dedicated ReputationConfig
+        // PDA owned by credmesh-reputation. See V1_ACCEPTANCE.md.
         let oracle_config_pda = credmesh_shared::cross_program::derive_pda(
             &[credmesh_receivable_oracle::ORACLE_CONFIG_SEED],
             &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
         );
-        let mut oracle_config = credmesh_shared::cross_program::read_cross_program_account::<
+        let oracle_config = credmesh_shared::cross_program::read_cross_program_account::<
             credmesh_receivable_oracle::OracleConfig,
         >(
             &ctx.accounts.oracle_config.to_account_info(),
@@ -87,22 +94,9 @@ pub mod credmesh_reputation {
         // feedback updates `score_ema`. Permissionless writes still emit and
         // update the digest (8004 ergonomics) but don't move the score.
         if attestor == oracle_config.reputation_writer_authority {
-            // Lazy per-period reset.
-            if now
-                >= oracle_config
-                    .reputation_period_start
-                    .saturating_add(oracle_config.reputation_period_seconds)
-            {
-                oracle_config.reputation_period_start = now;
-                oracle_config.reputation_period_used = 0;
-            }
             require!(
                 input.score as u32 <= oracle_config.reputation_max_per_tx_score as u32,
                 ReputationError::InvalidScore
-            );
-            require!(
-                oracle_config.reputation_period_used < oracle_config.reputation_max_per_period_count,
-                ReputationError::MathOverflow
             );
 
             // EMA update with N = EMA_WINDOW. score is u8 0..100; multiply by
@@ -128,9 +122,6 @@ pub mod credmesh_reputation {
             }
 
             reputation.last_event_slot = slot;
-            // Note: oracle_config mutation only takes effect if a separate ix
-            // updates it; here we just read. The per-period accounting lives
-            // in the receivable-oracle program proper.
         }
 
         emit!(NewFeedback {

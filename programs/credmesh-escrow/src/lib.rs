@@ -10,7 +10,8 @@ pub use errors::CredmeshError;
 pub use events::*;
 pub use state::*;
 
-declare_id!("CRED1escrow1111111111111111111111111111111");
+// PLACEHOLDER — replace before deploy via `anchor keys sync`. See DEPLOYMENT.md.
+declare_id!("11111111111111111111111111111112");
 
 #[program]
 pub mod credmesh_escrow {
@@ -189,7 +190,7 @@ pub mod credmesh_escrow {
         source_kind: u8,
         nonce: [u8; 16],
     ) -> Result<()> {
-        require!(amount > 0, CredmeshError::MathOverflow);
+        require!(amount >= MIN_ADVANCE_ATOMS, CredmeshError::AdvanceExceedsCap);
         let kind = credmesh_shared::SourceKind::from_u8(source_kind)
             .ok_or(CredmeshError::ReceivableStale)?;
 
@@ -753,15 +754,17 @@ fn compute_fee_amount(
     if utilization_bps > kink && (BPS_DENOMINATOR.saturating_sub(kink)) > 0 {
         let extra = utilization_bps - kink;
         let span = BPS_DENOMINATOR - kink;
-        let kink_to_max = curve.max_rate_bps as u64 - curve.kink_rate_bps as u64;
+        let kink_to_max = (curve.max_rate_bps as u64).saturating_sub(curve.kink_rate_bps as u64);
         rate_bps = curve.kink_rate_bps as u64
             + extra
                 .checked_mul(kink_to_max)
                 .ok_or(CredmeshError::MathOverflow)?
                 / span;
     } else {
+        let kink_minus_base =
+            (curve.kink_rate_bps as u64).saturating_sub(curve.base_rate_bps as u64);
         let scaled = utilization_bps
-            .checked_mul(curve.kink_rate_bps as u64 - curve.base_rate_bps as u64)
+            .checked_mul(kink_minus_base)
             .ok_or(CredmeshError::MathOverflow)?;
         rate_bps += if kink > 0 { scaled / kink } else { 0 };
     }

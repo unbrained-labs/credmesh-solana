@@ -4,7 +4,11 @@ pub mod cross_program;
 pub mod ix_introspection;
 pub mod mpl_identity;
 
-declare_id!("CRED1shared1111111111111111111111111111111");
+// PLACEHOLDER program IDs. They decode to valid 32-byte pubkeys but are NOT
+// real keypair-derived addresses. Before any devnet deploy, run
+// `solana-keygen new -o target/deploy/<program>-keypair.json` for each program
+// and `anchor keys sync` to replace these. See DEPLOYMENT.md §"Phase 0".
+declare_id!("11111111111111111111111111111115");
 
 pub mod seeds {
     pub const POOL_SEED: &[u8] = b"pool";
@@ -21,9 +25,10 @@ pub mod program_ids {
     use anchor_lang::prelude::Pubkey;
     use anchor_lang::pubkey;
 
-    pub const ESCROW: Pubkey = pubkey!("CRED1escrow1111111111111111111111111111111");
-    pub const REPUTATION: Pubkey = pubkey!("CRED1rep1111111111111111111111111111111111");
-    pub const RECEIVABLE_ORACLE: Pubkey = pubkey!("CRED1recv11111111111111111111111111111111");
+    // PLACEHOLDERS — replace before deploy. See DEPLOYMENT.md §"Phase 0".
+    pub const ESCROW: Pubkey = pubkey!("11111111111111111111111111111112");
+    pub const REPUTATION: Pubkey = pubkey!("11111111111111111111111111111113");
+    pub const RECEIVABLE_ORACLE: Pubkey = pubkey!("11111111111111111111111111111114");
 
     /// MPL Agent Registry — Identity program (DECISIONS Q1).
     /// Verified against `metaplex-foundation/mpl-agent` source `declare_id!`.

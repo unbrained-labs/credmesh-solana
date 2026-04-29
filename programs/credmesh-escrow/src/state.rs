@@ -13,6 +13,10 @@ pub const VIRTUAL_SHARES_OFFSET: u64 = 1_000_000_000;
 
 pub const MAX_LATE_DAYS: u32 = 365;
 
+/// Floor on advance amounts. 1 USDC = 1_000_000 atoms. Below this, the late
+/// penalty math (0.1%/day) truncates to zero and tx fees dominate.
+pub const MIN_ADVANCE_ATOMS: u64 = 1_000_000;
+
 #[account]
 pub struct Pool {
     pub bump: u8,
@@ -126,14 +130,7 @@ impl ConsumedPayment {
     pub const SIZE: usize = 8 + 1 + 16 + 32 + 8 + 16;
 }
 
-#[account]
-pub struct ProtocolTreasury {
-    pub bump: u8,
-    pub authority: Pubkey,
-    pub treasury_ata: Pubkey,
-    pub total_collected: u64,
-}
-
-impl ProtocolTreasury {
-    pub const SIZE: usize = 8 + 1 + 32 + 32 + 8 + 32;
-}
+// ProtocolTreasury is not a separate PDA in v1 — `Pool.treasury_ata` stores the
+// destination ATA directly. The TREASURY_SEED constant is reserved for v2 if a
+// dedicated PDA is ever needed (e.g., to track per-pool fee accrual on-chain
+// independently of the ATA balance).

@@ -3,14 +3,14 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-credmesh_escrow = "CRED1escrow1111111111111111111111111111111"
-credmesh_reputation = "CRED1rep1111111111111111111111111111111111"
-credmesh_receivable_oracle = "CRED1recv11111111111111111111111111111111"
+credmesh_escrow = "11111111111111111111111111111112"
+credmesh_reputation = "11111111111111111111111111111113"
+credmesh_receivable_oracle = "11111111111111111111111111111114"
 
 [programs.devnet]
-credmesh_escrow = "CRED1escrow1111111111111111111111111111111"
-credmesh_reputation = "CRED1rep1111111111111111111111111111111111"
-credmesh_receivable_oracle = "CRED1recv11111111111111111111111111111111"
+credmesh_escrow = "11111111111111111111111111111112"
+credmesh_reputation = "11111111111111111111111111111113"
+credmesh_receivable_oracle = "11111111111111111111111111111114"
 
 [registry]
 url = "https://api.apr.dev"
@@ -26,4 +26,14 @@ test = "ts-mocha -p ./tsconfig.json -t 1000000 'tests/bankrun/**/*.test.ts'"
 url = "https://api.devnet.solana.com"
 
 [[test.validator.clone]]
-address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"  # USDC mainnet mint
+[[test.validator.clone]]
+address = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"  # MPL Core
+[[test.validator.clone]]
+address = "1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p"  # MPL Agent Registry / Identity
+[[test.validator.clone]]
+address = "TLREGni9ZEyGC3vnPZtqUh95xQ8oPqJSvNjvB7FGK8S"  # MPL Agent Tools
+[[test.validator.clone]]
+address = "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf"  # Squads v4
+[[test.validator.clone]]
+address = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"  # Memo v2

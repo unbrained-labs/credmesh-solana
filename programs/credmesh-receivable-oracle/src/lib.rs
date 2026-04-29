@@ -9,7 +9,8 @@ pub use errors::OracleError;
 pub use events::*;
 pub use state::*;
 
-declare_id!("CRED1recv11111111111111111111111111111111");
+// PLACEHOLDER — replace before deploy via `anchor keys sync`. See DEPLOYMENT.md.
+declare_id!("11111111111111111111111111111114");
 
 #[program]
 pub mod credmesh_receivable_oracle {
@@ -255,6 +256,57 @@ pub mod credmesh_receivable_oracle {
         emit!(AllowedSignerRemoved { signer: removed });
         Ok(())
     }
+
+    /// Rotate the worker authority. Governance-gated; takes immediate effect.
+    /// Caps and per-period state are reset.
+    pub fn set_worker_authority(
+        ctx: Context<SetWorkerAuthority>,
+        new_authority: Pubkey,
+        new_max_per_tx: u64,
+        new_max_per_period: u64,
+        new_period_seconds: i64,
+    ) -> Result<()> {
+        require!(new_period_seconds > 0, OracleError::MathOverflow);
+        let now = Clock::get()?.unix_timestamp;
+        let config = &mut ctx.accounts.config;
+        config.worker_authority = new_authority;
+        config.worker_max_per_tx = new_max_per_tx;
+        config.worker_max_per_period = new_max_per_period;
+        config.worker_period_seconds = new_period_seconds;
+        config.worker_period_start = now;
+        config.worker_period_used = 0;
+        Ok(())
+    }
+
+    /// Rotate the reputation writer authority. Governance-gated.
+    pub fn set_reputation_writer(
+        ctx: Context<SetReputationWriter>,
+        new_authority: Pubkey,
+        new_max_per_tx_score: u8,
+        new_max_per_period_count: u32,
+        new_period_seconds: i64,
+    ) -> Result<()> {
+        require!(new_period_seconds > 0, OracleError::MathOverflow);
+        require!(new_max_per_tx_score <= 100, OracleError::MathOverflow);
+        let now = Clock::get()?.unix_timestamp;
+        let config = &mut ctx.accounts.config;
+        config.reputation_writer_authority = new_authority;
+        config.reputation_max_per_tx_score = new_max_per_tx_score;
+        config.reputation_max_per_period_count = new_max_per_period_count;
+        config.reputation_period_seconds = new_period_seconds;
+        config.reputation_period_start = now;
+        config.reputation_period_used = 0;
+        Ok(())
+    }
+
+    /// Rotate the governance authority itself. Use with extreme care — once
+    /// changed, only the new governance can rotate it back. Gated by current
+    /// governance.
+    pub fn set_governance(ctx: Context<SetGovernance>, new_governance: Pubkey) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        config.governance = new_governance;
+        Ok(())
+    }
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -377,4 +429,40 @@ pub struct RemoveAllowedSigner<'info> {
         bump = allowed_signer.bump
     )]
     pub allowed_signer: Account<'info, AllowedSigner>,
+}
+
+#[derive(Accounts)]
+pub struct SetWorkerAuthority<'info> {
+    pub governance: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [ORACLE_CONFIG_SEED],
+        bump = config.bump,
+        constraint = config.governance == governance.key() @ OracleError::NotGovernance
+    )]
+    pub config: Account<'info, OracleConfig>,
+}
+
+#[derive(Accounts)]
+pub struct SetReputationWriter<'info> {
+    pub governance: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [ORACLE_CONFIG_SEED],
+        bump = config.bump,
+        constraint = config.governance == governance.key() @ OracleError::NotGovernance
+    )]
+    pub config: Account<'info, OracleConfig>,
+}
+
+#[derive(Accounts)]
+pub struct SetGovernance<'info> {
+    pub governance: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [ORACLE_CONFIG_SEED],
+        bump = config.bump,
+        constraint = config.governance == governance.key() @ OracleError::NotGovernance
+    )]
+    pub config: Account<'info, OracleConfig>,
 }
