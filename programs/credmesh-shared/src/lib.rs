@@ -22,13 +22,24 @@ pub mod program_ids {
     pub const RECEIVABLE_ORACLE: Pubkey = pubkey!("CRED1recv11111111111111111111111111111111");
 
     /// MPL Agent Registry — Identity program (DECISIONS Q1).
-    /// Verify the canonical address against Metaplex docs before mainnet.
+    /// Verified against `metaplex-foundation/mpl-agent` source `declare_id!`.
+    /// Mainnet + devnet share the same address.
+    /// **Audit caveat**: this layer is not separately audited; MPL Core is.
     pub const MPL_AGENT_REGISTRY: Pubkey = pubkey!("1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p");
 
-    /// MPL Agent Registry — Tools program (delegate flows).
+    /// MPL Agent Registry — Tools program (DelegateExecutionV1 flows).
+    /// Verified against the same repo. Used to verify the `agent` signer is
+    /// either the asset owner OR a registered ExecutionDelegateRecordV1 delegate.
     pub const MPL_AGENT_TOOLS: Pubkey = pubkey!("TLREGni9ZEyGC3vnPZtqUh95xQ8oPqJSvNjvB7FGK8S");
 
+    /// MPL Core program. The Solana account-level owner of every Agent Registry
+    /// asset is always this program; the agent's owner-wallet is the `owner`
+    /// field at byte offset 1..33 of the asset's data (BaseAssetV1).
+    pub const MPL_CORE: Pubkey = pubkey!("CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d");
+
     /// Squads v4 multisig program (DECISIONS Q3).
+    /// Verified pin: commit `64af7330413d5c85cbbccfd8c27a05d45b6e666f` /
+    /// `squads-multisig-program = "=2.0.0"`. Mainnet + devnet same address.
     pub const SQUADS_V4: Pubkey = pubkey!("SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf");
 
     /// Memo program v2 (used for replay-nonce binding).
@@ -51,6 +62,30 @@ pub mod ed25519_message {
     pub const EXPIRES_AT_LEN: usize = 8;
     pub const NONCE_OFFSET: usize = 80;
     pub const NONCE_LEN: usize = 16;
+}
+
+/// Field offsets inside an MPL Core `BaseAssetV1` account's data buffer.
+/// Verified against `mpl_core::accounts::BaseAssetV1`. Used to read the
+/// asset's owner-wallet without a CPI.
+pub mod mpl_core_asset {
+    pub const KEY_OFFSET: usize = 0;
+    pub const KEY_VALUE_ASSET_V1: u8 = 1;
+    pub const OWNER_OFFSET: usize = 1;
+    pub const OWNER_LEN: usize = 32;
+}
+
+/// Field offsets inside MPL Agent Tools' `ExecutionDelegateRecordV1`.
+/// Verified against repo source. Layout: key(1) + bump(1) + padding(6) +
+/// executive_profile(32) + authority(32) + agent_asset(32) = 104 bytes.
+pub mod mpl_delegate_record {
+    pub const KEY_VALUE: u8 = 2;
+    pub const TOTAL_LEN: usize = 104;
+    pub const EXECUTIVE_PROFILE_OFFSET: usize = 8;
+    pub const AUTHORITY_OFFSET: usize = 40;
+    pub const AGENT_ASSET_OFFSET: usize = 72;
+    pub const RECORD_SEED: &[u8] = b"execution_delegate_record";
+    pub const PROFILE_SEED: &[u8] = b"executive_profile";
+    pub const AGENT_IDENTITY_SEED: &[u8] = b"agent_identity";
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]

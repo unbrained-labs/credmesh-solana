@@ -45,8 +45,9 @@ credmesh-solana/
 ```
 
 External dependencies (programs CredMesh **uses** but does not deploy):
-- **Squads v4** (`SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf`) — agent vaults, SpendingLimit PDAs, governance multisig
-- **Solana Agent Registry** — CredMesh agents register a Metaplex Core asset; we read its pubkey as our agent ID
+- **Squads v4** (`SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf`) — agent vaults + SpendingLimit PDAs + governance multisig. Pin: `squads-multisig-program = "=2.0.0"` / commit `64af7330413d5c85cbbccfd8c27a05d45b6e666f`. Audited: Trail of Bits + OtterSec (multiple) + Neodyme (multiple) + Certora FV.
+- **MPL Agent Registry** (`1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p`) + **MPL Agent Tools** (`TLREGni9ZEyGC3vnPZtqUh95xQ8oPqJSvNjvB7FGK8S`) — agent identity. Each agent owns an MPL Core asset; the AgentIdentityV2 PDA is `["agent_identity", asset.key()]`. DelegateExecutionV1 binds an alternate signing key. Audit caveat: layer is un-audited (MPL Core itself is). Pin `@metaplex-foundation/mpl-agent-registry@0.2.5`.
+- **MPL Core** (`CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`) — base asset primitive. The Solana account-level owner of every Agent Registry asset.
 - **SPL Token classic** — USDC vault; share-mint
 - **ed25519 program** (`Ed25519SigVerify111111111111111111111111111`) — receivable attestation verification
 - **Memo program** (`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`) — replay-nonce binding

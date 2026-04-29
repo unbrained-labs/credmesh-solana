@@ -176,12 +176,17 @@ pub struct Withdraw<'info> {
 pub struct RequestAdvance<'info> {
     #[account(mut)]
     pub agent: Signer<'info>,
-    /// CHECK: DECISIONS Q1 — agent_asset is an MPL Agent Registry asset.
-    /// Owner check is enforced as an account constraint below; the handler
-    /// must additionally verify the agent signer is the asset's owner or a
-    /// registered DelegateExecutionV1 delegate (via MPL Agent Tools).
-    #[account(owner = credmesh_shared::program_ids::MPL_AGENT_REGISTRY @ CredmeshError::InvalidAgentAsset)]
+    /// CHECK: DECISIONS Q1 — agent_asset is an MPL Core asset (Solana account-owner
+    /// is MPL_CORE, NOT the registry program). The handler reads the asset's
+    /// `BaseAssetV1.owner` field at byte offset 1..33, then verifies the agent
+    /// signer is either the owner or a registered DelegateExecutionV1 delegate
+    /// (account-read against MPL Agent Tools — no CPI).
+    #[account(owner = credmesh_shared::program_ids::MPL_CORE @ CredmeshError::InvalidAgentAsset)]
     pub agent_asset: UncheckedAccount<'info>,
+    /// CHECK: AgentIdentityV2 PDA (or V1, both readable) owned by MPL Agent Registry.
+    /// Handler re-derives ["agent_identity", agent_asset.key()] under MPL_AGENT_REGISTRY
+    /// and asserts equality. Required to prove agent_asset is registered as an Agent.
+    pub agent_identity: UncheckedAccount<'info>,
     /// CHECK: AgentReputation PDA (owned by credmesh-reputation).
     /// Handler must: verify owner == credmesh_shared::program_ids::REPUTATION,
     /// re-derive [REPUTATION_SEED, agent_asset.key()], check 8-byte discriminator,

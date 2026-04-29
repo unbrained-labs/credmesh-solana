@@ -19,17 +19,25 @@ These choices unblock handler-body implementation. Where the decision required c
 **What we forfeit by not picking SATI**:
 - The 8004scan / SATI Dashboard indexer doesn't auto-index MPL Agent Registry events. We address this in Q5 by writing SAS-shaped attestations alongside our reputation PDA in v1.5. The two ecosystems are not mutually exclusive.
 
-**Code change**: `credmesh-shared::program_ids::MPL_AGENT_REGISTRY` constant added; `RequestAdvance.agent_asset` will gain `owner = MPL_AGENT_REGISTRY` once the program ID is officially confirmed (placeholder used in v0).
+**Code change**: `credmesh-shared::program_ids::{MPL_AGENT_REGISTRY, MPL_AGENT_TOOLS, MPL_CORE}` constants added (verified against repo `declare_id!`). `RequestAdvance.agent_asset` gains `owner = MPL_CORE` constraint (the *Solana* account-owner of every MPL Core asset is the Core program; the *agent's owner wallet* is a 32-byte field at offset 1 of the data, not the Solana account-level owner). The handler must additionally verify either:
+- `agent_signer.key()` matches `BaseAssetV1.owner` field (byte offset 1..33), OR
+- A pair `(executive_profile, execution_delegate_record)` PDAs is passed; the record proves the signer is a registered DelegateExecutionV1 delegate.
 
-**Risk**: if Metaplex meaningfully changes the Agent Registry shape, we eat a migration. Mitigation: pin a verified-build commit hash in our deploy doc.
+**Verification is account-read only — no CPI to mpl-agent-tools.** Cheap and clean. Field-offset constants in `credmesh-shared::{mpl_core_asset, mpl_delegate_record}`.
+
+**Audit caveat**: MPL Core itself has audits (Mad Shield 2024-05); the Agent Registry layer is **un-audited**. Treat as P1 risk. Mitigation: PDA re-derivation for every read, no trust in passed pubkeys, pin `@metaplex-foundation/mpl-agent-registry@0.2.5` exactly.
+
+**Production maturity**: live on mainnet via Pump.studio integration (Mar 2026). SDK 0.2.5 published 2026-04-04.
+
+**Compatibility**: the asset key being our stable agent ID also works for `QuantuLabs/8004-solana` (which wraps MPL Core) — if Metaplex's reputation program lags, we can swap reputation backends without touching identity.
 
 ---
 
 ## Q3. Squads onboarding → **Path A (Controlled Multisig with sovereignty off-ramp)**
 
-**Decision**: Each agent's vault is a Squads v4 multisig with `configAuthority = CredMesh's governance multisig`. CredMesh holds unilateral authority to add/update SpendingLimit PDAs on the agent's vault. Onboarding is one CredMesh-authored ix after the agent creates the multisig.
+**Decision**: Each agent's vault is a Squads v4 multisig with `configAuthority = CredMesh's governance vault PDA`. CredMesh holds unilateral authority to add/update SpendingLimit PDAs on the agent's vault. Onboarding is **two transactions** (verified): (1) `multisig_create_v2` signed by the agent + an ephemeral `create_key`, (2) CredMesh governance executes a vault transaction whose inner ix is `multisig_add_spending_limit` against the agent's multisig. The vault is an *implicit PDA*, not a separately created account.
 
-The agent receives an explicit, documented off-ramp: a single Squads `configTransaction` (signed only by the agent) that sets `configAuthority = None`, severing CredMesh's authority. This is the agent's "exit" — taking it forfeits eligibility for further advances (CredMesh can no longer adjust their spending limits in response to defaults), but it makes the trust assumption explicit and reversible.
+**Off-ramp (corrected from initial draft)**: revoking `configAuthority` requires `multisig_set_config_authority` whose signer must be **the current `config_authority`** (= CredMesh governance). So the off-ramp is *bilateral*: agent requests → CredMesh governance executes a vault transaction setting `config_authority = Pubkey::default()`. This is not a one-click unilateral exit. The honest framing for the agent: "if you want to leave, ask CredMesh to release you; if CredMesh refuses, your unilateral path is to migrate funds out via your own member-controlled vault transactions before any new spending limit applies." Document this clearly in the dashboard onboarding flow.
 
 **Why Path A over Path B (sovereign 3-tx flow)**:
 - **The configAuthority *is* the credit-protocol use case.** A credit protocol that cannot adjust an agent's spending caps in response to reputation drops or defaults is structurally weaker than one that can. CredMesh's `configAuthority` is precisely the lever that makes "raise/lower credit dynamically" possible without bespoke on-chain machinery.
@@ -41,9 +49,13 @@ The agent receives an explicit, documented off-ramp: a single Squads `configTran
 - Adds a hosted KMS dependency. CredMesh would route every agent action through Squads' infrastructure. Single point of failure.
 - Grid is fine for treasury operations, wrong for autonomous-agent latency.
 
-**Code change**: `Pool.governance` is the CredMesh multisig pubkey. New `propose_params`-style instructions verify a Squads CPI by checking that the calling instruction's program ID is the Squads v4 program AND the signer is the CredMesh governance vault PDA. Implementation detail handled in handler bodies; account-struct shape is unchanged.
+**Code change**: `Pool.governance` is the CredMesh governance vault PDA address. Governance instructions (`propose_params`, `skim_protocol_fees`, `add_allowed_signer`) verify the signer matches `pool.governance`; the signer that appears here is the CredMesh governance vault PDA, which only signs via Squads `vault_transaction_execute`. Account-struct shape is unchanged. Pin `squads-multisig-program = "=2.0.0"` (commit `64af7330413d5c85cbbccfd8c27a05d45b6e666f`).
 
-**Risk**: the off-ramp is documented but not on-chain-enforced. Mitigation: add a documented "agent revocation" flow to the dashboard so the agent can find the off-ramp without reading source.
+**Period choice**: use `Period::Day` or `Period::Week` for advance-derived spending limits. `OneTime` cannot replenish; `Month` is a literal 30 days, not calendar.
+
+**Cost**: ~0.013 SOL network rent + 0.1 SOL Squads platform fee = **~0.113 SOL per agent onboarded** (verify `program_config.multisig_creation_fee` on-chain at deploy — Squads has waived this for partners historically). Update fundraising/runway forecasting accordingly; ~$22 per agent at $200/SOL is materially different from the "~$2" early estimate.
+
+**Risk**: bilateral off-ramp creates a soft trust assumption. Mitigation: dashboard surfaces the agent's right to request release; CredMesh policy commits to executing release within X days absent active default.
 
 ---
 
@@ -127,8 +139,8 @@ Constants live in `credmesh-shared::ed25519_message`.
 
 | Q | Resolution | Code change in v0 |
 |---|---|---|
-| Q1 | MPL Agent Registry | `MPL_AGENT_REGISTRY` const added; `agent_asset` owner constraint planned |
-| Q3 | Squads Path A (Controlled Multisig + off-ramp) | Governance handler will verify Squads CPI; account shape unchanged |
+| Q1 | MPL Agent Registry — verified, un-audited, live on mainnet | `MPL_*` constants + struct offsets in `credmesh-shared`; account-read-only verification (no CPI) |
+| Q3 | Squads Path A — 2-tx onboarding, **bilateral** off-ramp, ~0.113 SOL platform-fee-included | Governance verifies signer == pool.governance vault PDA |
 | Q4 | Single CredMesh writer for score; permissionless events recorded | New `reputation_writer_authority` field planned |
 | Q5 | SAS write-along in v1.5 | v1.5 schema documented in DESIGN.md |
 | Q6 | PayAI for v1, self-host Kora documented for v2 | TS server config (no on-chain change) |
