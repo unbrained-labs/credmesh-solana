@@ -956,8 +956,13 @@ pub struct RequestAdvance<'info> {
     pub agent_reputation_pda: UncheckedAccount<'info>,
     /// CHECK: Receivable PDA (owned by credmesh-receivable-oracle), required iff source_kind=Worker.
     /// For ed25519 / x402 paths the handler verifies via instruction-introspection
-    /// instead of reading this account.
+    /// instead of reading this account; pass any read-only pubkey (e.g., system_program).
     pub receivable_pda: UncheckedAccount<'info>,
+    /// CHECK: Optional ExecutiveProfileV1 PDA (MPL Agent Tools) for delegate path.
+    /// Pass `None` (Anchor encodes as missing) when agent.key() is the asset's owner.
+    pub executive_profile: Option<UncheckedAccount<'info>>,
+    /// CHECK: Optional ExecutionDelegateRecordV1 PDA. Pair with executive_profile.
+    pub execution_delegate_record: Option<UncheckedAccount<'info>>,
     #[account(mut, seeds = [POOL_SEED, pool.asset_mint.as_ref()], bump = pool.bump)]
     pub pool: Account<'info, Pool>,
     #[account(
