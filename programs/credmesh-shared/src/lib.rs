@@ -14,12 +14,16 @@ pub mod seeds {
     pub const POOL_SEED: &[u8] = b"pool";
     pub const ADVANCE_SEED: &[u8] = b"advance";
     pub const CONSUMED_SEED: &[u8] = b"consumed";
-    pub const TREASURY_SEED: &[u8] = b"treasury";
     pub const REPUTATION_SEED: &[u8] = b"agent_reputation";
     pub const RECEIVABLE_SEED: &[u8] = b"receivable";
     pub const ALLOWED_SIGNER_SEED: &[u8] = b"allowed_signer";
     pub const ORACLE_CONFIG_SEED: &[u8] = b"oracle_config";
 }
+
+/// 18-decimal scalar for `score_ema` (mirrors EVM 18-decimal arithmetic).
+pub const SCORE_SCALE: u128 = 1_000_000_000_000_000_000;
+
+pub const SECONDS_PER_DAY: u64 = 86_400;
 
 pub mod program_ids {
     use anchor_lang::prelude::Pubkey;
@@ -71,6 +75,40 @@ pub mod ed25519_message {
     pub const EXPIRES_AT_LEN: usize = 8;
     pub const NONCE_OFFSET: usize = 80;
     pub const NONCE_LEN: usize = 16;
+
+    /// Typed view of a 96-byte ed25519-signed receivable. Single source of truth
+    /// for the layout — both escrow and receivable-oracle decode via this.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct SignedReceivable {
+        pub receivable_id: [u8; 32],
+        pub agent: [u8; 32],
+        pub amount: u64,
+        pub expires_at: i64,
+        pub nonce: [u8; 16],
+    }
+
+    pub fn decode(msg: &[u8]) -> Option<SignedReceivable> {
+        if msg.len() != TOTAL_LEN {
+            return None;
+        }
+        let mut receivable_id = [0u8; 32];
+        receivable_id.copy_from_slice(&msg[RECEIVABLE_ID_OFFSET..RECEIVABLE_ID_OFFSET + RECEIVABLE_ID_LEN]);
+        let mut agent = [0u8; 32];
+        agent.copy_from_slice(&msg[AGENT_OFFSET..AGENT_OFFSET + AGENT_LEN]);
+        let mut amount_buf = [0u8; 8];
+        amount_buf.copy_from_slice(&msg[AMOUNT_OFFSET..AMOUNT_OFFSET + AMOUNT_LEN]);
+        let mut expires_buf = [0u8; 8];
+        expires_buf.copy_from_slice(&msg[EXPIRES_AT_OFFSET..EXPIRES_AT_OFFSET + EXPIRES_AT_LEN]);
+        let mut nonce = [0u8; 16];
+        nonce.copy_from_slice(&msg[NONCE_OFFSET..NONCE_OFFSET + NONCE_LEN]);
+        Some(SignedReceivable {
+            receivable_id,
+            agent,
+            amount: u64::from_le_bytes(amount_buf),
+            expires_at: i64::from_le_bytes(expires_buf),
+            nonce,
+        })
+    }
 }
 
 /// Field offsets inside an MPL Core `BaseAssetV1` account's data buffer.

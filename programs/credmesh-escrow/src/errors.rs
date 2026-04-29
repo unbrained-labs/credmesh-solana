@@ -56,4 +56,6 @@ pub enum CredmeshError {
     WaterfallSumMismatch,
     #[msg("Late days exceed maximum cap")]
     LateDaysExceeded,
+    #[msg("Payment amount is less than total owed (principal + fee + late penalty)")]
+    InsufficientPayment,
 }

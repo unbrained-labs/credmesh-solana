@@ -11,7 +11,6 @@
 /// Forgetting any one of these is the Wormhole / Cashio / similar-class bug.
 /// All four are wrapped together below.
 use anchor_lang::prelude::*;
-use anchor_lang::Discriminator;
 
 #[derive(Clone, Copy, Debug)]
 pub enum CrossProgramReadError {
@@ -35,7 +34,7 @@ pub fn read_cross_program_account<T>(
     expected_address: &Pubkey,
 ) -> std::result::Result<T, CrossProgramReadError>
 where
-    T: AccountDeserialize + Discriminator,
+    T: AccountDeserialize,
 {
     if info.owner != expected_owner {
         return Err(CrossProgramReadError::OwnerMismatch);
@@ -46,14 +45,10 @@ where
     let data = info
         .try_borrow_data()
         .map_err(|_| CrossProgramReadError::Deserialize)?;
-    if data.len() < 8 {
-        return Err(CrossProgramReadError::DiscriminatorMismatch);
-    }
-    if data[..8] != T::DISCRIMINATOR {
-        return Err(CrossProgramReadError::DiscriminatorMismatch);
-    }
+    // `try_deserialize` validates the 8-byte discriminator and advances past it;
+    // we don't pre-check here because doing both would duplicate the validation.
     let mut slice = &data[..];
-    T::try_deserialize(&mut slice).map_err(|_| CrossProgramReadError::Deserialize)
+    T::try_deserialize(&mut slice).map_err(|_| CrossProgramReadError::DiscriminatorMismatch)
 }
 
 /// Re-derive a PDA from a slice of seed parts under a program ID.

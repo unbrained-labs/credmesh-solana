@@ -61,7 +61,7 @@ pub mod credmesh_reputation {
             &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
             &oracle_config_pda,
         )
-        .map_err(|_| ReputationError::MathOverflow)?;
+        .map_err(|_| ReputationError::OracleConfigMismatch)?;
 
         // (2) Always: append to digest + bump count + emit event.
         let attestor = ctx.accounts.attestor.key();
@@ -99,9 +99,9 @@ pub mod credmesh_reputation {
                 ReputationError::InvalidScore
             );
 
-            // EMA update with N = EMA_WINDOW. score is u8 0..100; multiply by
+            // EMA update with N = EMA_WINDOW. score is u8 0..100; scaled by
             // 1e18 to get the 18-decimal representation, then EMA.
-            let score_scaled = (input.score as u128).saturating_mul(1_000_000_000_000_000_000u128);
+            let score_scaled = (input.score as u128).saturating_mul(credmesh_shared::SCORE_SCALE);
             let n = EMA_WINDOW as u128;
             // ema_new = (ema_old * (n - 1) + new_score) / n
             let ema_old = reputation.score_ema;
@@ -143,18 +143,16 @@ pub mod credmesh_reputation {
     }
 
     pub fn append_response(
-        ctx: Context<AppendResponse>,
-        feedback_index: u64,
-        response_uri: String,
-        response_hash: [u8; 32],
+        _ctx: Context<AppendResponse>,
+        _feedback_index: u64,
+        _response_uri: String,
+        _response_hash: [u8; 32],
     ) -> Result<()> {
-        let _ = (ctx, feedback_index, response_uri, response_hash);
-        Ok(())
+        Err(ReputationError::NotImplemented.into())
     }
 
-    pub fn revoke_feedback(ctx: Context<RevokeFeedback>, feedback_index: u64) -> Result<()> {
-        let _ = (ctx, feedback_index);
-        Ok(())
+    pub fn revoke_feedback(_ctx: Context<RevokeFeedback>, _feedback_index: u64) -> Result<()> {
+        Err(ReputationError::NotImplemented.into())
     }
 }
 

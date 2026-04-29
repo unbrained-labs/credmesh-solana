@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 pub use credmesh_shared::seeds::REPUTATION_SEED;
 
-pub const SCORE_DECIMALS: u8 = 18;
 pub const EMA_WINDOW: u64 = 50;
 
 #[account]
