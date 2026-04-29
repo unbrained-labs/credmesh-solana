@@ -63,7 +63,7 @@ Per V1_ACCEPTANCE.md:
 
 ### Open design questions (defer or revisit)
 
-1. **ConsumedPayment agent-namespacing** — currently seeded by `[CONSUMED_SEED, pool, receivable_id]`. Two agents with the same `receivable_id` collide. Acceptable if the off-chain worker enforces `receivable_id = sha256(agent || job_id)`; document this contract. Or change to `[CONSUMED_SEED, pool, agent, receivable_id]` (one-line change, but breaks compat if anyone has issued advances).
+1. ~~**ConsumedPayment agent-namespacing**~~ — **Resolved (issue #8):** seeds are now `[CONSUMED_SEED, pool, agent, receivable_id]`. Cross-agent `receivable_id` reuse no longer collides. No backwards-compat impact (no advances issued yet).
 2. **DESIGN.md §3.4 ix signatures** are slightly out of date vs. the implemented signatures. Reconcile.
 3. **First-time agent bootstrap** — new agents with `score_ema = 0` are blocked from advances by the credit-from-score curve. Need a "minimum credit" tier or initial reputation seed.
 

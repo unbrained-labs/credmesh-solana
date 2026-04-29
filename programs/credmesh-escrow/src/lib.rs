@@ -978,11 +978,13 @@ pub struct RequestAdvance<'info> {
     pub advance: Account<'info, Advance>,
     /// AUDIT P0-5: ConsumedPayment is permanent. Never closed.
     /// `init` failure is the replay-protection mechanism.
+    /// Issue #8: agent.key() in seeds so cross-agent receivable_id reuse
+    /// doesn't collide on a shared PDA address.
     #[account(
         init,
         payer = agent,
         space = ConsumedPayment::SIZE,
-        seeds = [CONSUMED_SEED, pool.key().as_ref(), receivable_id.as_ref()],
+        seeds = [CONSUMED_SEED, pool.key().as_ref(), agent.key().as_ref(), receivable_id.as_ref()],
         bump
     )]
     pub consumed: Account<'info, ConsumedPayment>,
@@ -1026,8 +1028,11 @@ pub struct ClaimAndSettle<'info> {
     )]
     pub advance: Account<'info, Advance>,
     /// AUDIT P0-5: ConsumedPayment is NOT closed here (would enable replay).
+    /// Issue #8: seeds include advance.agent so the PDA derivation enforces
+    /// the consumed↔advance binding via address (the explicit
+    /// consumed.agent == advance.agent constraint stays as belt-and-suspenders).
     #[account(
-        seeds = [CONSUMED_SEED, pool.key().as_ref(), advance.receivable_id.as_ref()],
+        seeds = [CONSUMED_SEED, pool.key().as_ref(), advance.agent.as_ref(), advance.receivable_id.as_ref()],
         bump = consumed.bump,
         constraint = consumed.agent == advance.agent @ CredmeshError::ReplayDetected
     )]
@@ -1080,8 +1085,10 @@ pub struct Liquidate<'info> {
     pub advance: Account<'info, Advance>,
     /// AUDIT P0-1: bind consumed.agent == advance.agent (was missing).
     /// AUDIT P0-5: ConsumedPayment is NOT closed.
+    /// Issue #8: seeds include advance.agent so the PDA derivation enforces
+    /// the consumed↔advance binding via address.
     #[account(
-        seeds = [CONSUMED_SEED, pool.key().as_ref(), advance.receivable_id.as_ref()],
+        seeds = [CONSUMED_SEED, pool.key().as_ref(), advance.agent.as_ref(), advance.receivable_id.as_ref()],
         bump = consumed.bump,
         constraint = consumed.agent == advance.agent @ CredmeshError::ReplayDetected
     )]

@@ -60,7 +60,7 @@ External dependencies (programs CredMesh **uses** but does not deploy):
 |---|---|---|---|
 | `Pool` | `[b"pool", asset_mint]` | ~400 B | Permanent |
 | `Advance` | `[b"advance", agent_pubkey, receivable_id]` | ~200 B | Init at request, close on settle/liquidate |
-| `ConsumedPayment` | `[b"consumed", receivable_id]` | 16 B | Init at request, close on settle (rent → agent) |
+| `ConsumedPayment` | `[b"consumed", pool, agent, receivable_id]` | 16 B | **Permanent** (audit P0-5; never closed). Issue #8: `agent` namespaces the seed so cross-agent `receivable_id` reuse cannot DoS-collide. |
 | `ProtocolTreasury` | `[b"treasury"]` | ~80 B | Permanent |
 
 ### 3.2 `Pool` account fields
@@ -174,7 +174,7 @@ Logic:
 Accounts:
 - `cranker` (signer, fee payer)
 - `advance_pda` (mut, close = agent on full settlement)
-- `consumed_pda` (mut, close = agent)
+- `consumed_pda` (mut) — **NOT** closed (audit P0-5; permanent for replay defense)
 - `pool` (mut)
 - `pool_usdc_vault` (mut)
 - `agent_usdc_ata` (mut) — receives net
@@ -198,7 +198,7 @@ Logic:
    2. `lp_cut` to `pool_usdc_vault`
    3. `agent_net` to `agent_usdc_ata`
 4. **Pool update**: `deployed_amount -= principal`, `total_assets += (lp_cut - principal)` (the fee portion).
-5. **Close** `advance_pda` and `consumed_pda`, send rent to `agent` (NOT cranker — neutralizes MEV cranking).
+5. **Close** `advance_pda`, send rent to `agent` (NOT cranker — neutralizes MEV cranking). `consumed_pda` is left open (audit P0-5).
 6. Emit `AdvanceSettled` event.
 
 #### `liquidate(advance_id)` — anyone after `expires_at + 14 days`
