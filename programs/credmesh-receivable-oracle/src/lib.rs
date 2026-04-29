@@ -113,14 +113,109 @@ pub mod credmesh_receivable_oracle {
         amount: u64,
         expires_at: i64,
     ) -> Result<()> {
-        // AUDIT AM-5: lazy period reset — top of handler should set
-        //   if now >= signer.period_start + signer.period_seconds {
-        //     signer.period_start = now; signer.period_used = 0;
-        //   }
-        // Then check per-receivable + per-period caps.
-        // AUDIT integration #2: also verify the ed25519 ix offsets all point
-        // at the verify ix itself (not at attacker-controlled bytes elsewhere).
-        let _ = (ctx, signer_pubkey, source_id, amount, expires_at);
+        let now = Clock::get()?.unix_timestamp;
+        let slot = Clock::get()?.slot;
+
+        require!(expires_at > now, OracleError::ReceivableExpired);
+
+        // (1) Verify the prior ed25519 ix and extract its signed pubkey + message.
+        // The asymmetric.re/Relay-class fix is enforced inside the helper.
+        let (verified_pubkey, signed_message) =
+            credmesh_shared::ix_introspection::verify_prev_ed25519(
+                &ctx.accounts.instructions_sysvar.to_account_info(),
+            )
+            .map_err(|_| OracleError::Ed25519Missing)?;
+
+        // (2) The verified pubkey must equal the ix-arg signer_pubkey AND match
+        // the AllowedSigner record (the latter is also enforced by the account
+        // constraint, but we double-check here for defense-in-depth).
+        require_keys_eq!(verified_pubkey, signer_pubkey, OracleError::SignerNotAllowed);
+        require_keys_eq!(
+            ctx.accounts.allowed_signer.signer,
+            signer_pubkey,
+            OracleError::SignerNotAllowed
+        );
+
+        // (3) Decode the message bytes per the canonical 96-byte layout.
+        require!(
+            signed_message.len() == credmesh_shared::ed25519_message::TOTAL_LEN,
+            OracleError::Ed25519Missing
+        );
+        use credmesh_shared::ed25519_message as M;
+        let msg_recv_id =
+            &signed_message[M::RECEIVABLE_ID_OFFSET..M::RECEIVABLE_ID_OFFSET + M::RECEIVABLE_ID_LEN];
+        let msg_agent =
+            &signed_message[M::AGENT_OFFSET..M::AGENT_OFFSET + M::AGENT_LEN];
+        let mut amount_buf = [0u8; 8];
+        amount_buf.copy_from_slice(
+            &signed_message[M::AMOUNT_OFFSET..M::AMOUNT_OFFSET + M::AMOUNT_LEN],
+        );
+        let msg_amount = u64::from_le_bytes(amount_buf);
+        let mut expires_buf = [0u8; 8];
+        expires_buf.copy_from_slice(
+            &signed_message[M::EXPIRES_AT_OFFSET..M::EXPIRES_AT_OFFSET + M::EXPIRES_AT_LEN],
+        );
+        let msg_expires_at = i64::from_le_bytes(expires_buf);
+
+        // The signed message must match the ix args bit-for-bit.
+        // We don't compare msg_recv_id to source_id directly: we hash
+        // (source_id || agent || amount || expires_at) into the message; receivable_id
+        // CAN equal source_id when the source defines it that way, but in general
+        // the signed receivable_id is what's authoritative, and source_id is the
+        // PDA seed we use locally. We still require source_id to be consistent.
+        require!(
+            msg_recv_id == source_id.as_ref(),
+            OracleError::Ed25519Missing
+        );
+        require!(
+            msg_agent == ctx.accounts.agent.key().as_ref(),
+            OracleError::Ed25519Missing
+        );
+        require!(msg_amount == amount, OracleError::Ed25519Missing);
+        require!(msg_expires_at == expires_at, OracleError::Ed25519Missing);
+
+        // (4) Cap enforcement on the AllowedSigner.
+        let signer_acc = &mut ctx.accounts.allowed_signer;
+        if now >= signer_acc.period_start.saturating_add(signer_acc.period_seconds) {
+            signer_acc.period_start = now;
+            signer_acc.period_used = 0;
+        }
+        require!(
+            amount <= signer_acc.max_per_receivable,
+            OracleError::PerReceivableCapExceeded
+        );
+        let new_period_used = signer_acc
+            .period_used
+            .checked_add(amount)
+            .ok_or(OracleError::MathOverflow)?;
+        require!(
+            new_period_used <= signer_acc.max_per_period,
+            OracleError::PerPeriodCapExceeded
+        );
+        signer_acc.period_used = new_period_used;
+
+        // (5) Persist the Receivable PDA.
+        let receivable = &mut ctx.accounts.receivable;
+        receivable.bump = ctx.bumps.receivable;
+        receivable.agent = ctx.accounts.agent.key();
+        receivable.source_id = source_id;
+        receivable.source_kind = signer_acc.kind; // 1=exchange, 2=x402_facilitator
+        receivable.source_signer = Some(signer_pubkey);
+        receivable.amount = amount;
+        receivable.expires_at = expires_at;
+        receivable.last_updated_slot = slot;
+        receivable.authority = ctx.accounts.payer.key();
+
+        emit!(ReceivableUpdated {
+            agent: receivable.agent,
+            source_id,
+            source_kind: receivable.source_kind,
+            source_signer: Some(signer_pubkey),
+            amount,
+            expires_at,
+            authority: receivable.authority,
+        });
+
         Ok(())
     }
 
