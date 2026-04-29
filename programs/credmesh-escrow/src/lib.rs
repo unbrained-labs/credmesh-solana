@@ -860,7 +860,7 @@ pub struct InitPool<'info> {
     #[account(
         init,
         payer = deployer,
-        space = Pool::SIZE,
+        space = 8 + Pool::INIT_SPACE,
         seeds = [POOL_SEED, asset_mint.key().as_ref()],
         bump
     )]
@@ -971,7 +971,7 @@ pub struct RequestAdvance<'info> {
     #[account(
         init,
         payer = agent,
-        space = Advance::SIZE,
+        space = 8 + Advance::INIT_SPACE,
         seeds = [ADVANCE_SEED, pool.key().as_ref(), agent.key().as_ref(), receivable_id.as_ref()],
         bump
     )]
@@ -983,7 +983,7 @@ pub struct RequestAdvance<'info> {
     #[account(
         init,
         payer = agent,
-        space = ConsumedPayment::SIZE,
+        space = 8 + ConsumedPayment::INIT_SPACE,
         seeds = [CONSUMED_SEED, pool.key().as_ref(), agent.key().as_ref(), receivable_id.as_ref()],
         bump
     )]
