@@ -117,9 +117,18 @@ Future-proofs multi-pool collisions; cheap now, expensive to retrofit.
 
 ---
 
-## Open design questions (your call)
+## Open design questions — RESOLVED in [DECISIONS.md](./DECISIONS.md)
 
-These cannot be fixed mechanically. The handler bodies cannot be written until these are resolved.
+The five blocking questions (Q1, Q3, Q4, Q5, Q6) plus the ed25519 layout (Q8) have been answered. Summary:
+
+- **Q1**: MPL Agent Registry (Metaplex), not SATI. `DelegateExecutionV1` solves the agent-binding hole cleanly.
+- **Q3**: Squads Path A (Controlled Multisig + sovereignty off-ramp). The configAuthority IS the credit-protocol use case.
+- **Q4**: Single CredMesh writer updates `score_ema`; permissionless `give_feedback` writes are recorded but score-inert.
+- **Q5**: SAS multi-issuer attestations land in v1.5; schema documented now to prevent breaking change.
+- **Q6**: PayAI hosted facilitator for v1; self-host Kora as documented v2 fallback.
+- **Q8**: 96-byte ed25519 message layout locked. Constants in `credmesh-shared::ed25519_message`.
+
+See [DECISIONS.md](./DECISIONS.md) for rationale on each call. Original framing of the questions retained below for traceability.
 
 ### Q1. MPL Agent Registry vs SATI for agent identity (P0-2, AM-2)
 Two competing 8004-on-Solana implementations exist:

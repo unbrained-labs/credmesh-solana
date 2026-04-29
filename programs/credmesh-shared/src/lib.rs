@@ -20,6 +20,22 @@ pub mod program_ids {
     pub const ESCROW: Pubkey = pubkey!("CRED1escrow1111111111111111111111111111111");
     pub const REPUTATION: Pubkey = pubkey!("CRED1rep1111111111111111111111111111111111");
     pub const RECEIVABLE_ORACLE: Pubkey = pubkey!("CRED1recv11111111111111111111111111111111");
+
+    /// MPL Agent Registry — Identity program (DECISIONS Q1).
+    /// Verify the canonical address against Metaplex docs before mainnet.
+    pub const MPL_AGENT_REGISTRY: Pubkey = pubkey!("1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p");
+
+    /// MPL Agent Registry — Tools program (delegate flows).
+    pub const MPL_AGENT_TOOLS: Pubkey = pubkey!("TLREGni9ZEyGC3vnPZtqUh95xQ8oPqJSvNjvB7FGK8S");
+
+    /// Squads v4 multisig program (DECISIONS Q3).
+    pub const SQUADS_V4: Pubkey = pubkey!("SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf");
+
+    /// Memo program v2 (used for replay-nonce binding).
+    pub const MEMO: Pubkey = pubkey!("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+
+    /// Native ed25519 signature-verification program.
+    pub const ED25519: Pubkey = pubkey!("Ed25519SigVerify111111111111111111111111111");
 }
 
 pub mod ed25519_message {

@@ -31,12 +31,13 @@ credmesh-solana/
 
 ## Read order
 
-1. **`AUDIT.md`** — three independent reviews of DESIGN + scaffold; 6 P0 fund-loss findings, 8 open design questions. Read this first.
-2. **`DESIGN.md`** — the v0 spec.
-3. `research/CONTRARIAN.md` — why we're building it this way (vs literal EVM port).
-4. `research/REVIEW.md` — what we got wrong in the first research pass.
-5. `research/SYNTHESIS.md` — original mapping (superseded where they conflict).
-6. `research/01–04` — supporting detail.
+1. **`DECISIONS.md`** — resolutions for the 5 blocking design questions (MPL vs SATI, Squads onboarding, Sybil mitigation, SAS roadmap, fee-payer). Start here.
+2. **`AUDIT.md`** — three independent reviews of DESIGN + scaffold; 6 P0 fund-loss findings (all fixed mechanically) + the design questions DECISIONS resolves.
+3. **`DESIGN.md`** — the v0 spec.
+4. `research/CONTRARIAN.md` — why we're building it this way (vs literal EVM port).
+5. `research/REVIEW.md` — what we got wrong in the first research pass.
+6. `research/SYNTHESIS.md` — original mapping (superseded where they conflict).
+7. `research/01–04` — supporting detail.
 
 ## Programs
 

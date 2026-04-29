@@ -38,10 +38,13 @@ pub mod credmesh_escrow {
         source_kind: u8,
         nonce: [u8; 16],
     ) -> Result<()> {
-        // AUDIT P0-2 / Q1: handler must enforce that `agent: Signer` is the
-        // authorized owner/delegate of `agent_asset` per the chosen
-        // identity registry (MPL Agent Registry vs SATI). Without this, any
-        // keypair can claim any agent_asset and read its reputation.
+        // DECISIONS Q1: agent_asset is an MPL Agent Registry asset.
+        // Handler must verify:
+        //   1. agent_asset.owner == credmesh_shared::program_ids::MPL_AGENT_REGISTRY
+        //   2. agent.key() is the asset's owner OR a registered DelegateExecutionV1
+        //      delegate of the asset (read via MPL Agent Tools program).
+        // Step 1 is also enforced by an account constraint (added below).
+        // Step 2 must be runtime-verified.
         let _ = (ctx, receivable_id, amount, source_kind, nonce);
         Ok(())
     }
@@ -173,10 +176,11 @@ pub struct Withdraw<'info> {
 pub struct RequestAdvance<'info> {
     #[account(mut)]
     pub agent: Signer<'info>,
-    /// CHECK: AUDIT P0-2 / Q1 — must be constrained to the chosen agent registry
-    /// program ID once Q1 is resolved (`owner == 1DREG…` for MPL Agent Registry,
-    /// or the equivalent for SATI). The handler must additionally verify that
-    /// `agent.key()` is the asset's owner or a registered delegate.
+    /// CHECK: DECISIONS Q1 — agent_asset is an MPL Agent Registry asset.
+    /// Owner check is enforced as an account constraint below; the handler
+    /// must additionally verify the agent signer is the asset's owner or a
+    /// registered DelegateExecutionV1 delegate (via MPL Agent Tools).
+    #[account(owner = credmesh_shared::program_ids::MPL_AGENT_REGISTRY @ CredmeshError::InvalidAgentAsset)]
     pub agent_asset: UncheckedAccount<'info>,
     /// CHECK: AgentReputation PDA (owned by credmesh-reputation).
     /// Handler must: verify owner == credmesh_shared::program_ids::REPUTATION,

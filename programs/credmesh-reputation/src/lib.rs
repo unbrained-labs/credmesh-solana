@@ -20,12 +20,16 @@ pub mod credmesh_reputation {
     }
 
     pub fn give_feedback(ctx: Context<GiveFeedback>, input: FeedbackInput) -> Result<()> {
-        // AUDIT P1-5 / Q4: Sybil mitigation policy is undecided.
-        // Until Q4 is resolved (allowlist / stake-weighted / single-writer),
-        // this handler must NOT update score_ema based on permissionless writes
-        // alone. Recommended interim: only allow input.score to update score_ema
-        // when ctx.accounts.attestor.key() is in a Pool-stored allowlist (Option A
-        // in AUDIT.md) or matches a single CredMesh-controlled writer (Option C).
+        // DECISIONS Q4: permissionless writes are recorded in feedback_count
+        // and feedback_digest (and emitted as NewFeedback events for indexers),
+        // but only writes signed by the OracleConfig.reputation_writer_authority
+        // update score_ema. Handler logic must:
+        //   1. Always update feedback_count + feedback_digest + emit event.
+        //   2. If attestor.key() == oracle_config.reputation_writer_authority:
+        //        update score_ema, default_count, last_event_slot.
+        //      Else: leave score fields untouched.
+        //   3. Apply per-tx and per-period caps from OracleConfig before
+        //        updating score state.
         let _ = (ctx, input);
         Ok(())
     }

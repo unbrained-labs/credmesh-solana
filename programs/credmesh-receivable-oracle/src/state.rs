@@ -14,10 +14,25 @@ pub struct OracleConfig {
     pub worker_period_seconds: i64,
     pub worker_period_start: i64,
     pub worker_period_used: u64,
+    /// DECISIONS Q4: signer of feedback that updates `score_ema`. Permissionless
+    /// `give_feedback` writes still emit events for ecosystem readability, but
+    /// only this key's writes affect the oracle's credit input.
+    pub reputation_writer_authority: Pubkey,
+    /// Per-tx + per-period caps mirror the worker authority pattern.
+    pub reputation_max_per_tx_score: u8,
+    pub reputation_max_per_period_count: u32,
+    pub reputation_period_seconds: i64,
+    pub reputation_period_start: i64,
+    pub reputation_period_used: u32,
 }
 
 impl OracleConfig {
-    pub const SIZE: usize = 8 + 1 + 32 * 2 + 8 * 5 + 32;
+    pub const SIZE: usize = 8
+        + 1
+        + 32 * 3
+        + 8 * 5
+        + 1 + 4 + 8 + 8 + 4
+        + 32;
 }
 
 #[account]
