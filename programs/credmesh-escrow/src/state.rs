@@ -1,9 +1,11 @@
 use anchor_lang::prelude::*;
 
-pub use credmesh_shared::seeds::{ADVANCE_SEED, CONSUMED_SEED, POOL_SEED, TREASURY_SEED};
+pub use credmesh_shared::seeds::{ADVANCE_SEED, CONSUMED_SEED, POOL_SEED};
+pub use credmesh_shared::{SCORE_SCALE, SECONDS_PER_DAY};
 
 pub const PROTOCOL_FEE_BPS: u16 = 1500;
 pub const BPS_DENOMINATOR: u64 = 10_000;
+pub const LATE_PENALTY_BPS_PER_DAY: u64 = 10;
 
 pub const CLAIM_WINDOW_SECONDS: i64 = 7 * 24 * 60 * 60;
 pub const LIQUIDATION_GRACE_SECONDS: i64 = 14 * 24 * 60 * 60;
@@ -131,6 +133,4 @@ impl ConsumedPayment {
 }
 
 // ProtocolTreasury is not a separate PDA in v1 — `Pool.treasury_ata` stores the
-// destination ATA directly. The TREASURY_SEED constant is reserved for v2 if a
-// dedicated PDA is ever needed (e.g., to track per-pool fee accrual on-chain
-// independently of the ATA balance).
+// destination ATA directly.

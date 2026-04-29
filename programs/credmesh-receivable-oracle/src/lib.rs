@@ -23,6 +23,7 @@ pub mod credmesh_receivable_oracle {
         let config = &mut ctx.accounts.config;
         config.bump = ctx.bumps.config;
         config.governance = params.governance;
+        config.pending_governance = None;
         config.worker_authority = params.worker_authority;
         config.worker_max_per_tx = params.worker_max_per_tx;
         config.worker_max_per_period = params.worker_max_per_period;
@@ -137,43 +138,15 @@ pub mod credmesh_receivable_oracle {
             OracleError::SignerNotAllowed
         );
 
-        // (3) Decode the message bytes per the canonical 96-byte layout.
+        let decoded = credmesh_shared::ed25519_message::decode(&signed_message)
+            .ok_or(OracleError::Ed25519Missing)?;
+        require!(decoded.receivable_id == source_id, OracleError::Ed25519Missing);
         require!(
-            signed_message.len() == credmesh_shared::ed25519_message::TOTAL_LEN,
+            decoded.agent == ctx.accounts.agent.key().to_bytes(),
             OracleError::Ed25519Missing
         );
-        use credmesh_shared::ed25519_message as M;
-        let msg_recv_id =
-            &signed_message[M::RECEIVABLE_ID_OFFSET..M::RECEIVABLE_ID_OFFSET + M::RECEIVABLE_ID_LEN];
-        let msg_agent =
-            &signed_message[M::AGENT_OFFSET..M::AGENT_OFFSET + M::AGENT_LEN];
-        let mut amount_buf = [0u8; 8];
-        amount_buf.copy_from_slice(
-            &signed_message[M::AMOUNT_OFFSET..M::AMOUNT_OFFSET + M::AMOUNT_LEN],
-        );
-        let msg_amount = u64::from_le_bytes(amount_buf);
-        let mut expires_buf = [0u8; 8];
-        expires_buf.copy_from_slice(
-            &signed_message[M::EXPIRES_AT_OFFSET..M::EXPIRES_AT_OFFSET + M::EXPIRES_AT_LEN],
-        );
-        let msg_expires_at = i64::from_le_bytes(expires_buf);
-
-        // The signed message must match the ix args bit-for-bit.
-        // We don't compare msg_recv_id to source_id directly: we hash
-        // (source_id || agent || amount || expires_at) into the message; receivable_id
-        // CAN equal source_id when the source defines it that way, but in general
-        // the signed receivable_id is what's authoritative, and source_id is the
-        // PDA seed we use locally. We still require source_id to be consistent.
-        require!(
-            msg_recv_id == source_id.as_ref(),
-            OracleError::Ed25519Missing
-        );
-        require!(
-            msg_agent == ctx.accounts.agent.key().as_ref(),
-            OracleError::Ed25519Missing
-        );
-        require!(msg_amount == amount, OracleError::Ed25519Missing);
-        require!(msg_expires_at == expires_at, OracleError::Ed25519Missing);
+        require!(decoded.amount == amount, OracleError::Ed25519Missing);
+        require!(decoded.expires_at == expires_at, OracleError::Ed25519Missing);
 
         // (4) Cap enforcement on the AllowedSigner.
         let signer_acc = &mut ctx.accounts.allowed_signer;
@@ -299,12 +272,34 @@ pub mod credmesh_receivable_oracle {
         Ok(())
     }
 
-    /// Rotate the governance authority itself. Use with extreme care — once
-    /// changed, only the new governance can rotate it back. Gated by current
-    /// governance.
-    pub fn set_governance(ctx: Context<SetGovernance>, new_governance: Pubkey) -> Result<()> {
+    /// Two-step governance handover, step 1: current governance proposes a new
+    /// governance pubkey. Step 2 is `accept_governance` called by the new key.
+    /// This prevents single-tx takeover via compromised governance key.
+    pub fn propose_governance(
+        ctx: Context<ProposeGovernance>,
+        new_governance: Pubkey,
+    ) -> Result<()> {
+        require_keys_neq!(new_governance, Pubkey::default(), OracleError::NotGovernance);
         let config = &mut ctx.accounts.config;
-        config.governance = new_governance;
+        config.pending_governance = Some(new_governance);
+        Ok(())
+    }
+
+    /// Two-step governance handover, step 2: the proposed new authority signs
+    /// to accept. Cancellation: current governance calls `propose_governance`
+    /// with the current authority's pubkey to clear the pending slot.
+    pub fn accept_governance(ctx: Context<AcceptGovernance>) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        let pending = config
+            .pending_governance
+            .ok_or(OracleError::NotGovernance)?;
+        require_keys_eq!(
+            ctx.accounts.new_governance.key(),
+            pending,
+            OracleError::NotGovernance
+        );
+        config.governance = pending;
+        config.pending_governance = None;
         Ok(())
     }
 }
@@ -456,13 +451,24 @@ pub struct SetReputationWriter<'info> {
 }
 
 #[derive(Accounts)]
-pub struct SetGovernance<'info> {
+pub struct ProposeGovernance<'info> {
     pub governance: Signer<'info>,
     #[account(
         mut,
         seeds = [ORACLE_CONFIG_SEED],
         bump = config.bump,
         constraint = config.governance == governance.key() @ OracleError::NotGovernance
+    )]
+    pub config: Account<'info, OracleConfig>,
+}
+
+#[derive(Accounts)]
+pub struct AcceptGovernance<'info> {
+    pub new_governance: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [ORACLE_CONFIG_SEED],
+        bump = config.bump
     )]
     pub config: Account<'info, OracleConfig>,
 }

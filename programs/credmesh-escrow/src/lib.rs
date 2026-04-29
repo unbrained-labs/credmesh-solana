@@ -274,39 +274,19 @@ pub mod credmesh_escrow {
                         _ => error!(CredmeshError::Ed25519Missing),
                     })?;
 
+                let decoded = credmesh_shared::ed25519_message::decode(&signed_msg)
+                    .ok_or(CredmeshError::Ed25519MessageMismatch)?;
                 require!(
-                    signed_msg.len() == credmesh_shared::ed25519_message::TOTAL_LEN,
-                    CredmeshError::Ed25519MessageMismatch
-                );
-
-                use credmesh_shared::ed25519_message as M;
-                let msg_recv_id = &signed_msg[M::RECEIVABLE_ID_OFFSET
-                    ..M::RECEIVABLE_ID_OFFSET + M::RECEIVABLE_ID_LEN];
-                let msg_agent =
-                    &signed_msg[M::AGENT_OFFSET..M::AGENT_OFFSET + M::AGENT_LEN];
-                let mut amount_buf = [0u8; 8];
-                amount_buf.copy_from_slice(
-                    &signed_msg[M::AMOUNT_OFFSET..M::AMOUNT_OFFSET + M::AMOUNT_LEN],
-                );
-                let msg_amount = u64::from_le_bytes(amount_buf);
-                let mut expires_buf = [0u8; 8];
-                expires_buf.copy_from_slice(
-                    &signed_msg[M::EXPIRES_AT_OFFSET..M::EXPIRES_AT_OFFSET + M::EXPIRES_AT_LEN],
-                );
-                let msg_expires_at = i64::from_le_bytes(expires_buf);
-                let msg_nonce = &signed_msg[M::NONCE_OFFSET..M::NONCE_OFFSET + M::NONCE_LEN];
-
-                require!(
-                    msg_recv_id == receivable_id.as_ref(),
+                    decoded.receivable_id == receivable_id,
                     CredmeshError::Ed25519MessageMismatch
                 );
                 require!(
-                    msg_agent == ctx.accounts.agent_asset.key().as_ref(),
+                    decoded.agent == ctx.accounts.agent_asset.key().to_bytes(),
                     CredmeshError::Ed25519MessageMismatch
                 );
-                require!(msg_nonce == nonce.as_ref(), CredmeshError::Ed25519MessageMismatch);
+                require!(decoded.nonce == nonce, CredmeshError::Ed25519MessageMismatch);
 
-                (msg_amount, msg_expires_at, Some(signed_pubkey))
+                (decoded.amount, decoded.expires_at, Some(signed_pubkey))
             }
         };
 
@@ -433,7 +413,7 @@ pub mod credmesh_escrow {
         let expires_at = ctx.accounts.advance.expires_at;
 
         let late_seconds = (now - expires_at).max(0);
-        let mut late_days = (late_seconds / 86_400) as u64;
+        let mut late_days = (late_seconds / SECONDS_PER_DAY as i64) as u64;
         if late_days > MAX_LATE_DAYS as u64 {
             late_days = MAX_LATE_DAYS as u64;
         }
@@ -446,7 +426,7 @@ pub mod credmesh_escrow {
             .ok_or(CredmeshError::MathOverflow)?
             .checked_add(late_penalty)
             .ok_or(CredmeshError::MathOverflow)?;
-        require!(payment_amount >= total_owed, CredmeshError::WaterfallSumMismatch);
+        require!(payment_amount >= total_owed, CredmeshError::InsufficientPayment);
 
         // Compute three cuts. Fee + late penalty splits 15/85; principal
         // returns to LP vault in full.
@@ -724,8 +704,8 @@ fn preview_deposit(amount: u64, total_assets: u64, total_shares: u64) -> Result<
 ///         score 80 → $100; score 95+ → $250 (KYC tier).
 /// Hard ceiling = pool.max_advance_abs.
 fn credit_from_score_ema(score_ema: u128, _curve: &FeeCurve) -> Result<u64> {
-    // score_ema is u128 with 18 decimals — divide by 10^18 to get integer 0..100.
-    let score_int = (score_ema / 1_000_000_000_000_000_000u128) as u64;
+    // score_ema is u128 with 18 decimals — divide by SCORE_SCALE to get integer 0..100.
+    let score_int = (score_ema / SCORE_SCALE) as u64;
     let credit_usd = match score_int {
         0..=20 => 0u64,
         21..=49 => 10_000_000,   // $10
@@ -770,7 +750,7 @@ fn compute_fee_amount(
     }
 
     // Duration premium.
-    let duration_days = duration_seconds / 86_400;
+    let duration_days = duration_seconds / SECONDS_PER_DAY;
     rate_bps = rate_bps
         .checked_add(duration_days.saturating_mul(curve.duration_per_day_bps as u64))
         .ok_or(CredmeshError::MathOverflow)?;
@@ -792,9 +772,10 @@ fn compute_fee_amount(
 }
 
 fn compute_late_penalty_per_day(principal: u64, curve: &FeeCurve) -> Result<u64> {
-    // 0.1% per day of principal, multiplied by pool_loss_surcharge_bps if active.
+    // LATE_PENALTY_BPS_PER_DAY (= 10 bps = 0.1%) of principal, multiplied by
+    // pool_loss_surcharge_bps if active.
     let base = (principal as u128)
-        .checked_mul(10) // 0.1% = 10 bps
+        .checked_mul(LATE_PENALTY_BPS_PER_DAY as u128)
         .ok_or(CredmeshError::MathOverflow)?
         .checked_div(BPS_DENOMINATOR as u128)
         .ok_or(CredmeshError::MathOverflow)?;

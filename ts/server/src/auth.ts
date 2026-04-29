@@ -24,6 +24,14 @@ import bs58 from "bs58";
 const SIWS_DOMAIN = process.env.CREDMESH_DOMAIN ?? "credmesh.xyz";
 const TIMESTAMP_TOLERANCE_MS = 10 * 60 * 1000; // ±10 min
 const NONCE_TTL_MS = 5 * 60 * 1000;
+const NONCE_GC_PROBABILITY = 0.05;
+const NONCE_MAX_SIZE = 100_000;
+
+// CAIP-2 chain IDs (genesis hash prefixes). Required for Phantom anti-phishing UI.
+const CAIP2_CHAIN_ID: Record<"mainnet-beta" | "devnet", string> = {
+  "mainnet-beta": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+  devnet: "solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1S5jJUrdiJzMv",
+};
 
 export interface SiwsPayload {
   domain: string;
@@ -63,7 +71,9 @@ class NonceStore {
   private nonces = new Map<string, { issuedAt: number; address: string }>();
 
   issue(address: string): string {
-    this.gc();
+    if (this.nonces.size >= NONCE_MAX_SIZE || Math.random() < NONCE_GC_PROBABILITY) {
+      this.gc();
+    }
     const nonce = randomNonce(16);
     this.nonces.set(nonce, { issuedAt: Date.now(), address });
     return nonce;
@@ -81,10 +91,13 @@ class NonceStore {
     return true;
   }
 
+  // Map preserves insertion order; iterate from the front and break on the
+  // first entry that's still within TTL.
   private gc(): void {
-    const now = Date.now();
+    const cutoff = Date.now() - NONCE_TTL_MS;
     for (const [nonce, entry] of this.nonces) {
-      if (now - entry.issuedAt > NONCE_TTL_MS) this.nonces.delete(nonce);
+      if (entry.issuedAt > cutoff) break;
+      this.nonces.delete(nonce);
     }
   }
 }
@@ -146,7 +159,7 @@ export const authMiddleware = createMiddleware<{
     statement: "Authenticate to CredMesh",
     uri: requestUri,
     version: "1",
-    chainId: `solana:${cluster}`,
+    chainId: CAIP2_CHAIN_ID[cluster],
     nonce,
     issuedAt: timestamp,
     expirationTime,

@@ -12,4 +12,8 @@ pub enum ReputationError {
     NotOriginalSigner,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("OracleConfig cross-program account did not match expected derivation")]
+    OracleConfigMismatch,
+    #[msg("Instruction not implemented in v1")]
+    NotImplemented,
 }

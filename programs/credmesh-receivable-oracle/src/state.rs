@@ -8,6 +8,10 @@ pub const MAX_STALENESS_SLOTS: u64 = 5_400;
 pub struct OracleConfig {
     pub bump: u8,
     pub governance: Pubkey,
+    /// Two-step governance handover: set by `propose_governance`, accepted by
+    /// `accept_governance` from the new authority. Prevents single-tx takeover
+    /// if the current governance key is compromised.
+    pub pending_governance: Option<Pubkey>,
     pub worker_authority: Pubkey,
     pub worker_max_per_tx: u64,
     pub worker_max_per_period: u64,
@@ -30,6 +34,7 @@ impl OracleConfig {
     pub const SIZE: usize = 8
         + 1
         + 32 * 3
+        + (1 + 32)        // pending_governance: Option<Pubkey>
         + 8 * 5
         + 1 + 4 + 8 + 8 + 4
         + 32;
