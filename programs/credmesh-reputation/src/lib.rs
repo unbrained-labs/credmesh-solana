@@ -168,7 +168,7 @@ pub struct InitReputation<'info> {
     #[account(
         init,
         payer = payer,
-        space = AgentReputation::SIZE,
+        space = 8 + AgentReputation::INIT_SPACE,
         seeds = [REPUTATION_SEED, agent_asset.key().as_ref()],
         bump
     )]
