@@ -1,0 +1,75 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  SOLANA_VERSION: "1.18.26"
+  ANCHOR_VERSION: "0.30.1"
+  RUST_TOOLCHAIN: "1.79.0"
+
+jobs:
+  cargo-check:
+    name: cargo check (workspace)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Install dependencies for solana-program build
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev pkg-config
+      - name: cargo check
+        run: cargo check --workspace --locked
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+        continue-on-error: true
+      - name: cargo clippy
+        run: cargo clippy --workspace -- -D warnings
+        continue-on-error: true
+
+  anchor-build:
+    name: anchor build
+    runs-on: ubuntu-latest
+    needs: cargo-check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Install Anchor CLI
+        run: cargo install --git https://github.com/coral-xyz/anchor avm --force && avm install ${{ env.ANCHOR_VERSION }} && avm use ${{ env.ANCHOR_VERSION }}
+      - name: Verify versions
+        run: |
+          solana --version
+          anchor --version
+      - name: anchor build
+        run: anchor build
+
+  ts-typecheck:
+    name: typescript typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install workspace deps
+        working-directory: ts/server
+        run: |
+          if [ -f package.json ]; then npm install --ignore-scripts; fi
+      - name: typecheck server
+        working-directory: ts/server
+        run: |
+          if [ -f package.json ]; then npm run typecheck --if-present; fi
+        continue-on-error: true
