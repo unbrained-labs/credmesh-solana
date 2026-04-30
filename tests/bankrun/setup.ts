@@ -20,9 +20,12 @@ import {
   mintTo,
 } from "@solana/spl-token";
 
-const ESCROW_PROGRAM_ID = new PublicKey("CRED1escrow1111111111111111111111111111111");
-const REPUTATION_PROGRAM_ID = new PublicKey("CRED1rep1111111111111111111111111111111111");
-const ORACLE_PROGRAM_ID = new PublicKey("CRED1recv11111111111111111111111111111111");
+// Devnet program IDs (Track A — PR #16). Mirror of `crates/credmesh-shared::program_ids`.
+// Source: target/deploy/credmesh_*-keypair.json. Once Track A's PR merges and the
+// IDL is generated, prefer importing the address from `target/idl/<name>.json`.
+const ESCROW_PROGRAM_ID = new PublicKey("DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF");
+const REPUTATION_PROGRAM_ID = new PublicKey("JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G");
+const ORACLE_PROGRAM_ID = new PublicKey("ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk");
 
 export interface TestContext {
   provider: BankrunProvider;
