@@ -9,7 +9,7 @@ pub use events::*;
 pub use state::*;
 
 // PLACEHOLDER — replace before deploy via `anchor keys sync`. See DEPLOYMENT.md.
-declare_id!("11111111111111111111111111111113");
+declare_id!("JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G");
 
 #[program]
 pub mod credmesh_reputation {

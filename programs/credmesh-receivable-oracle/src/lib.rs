@@ -10,7 +10,7 @@ pub use events::*;
 pub use state::*;
 
 // PLACEHOLDER — replace before deploy via `anchor keys sync`. See DEPLOYMENT.md.
-declare_id!("11111111111111111111111111111114");
+declare_id!("ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk");
 
 #[program]
 pub mod credmesh_receivable_oracle {

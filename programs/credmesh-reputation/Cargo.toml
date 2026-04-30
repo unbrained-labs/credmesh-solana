@@ -3,6 +3,7 @@ name = "credmesh-reputation"
 version = "0.1.0"
 description = "CredMesh reputation registry — 8004-shape, CredMesh-owned"
 edition = "2021"
+rust-version.workspace = true
 
 [lib]
 crate-type = ["cdylib", "lib"]
