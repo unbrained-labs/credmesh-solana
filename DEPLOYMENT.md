@@ -133,45 +133,245 @@ deployable keypair.
 
 ## Phase 1 — Devnet deploy
 
+The deploy machinery (Track A, PR #16) is in place; running it requires
+three org-level inputs that are deliberately not in the repo: a governance
+pubkey, a worker authority pubkey, and a treasury USDC ATA. The Day-3
+operational notes below are written for the operator who has those three
+pubkeys in hand.
+
+### Inputs (all TBD — fill in before running)
+
+| Input | What it is | Where to get it |
+|-------|-----------|-----------------|
+| `--governance` | A Squads v4 vault PDA — must NOT equal the deployer wallet (DESIGN §10) | Provision a Squads v4 multisig on devnet via the Squads UI. The "vault PDA" is one of the addresses Squads exposes per multisig — copy it from the Squads config view. Same address can be used for the oracle and the pool. |
+| `--worker-authority` | The hot key the off-chain worker signs `worker_update_receivable` with. MUST NOT equal governance or the reputation writer (DESIGN §10 three-key topology). | `solana-keygen new -o ~/.credmesh/worker-authority.json` then `solana-keygen pubkey ~/.credmesh/worker-authority.json`. Keep this key on whatever host the worker runs on; rotate quarterly via `set_worker_authority`. |
+| `--treasury-ata` | The USDC ATA owned by the protocol treasury wallet on devnet. Where `claim_and_settle` deposits the protocol fee share. | The treasury wallet is a separate Squads vault from the governance one. Use `spl-token create-account 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU --owner <treasury-vault-pda> --url devnet` to mint the ATA, or derive deterministically with `getAssociatedTokenAddressSync` against the devnet USDC mint and have the deployer fund 0.002 SOL of rent. |
+
+### Funding the deployer wallet
+
+Three programs (`escrow`, `reputation`, `receivable-oracle`) plus the init
+flow's fresh share-mint, USDC vault, and OracleConfig PDA. Conservative
+upfront budget for devnet: **~10 SOL**. Devnet airdrops cap at 5 SOL per
+call and rate-limit aggressively, so plan two airdrops with a minute or
+two between them.
+
 ```bash
-solana config set --url devnet
-solana airdrop 3
-anchor build
-anchor deploy --provider.cluster devnet
+# Generate a deployer wallet — interactive passphrase prompt; the
+# --no-bip39-passphrase flag suppresses the seed-phrase passphrase prompt
+# but you still set a wallet passphrase (use empty string for devnet ops).
+solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
+
+# Two airdrops to cover program rent (~7 SOL across the three .so files)
+# plus init-flow rent + tx fees.
+solana airdrop 5 -u devnet
+sleep 90  # rate-limit cooldown
+solana airdrop 5 -u devnet
+solana balance -u devnet  # should be ~10 SOL
 ```
 
-Note the deployed addresses; verify they match the keypair pubkeys.
+If `solana airdrop` returns `Error: airdrop request failed`, the public
+faucet is throttled — fall back to the [web faucet](https://faucet.solana.com)
+or one of the third-party devnet faucets (Helius, QuickNode).
 
-### Initialize state on devnet
+### Build, then deploy
 
 ```bash
-# 1. Init OracleConfig (worker authority + governance + caps)
-ts-node scripts/init_oracle.ts \
+# 1. Build BPF artifacts (Docker recipe; see "Build environment" above).
+#    The `--no-idl` flag is required until issue #15 lands.
+#    Output: target/deploy/credmesh_{escrow,reputation,receivable_oracle}.so
+
+# 2. Install root JS deps if you haven't yet.
+npm install
+
+# 3. Deploy all three programs to devnet.
+npm run deploy -- --cluster devnet --program all
+```
+
+`scripts/deploy.ts` wraps `solana program deploy` per program. It is
+idempotent — re-running on an already-deployed program-id issues a BPF
+Loader Upgradeable v3 upgrade against the same address. Output includes
+the local sha256 of each `.so` (a verifiable build hash) and a post-deploy
+RPC `getAccountInfo` to confirm the program-id is live.
+
+### Initialize state
+
+```bash
+# 1. OracleConfig (worker authority + governance + caps).
+npm run init:oracle -- \
   --cluster devnet \
-  --governance <CredMesh devnet governance multisig vault PDA> \
-  --worker-authority <hot worker key pubkey> \
+  --governance <SQUADS_VAULT_PDA> \
+  --worker-authority <WORKER_HOT_KEY_PUBKEY> \
   --worker-max-per-tx 100000000 \
   --worker-max-per-period 10000000000 \
   --period-seconds 86400
 
-# 2. Init Pool (USDC, fee curve, caps, treasury ATA)
-ts-node scripts/init_pool.ts \
+# 2. Pool (USDC mint, fee curve, caps, treasury ATA).
+npm run init:pool -- \
   --cluster devnet \
   --asset-mint 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU \
-  --governance <CredMesh devnet governance> \
-  --treasury-ata <protocol treasury USDC ATA> \
+  --governance <SQUADS_VAULT_PDA> \
+  --treasury-ata <TREASURY_USDC_ATA> \
   --max-advance-pct-bps 3000 \
   --max-advance-abs 100000000 \
   --timelock-seconds 86400
 ```
 
-(Scripts not yet written; v1 sprint task.)
+Both scripts refuse to re-init when the target PDA already holds account
+data, so a half-finished init is safe to re-attempt — fix the failed step,
+re-run only that step. Order matters: oracle must exist before pool (the
+pool relies on the oracle for receivable lookups, but the dependency is
+runtime, not init-time — strictly speaking either order works for the init
+itself; conventional is oracle-first).
+
+`init_oracle.ts` enforces `governance != worker_authority` client-side
+before sending. `init_pool.ts` enforces `governance != deployer`.
 
 ### Verify
 
-- `solana program show <ESCROW_ID> --url devnet` — confirm deploy.
-- `anchor verify <ESCROW_ID> --url devnet` — match local build hash.
-- Run `npm test` — all Bankrun tests should pass on the now-deployed programs.
+```bash
+# Confirm each program-id is live and points at our keypair-derived addresses.
+solana program show DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF -u devnet  # escrow
+solana program show JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G -u devnet  # reputation
+solana program show ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk -u devnet  # oracle
+
+# `anchor verify` requires the IDL — defer until #15 lands. Until then,
+# the local sha256 (printed by `scripts/deploy.ts`) is the verifiable
+# build hash; cross-reference with the on-chain program-data account if
+# you need stronger guarantees.
+```
+
+### Day 3 — operational notes (gotchas)
+
+What was learned across Track A Days 1-2 that the next operator should
+know before they hit the same walls:
+
+**Build environment**
+
+- *The `linux/amd64` platform warning is harmless on Apple Silicon.* Docker
+  Desktop runs the image under Rosetta. First build is ~5-10 min cold and
+  ~1-2 min warm with the four named volumes (`credmesh-rustup`,
+  `credmesh-cargo-registry`, `credmesh-cargo-git`, `credmesh-pt-cache`)
+  populated — never `docker volume rm` these unless you want to pay the
+  cold-cache cost again.
+- *The `cargo-build-sbf` wrapper is required even for dev builds.* The
+  one-liner shell wrapper that injects `--tools-version v1.50` lives at
+  `/opt/wrapper/cargo-build-sbf` inside the container; it must be on the
+  PATH _before_ the bundled `solana/install/active_release/bin` directory.
+  Forgetting the PATH order is silent — cargo-build-sbf falls back to its
+  bundled `platform-tools v1.41` (rustc 1.75-dev) which then fails on
+  cargo 1.86's stable `--check-cfg` flag.
+- *The wrapper's argv handling matters.* Cargo invokes the binary with
+  `argv[1]="build-sbf"` (the subcommand name); clap inside the real binary
+  auto-strips that slot only if the binary is named `cargo-build-sbf` and
+  argv[1] is intact. The wrapper preserves both — if you rewrite the
+  wrapper to put `--tools-version v1.50` _before_ the subcommand arg, the
+  real binary errors with `Found argument 'build-sbf' which wasn't
+  expected`.
+- *`anchor build --no-idl` is the canonical green build for now.* Drop the
+  flag and you hit issue #15 (`AssociatedToken` resolution under cargo's
+  `--features idl-build` test profile). The `.so` artifacts are identical
+  either way — the `--no-idl` path just skips the post-compile IDL JSON
+  emission.
+- *Cargo.lock is committed.* Our three transitive-dep pins (blake3,
+  proc-macro2, workspace MSRV) live in Cargo.toml; the lockfile makes them
+  reproducible across machines. If Cargo.lock disappears, re-running the
+  Docker build with `RUSTUP_TOOLCHAIN=1.86.0` and
+  `CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS=fallback` reconstructs an
+  equivalent lockfile from the same Cargo.toml constraints.
+- *`anchor keys sync` only updates the active cluster's `[programs.X]`.*
+  The `[provider].cluster = "Devnet"` in our Anchor.toml means devnet gets
+  rewritten automatically; localnet is mirrored by hand. If you ever flip
+  `[provider].cluster` to "Localnet" and re-run `anchor keys sync`,
+  re-mirror after.
+- *`anchor keys sync` auto-generates a `target/deploy/credmesh_shared-keypair.json`*
+  even though `credmesh-shared` is a library. The `.gitignore` carves out
+  the three deployable program keypairs but explicitly excludes the
+  `credmesh_shared` one — don't add it back.
+
+**Deploy mechanics**
+
+- *`solana program deploy` is upgrade-on-rerun.* It looks up the
+  program-id, sees the program already exists, and issues an upgrade
+  using the upgrade authority (the deployer wallet by default). To
+  redeploy from scratch, first `solana program close <PROGRAM_ID>`,
+  reclaim the rent, then redeploy.
+- *Program rent is non-trivial.* The current `.so` sizes (461 KB / 296 KB
+  / 241 KB) consume ~3.2 / 2.1 / 1.7 SOL respectively under the BPF Loader
+  Upgradeable v3 rent model. A fresh-wallet devnet bring-up needs ~10 SOL
+  total, not the README's quoted 3 SOL.
+- *Devnet airdrops rate-limit hard.* Two `solana airdrop 5 -u devnet`
+  calls a minute apart usually work; in busy hours you may need the
+  [web faucet](https://faucet.solana.com) or a third-party (Helius,
+  QuickNode). Keep the deployer wallet topped up — out-of-funds during a
+  multi-program deploy leaves a partial deploy that requires
+  `solana program close` to clean up.
+- *Pool PDA is keyed on the asset mint.* `seeds = ["pool", asset_mint]`.
+  Devnet USDC and mainnet USDC have different mints, so the pool PDA on
+  one cluster does not match the other. If you ever switch the asset mint
+  (e.g., if Circle redeploys USDC), you cannot migrate the existing pool —
+  init a new one.
+- *`init_pool.ts` generates fresh share-mint and USDC-vault keypairs.*
+  Both are passed as transaction signers alongside the deployer. The
+  pubkeys are throwaway — the program owns both accounts after init.
+  Don't try to reuse a previous run's pubkeys; they'll fail the `init`
+  constraint.
+- *The hand-rolled `init_pool.ts` discriminator is `sha256("global:init_pool")[0..8]`.*
+  When issue #15 lands and the escrow IDL becomes available, replace the
+  hand-rolled instruction builder with a typed `Program` (mirror
+  `init_oracle.ts`); the discriminator and Borsh layout will match
+  exactly, but the typed version catches account-order bugs at compile
+  time.
+
+**Anchor 0.30 specifics**
+
+- *`[features] resolution = true` in Anchor.toml auto-resolves PDA accounts.*
+  When calling typed `program.methods.foo().accounts({...}).rpc()`, do NOT
+  pass `config: configPda` for an account that has `pda: { seeds: [...] }`
+  in the IDL. Anchor's TS code derives it. Passing it manually is a
+  TypeScript error (good) but if you cast to `any` you'll get a runtime
+  account-mismatch error (bad).
+- *`system_program` is also auto-resolved.* Same as PDAs.
+- *Program constructor takes the IDL JSON directly.* Anchor 0.30 deduces
+  the program-id from `idl.address`. The hand-spread of
+  `RECEIVABLE_ORACLE_PROGRAM_ID.toBase58()` over `idl.address` in
+  `init_oracle.ts` is defensive in case the extracted IDL was generated
+  under a different keypair (it shouldn't be, but being explicit costs
+  nothing).
+- *`target/types/<program>.ts` is just a TypeScript type alias.* It is
+  not a runtime artifact — `import type` is the correct import. The
+  runtime IDL is the JSON.
+
+**Wallet + key management**
+
+- *The three-key topology (DESIGN §10) is not a guideline — it is enforced.*
+  `init_oracle.ts` rejects `governance == worker_authority` client-side
+  before sending; `init_pool.ts` rejects `governance == deployer`. The
+  reputation writer authority defaults to governance until
+  `set_reputation_writer` is called — once the worker is live in prod,
+  rotate it to a separate key.
+- *The deployer wallet is also the upgrade authority by default.*
+  Phase 3 transfers it to a Squads vault; until then, the deployer's
+  hot key controls program upgrades. Keep that key cold or rotate.
+- *Wallet path expansion supports `~`.* `scripts/lib/cluster.ts`
+  expands `~` → `$HOME` so `--wallet ~/.config/solana/id.json` works; bare
+  paths are resolved against `$PWD`.
+
+**Recovery**
+
+- *Half-init recovery: just re-run the failing step.* Both init scripts
+  refuse to re-init existing PDAs (refuse-then-exit-2). If `init_oracle`
+  succeeded but `init_pool` failed, fix the pool args and re-run only
+  `init_pool` — the oracle config is already in place and is single-shot
+  anyway.
+- *Half-deploy recovery: `solana program close <PROGRAM_ID>`.* This
+  reclaims the rent and frees the program-id for redeploy. Lose the
+  upgrade authority and the program is permanently un-upgradeable, so
+  don't `--bypass-warning` flags carelessly.
+- *Failed `init_pool` doesn't leave orphan accounts in the common case.*
+  Anchor's `init` constraint reverts the whole tx atomically on any
+  failure. The fresh share-mint and USDC-vault keypairs that
+  `init_pool.ts` generates are throwaway and the SOL stays with the
+  deployer.
 
 ## Phase 2 — Mainnet-beta staging
 
