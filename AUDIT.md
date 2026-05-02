@@ -89,7 +89,7 @@ A Squads vault is a PDA — it cannot be a `Signer`. The current scaffold lets w
 Future-proofs multi-pool collisions; cheap now, expensive to retrofit.
 **Status: FIXED in this commit.**
 - `Advance`: `[ADVANCE_SEED, pool.key().as_ref(), agent.key().as_ref(), receivable_id]`
-- `ConsumedPayment`: `[CONSUMED_SEED, pool.key().as_ref(), receivable_id]`
+- `ConsumedPayment`: `[CONSUMED_SEED, pool.key().as_ref(), agent.key().as_ref(), receivable_id]` — issue #8 (post-fix). The `agent` seed eliminates cross-agent `receivable_id` DoS-collisions; previously two agents picking the same 32-byte `receivable_id` collided on the same PDA and the second `request_advance` failed. Test fixture: `tests/bankrun/attacks/cross_agent_receivable_id_reuse.test.ts`.
 
 ### AM-2. Constrain `agent_asset` ownership
 **Status: BLOCKED on P0-2 decision.** Marker comment in source.

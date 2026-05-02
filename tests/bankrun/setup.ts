@@ -111,9 +111,15 @@ export function advancePda(
   );
 }
 
-export function consumedPda(pool: PublicKey, receivableId: Buffer): [PublicKey, number] {
+export function consumedPda(
+  pool: PublicKey,
+  agent: PublicKey,
+  receivableId: Buffer,
+): [PublicKey, number] {
+  // Issue #8: agent.key() is part of the seed so two distinct agents can use
+  // the same receivable_id without colliding on the same PDA.
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("consumed"), pool.toBuffer(), receivableId],
+    [Buffer.from("consumed"), pool.toBuffer(), agent.toBuffer(), receivableId],
     ESCROW_PROGRAM_ID,
   );
 }

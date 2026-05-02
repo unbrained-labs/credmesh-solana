@@ -18,6 +18,7 @@ pub const MAX_LATE_DAYS: u32 = 365;
 pub const MIN_ADVANCE_ATOMS: u64 = 1_000_000;
 
 #[account]
+#[derive(InitSpace)]
 pub struct Pool {
     pub bump: u8,
     pub asset_mint: Pubkey,
@@ -36,20 +37,7 @@ pub struct Pool {
     pub pending_params: Option<PendingParams>,
 }
 
-impl Pool {
-    pub const SIZE: usize = 8
-        + 1
-        + 32 * 5
-        + 8 * 4
-        + FeeCurve::SIZE
-        + 2
-        + 8
-        + 8
-        + 1 + PendingParams::SIZE
-        + 64;
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Default)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Default, InitSpace)]
 pub struct FeeCurve {
     pub utilization_kink_bps: u16,
     pub base_rate_bps: u16,
@@ -60,11 +48,7 @@ pub struct FeeCurve {
     pub pool_loss_surcharge_bps: u16,
 }
 
-impl FeeCurve {
-    pub const SIZE: usize = 2 * 7;
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
 pub struct PendingParams {
     pub fee_curve: FeeCurve,
     pub max_advance_pct_bps: u16,
@@ -72,11 +56,8 @@ pub struct PendingParams {
     pub execute_after: i64,
 }
 
-impl PendingParams {
-    pub const SIZE: usize = FeeCurve::SIZE + 2 + 8 + 8;
-}
-
 #[account]
+#[derive(InitSpace)]
 pub struct Advance {
     pub bump: u8,
     pub agent: Pubkey,
@@ -91,19 +72,7 @@ pub struct Advance {
     pub state: AdvanceState,
 }
 
-impl Advance {
-    pub const SIZE: usize = 8
-        + 1
-        + 32
-        + 32
-        + 8 * 5
-        + 1
-        + 1 + 32
-        + 1
-        + 32;
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
 pub enum AdvanceState {
     Issued,
     Settled,
@@ -119,15 +88,12 @@ impl Default for AdvanceState {
 /// **Permanent** PDA per receivable_id. Never closed — closing it would re-open
 /// a replay channel via close-then-reinit in the same tx (audit P0-5).
 #[account]
+#[derive(InitSpace)]
 pub struct ConsumedPayment {
     pub bump: u8,
     pub nonce: [u8; 16],
     pub agent: Pubkey,
     pub created_at: i64,
-}
-
-impl ConsumedPayment {
-    pub const SIZE: usize = 8 + 1 + 16 + 32 + 8 + 16;
 }
 
 // ProtocolTreasury is not a separate PDA in v1 — `Pool.treasury_ata` stores the
