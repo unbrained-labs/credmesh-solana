@@ -216,43 +216,21 @@ pub mod credmesh_escrow {
             _ => error!(CredmeshError::AgentBindingMismatch),
         })?;
 
-        // (2) Read AgentReputation cross-program.
-        let reputation_pda = credmesh_shared::cross_program::derive_pda(
-            &[
-                credmesh_reputation::REPUTATION_SEED,
-                ctx.accounts.agent_asset.key.as_ref(),
-            ],
-            &credmesh_shared::program_ids::REPUTATION,
-        );
-        let reputation = credmesh_shared::cross_program::read_cross_program_account::<
-            credmesh_reputation::AgentReputation,
-        >(
-            &ctx.accounts.agent_reputation_pda.to_account_info(),
-            &credmesh_shared::program_ids::REPUTATION,
-            &reputation_pda,
-        )
-        .map_err(|_| error!(CredmeshError::ReputationPdaMismatch))?;
+        // (2) Read AgentReputation cross-program. Issue #4: typed `Account` with
+        // `seeds::program` runs Anchor's owner+address+discriminator+deserialize
+        // verify automatically — no handler-side manual read.
+        let reputation = &ctx.accounts.agent_reputation_pda;
 
         // (3) Read Receivable cross-program (Worker path) OR verify ed25519
-        // signed receivable (Ed25519/X402 paths).
+        // signed receivable (Ed25519/X402 paths). Issue #4: same Anchor-typed
+        // pattern; the Worker path resolves the `Option<Account>` to `Some`.
         let (receivable_amount, receivable_expires_at, source_signer) = match kind {
             credmesh_shared::SourceKind::Worker => {
-                let receivable_pda = credmesh_shared::cross_program::derive_pda(
-                    &[
-                        credmesh_receivable_oracle::RECEIVABLE_SEED,
-                        ctx.accounts.agent.key.as_ref(),
-                        receivable_id.as_ref(),
-                    ],
-                    &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
-                );
-                let receivable = credmesh_shared::cross_program::read_cross_program_account::<
-                    credmesh_receivable_oracle::Receivable,
-                >(
-                    &ctx.accounts.receivable_pda.to_account_info(),
-                    &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
-                    &receivable_pda,
-                )
-                .map_err(|_| error!(CredmeshError::ReceivablePdaMismatch))?;
+                let receivable = ctx
+                    .accounts
+                    .receivable_pda
+                    .as_ref()
+                    .ok_or(error!(CredmeshError::ReceivablePdaMismatch))?;
 
                 let staleness =
                     slot.saturating_sub(receivable.last_updated_slot);
@@ -952,15 +930,28 @@ pub struct RequestAdvance<'info> {
     /// Handler re-derives ["agent_identity", agent_asset.key()] under MPL_AGENT_REGISTRY
     /// and asserts equality. Required to prove agent_asset is registered as an Agent.
     pub agent_identity: UncheckedAccount<'info>,
-    /// CHECK: AgentReputation PDA (owned by credmesh-reputation).
-    /// Handler must: verify owner == credmesh_shared::program_ids::REPUTATION,
-    /// re-derive [REPUTATION_SEED, agent_asset.key()], check 8-byte discriminator,
-    /// then deserialize.
-    pub agent_reputation_pda: UncheckedAccount<'info>,
-    /// CHECK: Receivable PDA (owned by credmesh-receivable-oracle), required iff source_kind=Worker.
-    /// For ed25519 / x402 paths the handler verifies via instruction-introspection
-    /// instead of reading this account; pass any read-only pubkey (e.g., system_program).
-    pub receivable_pda: UncheckedAccount<'info>,
+    /// AgentReputation PDA owned by credmesh-reputation. Issue #4: Anchor's
+    /// typed Account + seeds::program does the four-step verify (owner →
+    /// address → discriminator → deserialize) declaratively. The handler
+    /// reads `score_ema` / `default_count` directly off this typed account.
+    #[account(
+        seeds = [credmesh_shared::seeds::REPUTATION_SEED, agent_asset.key().as_ref()],
+        seeds::program = credmesh_reputation::ID,
+        bump,
+    )]
+    pub agent_reputation_pda: Account<'info, credmesh_reputation::AgentReputation>,
+    /// Receivable PDA owned by credmesh-receivable-oracle, required iff
+    /// `source_kind = Worker`. For Ed25519 / X402 paths the handler verifies
+    /// via instruction-introspection instead of reading this account, so the
+    /// caller passes `None` (encoded as a missing account); a typed `Account`
+    /// without `Option` would fail the discriminator check there. Anchor
+    /// runs the four-step verify on `Some` only (issue #4).
+    #[account(
+        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, agent.key().as_ref(), receivable_id.as_ref()],
+        seeds::program = credmesh_receivable_oracle::ID,
+        bump,
+    )]
+    pub receivable_pda: Option<Account<'info, credmesh_receivable_oracle::Receivable>>,
     /// CHECK: Optional ExecutiveProfileV1 PDA (MPL Agent Tools) for delegate path.
     /// Pass `None` (Anchor encodes as missing) when agent.key() is the asset's owner.
     pub executive_profile: Option<UncheckedAccount<'info>>,
