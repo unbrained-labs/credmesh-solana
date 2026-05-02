@@ -1,0 +1,103 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+CredMesh-Solana is a pre-implementation port of [CredMesh](https://github.com/unbrained-labs/credmesh) (programmable credit protocol for autonomous agents) from EVM (Base) to Solana. The EVM protocol is live at https://credmesh.xyz; this repo is the Anchor scaffold + design + research that gets it to Solana.
+
+Status: handler bodies written end-to-end but **not compile-verified**. First `anchor build` will surface 1-3 minor Anchor 0.30 syntax fixes.
+
+## Read order (before touching code)
+
+1. **`DECISIONS.md`** — five blocking design questions answered with rationale (MPL Agent Registry vs SATI, Squads onboarding flow, Sybil mitigation, SAS roadmap, fee-payer infra).
+2. **`AUDIT.md`** — three independent reviews + final-review pass; all P0/P1 fixes applied with cross-references in code as `// AUDIT P0-X` comments.
+3. **`DESIGN.md`** — implementer spec (programs, PDAs, instructions, invariants, threat model).
+4. **`research/HANDLER_PATTERNS.md`** — canonical Solana lending patterns (MarginFi/Solend/Kamino/Drift/Squads) lifted byte-for-byte at pinned commit hashes. **The handler-implementation reference manual.**
+5. **`V1_ACCEPTANCE.md`** — what "v1 ready to ship" means.
+6. **`DEPLOYMENT.md`** — devnet/mainnet deploy procedure + key rotation.
+7. **`research/CONTRARIAN.md`** — why we redesigned where we did (vs literal EVM port).
+8. **`research/REVIEW.md`**, `research/SYNTHESIS.md`, `research/01-04` — supporting research.
+
+## Commands
+
+```bash
+# Toolchain (see CONTRIBUTING.md for full setup)
+rustup default 1.79.0
+sh -c "$(curl -sSfL https://release.anza.xyz/v1.18.26/install)"
+cargo install --git https://github.com/coral-xyz/anchor avm --force && avm install 0.30.1
+
+anchor build                                 # build all 4 programs
+anchor test --skip-local-validator           # bankrun tests
+npm install && npm test                      # ts-mocha + bankrun
+
+# TS server
+cd ts/server && npm install && npm run dev   # http://localhost:3000
+```
+
+## Architecture
+
+### Workspace layout
+
+```
+programs/
+├── credmesh-shared/                 seeds, program IDs, helpers (mpl_identity,
+│                                    cross_program, ix_introspection)
+├── credmesh-escrow/                 Pool vault + share-mint + advance + waterfall
+├── credmesh-reputation/             8004-shape rolling-digest reputation
+└── credmesh-receivable-oracle/      worker + ed25519 payer-signed receivables
+ts/server/                           Hono backend (SIWS auth, tx-builder, webhook ingress)
+tests/bankrun/                       anchor-bankrun unit/integration + AUDIT-finding fixtures
+```
+
+### External programs CredMesh **uses** but does not deploy
+
+- **Squads v4** (`SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf`) — agent vaults, SpendingLimits, governance multisig
+- **MPL Agent Registry** (`1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p`) + **MPL Agent Tools** (`TLREGni9ZEyGC3vnPZtqUh95xQ8oPqJSvNjvB7FGK8S`) — agent identity + DelegateExecutionV1
+- **MPL Core** (`CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d`) — base asset primitive
+- **SPL Token classic** — USDC vault and share mint
+- **ed25519 program** + **Memo v2** — receivable verification + replay-nonce binding
+
+## Conventions specific to this repo
+
+- **Cross-program reads use the four-step verify** (owner → address → discriminator → typed deserialize) via `credmesh_shared::cross_program::read_cross_program_account<T>`. Forgetting any step is the Wormhole-class bug. **Don't skip steps.**
+- **PDA seeds come from `credmesh-shared::seeds`.** Never re-declare seed bytes in two crates — they will silently drift.
+- **`ConsumedPayment` is permanent** (AUDIT P0-5). Closing it reopens close-then-reinit replay. Don't add a close handler.
+- **`request_advance` has no pause path.** Advance issuance is never gated by governance. The "no pause on issuance" invariant is load-bearing — see DESIGN §3.5 and AUDIT P0-6.
+- **`claim_and_settle` requires `cranker == advance.agent` in v1.** Permissionless cranking is deferred — needs a payer-pre-auth pattern that doesn't exist yet (AUDIT P0-3/P0-4).
+- **Three-key topology** (DESIGN §10): fee-payer, oracle worker authority, reputation writer authority must NEVER share keys. The off-chain config and rotation flow enforce this.
+- **All math is `checked_*`** or wrapped in u128. Cargo.toml sets `overflow-checks = true` in release; don't rely on it.
+- **Errors map to typed enums** (`CredmeshError`, `ReputationError`, `OracleError`). No `unwrap()` in handlers.
+- **Cross-program seed constants come from `credmesh-shared`.** Each program `pub use`s only the seeds it actually uses, so its own clients can derive PDAs without depending on `credmesh-shared`.
+- **Events are emitted as the LAST step of each handler.** A partial failure mid-handler shouldn't emit a misleading event.
+- **No `find_program_address` in hot paths** when the bump is already cached. Per HANDLER_PATTERNS.md Pattern 2 (~1500 CU per call). Use `Pubkey::create_program_address(seeds_with_bump, program_id)` instead.
+- **`emit!` is the LAST line.** Anti-pattern: emitting before all CPIs succeed.
+
+## What NOT to do
+
+- Don't add a `paused` field back to `Pool`. The "no pause on issuance" invariant is load-bearing — AUDIT P0-6.
+- Don't close `ConsumedPayment`. Permanent. AUDIT P0-5.
+- Don't make `claim_and_settle` permissionless in v1. AUDIT P0-3/P0-4.
+- Don't introduce Light Protocol compressed PDAs or Token-2022 features in v1. Both are explicitly v2+.
+- Don't add per-record SQL persistence on the off-chain server. State migrates to on-chain PDAs (DESIGN §6); SQLite is a derived-view cache only.
+- Don't use `init_if_needed` for replay-protection PDAs — only `init`. AUDIT P0-5.
+- Don't use bare `transfer` — Token-2022 forward-compat requires `transfer_checked`.
+
+## V1 explicitly NOT in scope (deferred)
+
+Per DESIGN §9:
+- ML-derived credit curves
+- Mobile Wallet Adapter / Solana Mobile
+- Hyperliquid Lazer publisher
+- Light Protocol compressed PDAs
+- Plain-EOA agents (Squads-only for v1)
+- Multi-asset pools (USDC only)
+- Per-instruction-type timelock granularity
+- Token-2022 USDC handling
+- Embedded-wallet (Phantom Portal) auth
+- Permissionless `claim_and_settle` cranking
+- Multi-issuer SAS attestations (deferred to v1.5; schema documented now)
+
+## Sister repo
+
+The original EVM CredMesh lives at `../credmesh/`. When porting logic (e.g., `pricing.ts` → `compute_fee_amount` in escrow), the EVM file is the source of truth for math; the Solana file mirrors it. Tests assert the on-chain quote and the off-chain quote match exactly.
