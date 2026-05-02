@@ -17,7 +17,8 @@ tests/bankrun/
 │   └── invariants.test.ts          # property-style: waterfall sum, share monotonicity
 ├── reputation/
 │   ├── init_reputation.test.ts
-│   └── give_feedback_writer_gating.test.ts   # DECISIONS Q4 single-writer test
+│   ├── give_feedback_writer_gating.test.ts   # DECISIONS Q4 single-writer test
+│   └── emit_cpi_noisy_log.test.ts            # issue #3 fixture: NewFeedback survives 10 KB log truncation
 ├── receivable_oracle/
 │   ├── worker_update.test.ts
 │   └── ed25519_record.test.ts
