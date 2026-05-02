@@ -116,21 +116,27 @@ pub fn verify_prev_ed25519(
     Ok((signed_pubkey, signed_message))
 }
 
+/// Hard upper bound on instructions scanned by `require_memo_nonce`. Solana
+/// transactions are capped at ~64 top-level instructions in practice (the
+/// 1232-byte tx-size limit binds before this), so 64 is permissive without
+/// being unbounded. Audit-MED #4 fix: when v1.5 makes `claim_and_settle`
+/// permissionless, a malicious cranker could pad the tx with no-ops to
+/// exhaust compute before reaching the Memo; an explicit cap defends now.
+const MAX_IX_SCAN: usize = 64;
+
 /// Find a Memo program instruction in the current tx whose data matches the
-/// expected nonce bytes. Searches all instructions in the tx (memo placement
-/// is not constrained relative to the calling ix).
+/// expected nonce bytes. Searches up to `MAX_IX_SCAN` top-level instructions
+/// (memo placement is not constrained relative to the calling ix).
 pub fn require_memo_nonce(
     sysvar_instructions_ai: &AccountInfo<'_>,
     expected_nonce: &[u8],
 ) -> std::result::Result<(), IxIntrospectionError> {
-    let mut idx = 0usize;
-    loop {
+    for idx in 0..MAX_IX_SCAN {
         match load_instruction_at_checked(idx, sysvar_instructions_ai) {
             Ok(ix) => {
                 if ix.program_id == MEMO && ix.data == expected_nonce {
                     return Ok(());
                 }
-                idx += 1;
             }
             Err(_) => break,
         }
