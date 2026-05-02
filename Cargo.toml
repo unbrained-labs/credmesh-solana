@@ -17,7 +17,7 @@ members = [
 rust-version = "1.75"
 
 [workspace.dependencies]
-anchor-lang = { version = "0.30.1", features = ["init-if-needed"] }
+anchor-lang = { version = "0.30.1", features = ["init-if-needed", "event-cpi"] }
 anchor-spl = "0.30.1"
 # `credmesh-shared` is a library crate, not a deployable Solana program, so it
 # lives in `crates/` rather than `programs/`. Anchor only treats subdirs of
