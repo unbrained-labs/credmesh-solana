@@ -347,11 +347,14 @@ pub struct WorkerUpdateReceivable<'info> {
     pub config: Account<'info, OracleConfig>,
     /// CHECK: Just an address used as a seed.
     pub agent: UncheckedAccount<'info>,
+    /// Audit-MED #3 fix: source_kind byte is part of the seed so a worker-
+    /// owned receivable cannot be clobbered by an `ed25519_record_receivable`
+    /// call (and vice-versa). Worker = `[0]` (`SourceKind::Worker`).
     #[account(
         init_if_needed,
         payer = worker,
         space = Receivable::SIZE,
-        seeds = [RECEIVABLE_SEED, agent.key().as_ref(), source_id.as_ref()],
+        seeds = [RECEIVABLE_SEED, &[0u8], agent.key().as_ref(), source_id.as_ref()],
         bump
     )]
     pub receivable: Account<'info, Receivable>,
@@ -375,11 +378,17 @@ pub struct Ed25519RecordReceivable<'info> {
         constraint = allowed_signer.signer == signer_pubkey @ OracleError::SignerNotAllowed
     )]
     pub allowed_signer: Account<'info, AllowedSigner>,
+    /// Audit-MED #3 fix: source_kind byte (sourced from `allowed_signer.kind`,
+    /// = 1 for exchange, 2 for x402 facilitator) is part of the seed so an
+    /// ed25519-attested receivable cannot collide with a Worker-created one,
+    /// nor can an exchange-kind clobber an x402-kind. The handler later writes
+    /// `receivable.source_kind = signer_acc.kind`, so seed and stored kind
+    /// agree by construction.
     #[account(
         init_if_needed,
         payer = payer,
         space = Receivable::SIZE,
-        seeds = [RECEIVABLE_SEED, agent.key().as_ref(), source_id.as_ref()],
+        seeds = [RECEIVABLE_SEED, &[allowed_signer.kind], agent.key().as_ref(), source_id.as_ref()],
         bump
     )]
     pub receivable: Account<'info, Receivable>,

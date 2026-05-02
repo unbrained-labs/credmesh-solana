@@ -144,9 +144,13 @@ export function oracleConfigPda(): [PublicKey, number] {
 export function receivablePda(
   agent: PublicKey,
   sourceId: Buffer,
+  sourceKind: number = 0, // SourceKind::Worker
 ): [PublicKey, number] {
+  // Audit-MED #3 fix: source_kind byte is part of the seed so a worker-owned
+  // receivable cannot collide with an ed25519-attested one (or vice versa).
+  // Default to Worker (0) since that's the path Bankrun fixtures exercise.
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("receivable"), agent.toBuffer(), sourceId],
+    [Buffer.from("receivable"), Buffer.from([sourceKind]), agent.toBuffer(), sourceId],
     ORACLE_PROGRAM_ID,
   );
 }

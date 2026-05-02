@@ -946,8 +946,12 @@ pub struct RequestAdvance<'info> {
     /// caller passes `None` (encoded as a missing account); a typed `Account`
     /// without `Option` would fail the discriminator check there. Anchor
     /// runs the four-step verify on `Some` only (issue #4).
+    /// Audit-MED #3 fix: the source_kind byte (`[0]` for Worker) is part of
+    /// the receivable PDA seed, so the address Anchor verifies here can only
+    /// resolve to a Worker-created receivable — an ed25519-attested receivable
+    /// (kind=1/2) lives at a different address and cannot pass this gate.
     #[account(
-        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, agent.key().as_ref(), receivable_id.as_ref()],
+        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, &[0u8], agent.key().as_ref(), receivable_id.as_ref()],
         seeds::program = credmesh_receivable_oracle::ID,
         bump,
     )]
