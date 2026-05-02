@@ -124,7 +124,11 @@ pub mod credmesh_reputation {
             reputation.last_event_slot = slot;
         }
 
-        emit!(NewFeedback {
+        // Issue #3: emit via CPI inner-instruction so the event survives
+        // a noisy-log adversary tx that pushes the LogCollector past 10 KB.
+        // NewFeedback carries variable-length fields (feedback_uri up to 200 B)
+        // and is the only event in this program at risk of truncation.
+        emit_cpi!(NewFeedback {
             agent_asset: reputation.agent_asset,
             feedback_index,
             attestor,
@@ -176,6 +180,7 @@ pub struct InitReputation<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[event_cpi]
 #[derive(Accounts)]
 pub struct GiveFeedback<'info> {
     pub attestor: Signer<'info>,
