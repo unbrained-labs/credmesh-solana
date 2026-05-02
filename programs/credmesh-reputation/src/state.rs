@@ -6,6 +6,7 @@ pub const SCORE_DECIMALS: u8 = 18;
 pub const EMA_WINDOW: u64 = 50;
 
 #[account]
+#[derive(InitSpace)]
 pub struct AgentReputation {
     pub bump: u8,
     pub agent_asset: Pubkey,
@@ -14,10 +15,6 @@ pub struct AgentReputation {
     pub score_ema: u128,
     pub default_count: u32,
     pub last_event_slot: u64,
-}
-
-impl AgentReputation {
-    pub const SIZE: usize = 8 + 1 + 32 + 8 + 32 + 16 + 4 + 8 + 32;
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
