@@ -50,18 +50,9 @@ pub mod credmesh_reputation {
         // gate is purely the writer-authority equality check below.
         // v1.5 will move the per-period state to a dedicated ReputationConfig
         // PDA owned by credmesh-reputation. See V1_ACCEPTANCE.md.
-        let oracle_config_pda = credmesh_shared::cross_program::derive_pda(
-            &[credmesh_receivable_oracle::ORACLE_CONFIG_SEED],
-            &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
-        );
-        let oracle_config = credmesh_shared::cross_program::read_cross_program_account::<
-            credmesh_receivable_oracle::OracleConfig,
-        >(
-            &ctx.accounts.oracle_config.to_account_info(),
-            &credmesh_shared::program_ids::RECEIVABLE_ORACLE,
-            &oracle_config_pda,
-        )
-        .map_err(|_| ReputationError::MathOverflow)?;
+        // Issue #4: typed `Account` + `seeds::program` runs the four-step
+        // verify in the accounts struct; no handler-side manual read needed.
+        let oracle_config = &ctx.accounts.oracle_config;
 
         // (2) Always: append to digest + bump count + emit event.
         let attestor = ctx.accounts.attestor.key();
@@ -192,10 +183,16 @@ pub struct GiveFeedback<'info> {
         bump = reputation.bump
     )]
     pub reputation: Account<'info, AgentReputation>,
-    /// CHECK: OracleConfig PDA (owned by credmesh-receivable-oracle).
-    /// Handler re-derives [ORACLE_CONFIG_SEED] under RECEIVABLE_ORACLE program ID
-    /// and verifies the discriminator.
-    pub oracle_config: UncheckedAccount<'info>,
+    /// OracleConfig PDA owned by credmesh-receivable-oracle. Issue #4: typed
+    /// `Account` with `seeds::program` runs Anchor's owner+address+discriminator+
+    /// deserialize verify automatically. Read for the writer-authority gate
+    /// (`reputation_writer_authority` + `reputation_max_per_tx_score`).
+    #[account(
+        seeds = [credmesh_shared::seeds::ORACLE_CONFIG_SEED],
+        seeds::program = credmesh_receivable_oracle::ID,
+        bump,
+    )]
+    pub oracle_config: Account<'info, credmesh_receivable_oracle::OracleConfig>,
 }
 
 #[derive(Accounts)]
