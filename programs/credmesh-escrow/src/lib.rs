@@ -23,6 +23,8 @@ pub mod credmesh_escrow {
             CredmeshError::AdvanceExceedsCap
         );
         require!(params.timelock_seconds >= 0, CredmeshError::MathOverflow);
+        // Audit-MED #5: reject malformed fee curves at construction.
+        params.fee_curve.validate()?;
 
         let pool = &mut ctx.accounts.pool;
         pool.bump = ctx.bumps.pool;
@@ -591,6 +593,12 @@ pub mod credmesh_escrow {
     }
 
     pub fn propose_params(ctx: Context<ProposeParams>, params: PendingParams) -> Result<()> {
+        // Audit-MED #5: validate the proposed curve BEFORE staging it under
+        // timelock. Catching this at propose-time (rather than execute-time)
+        // gives governance the full timelock window to fix a bad submission
+        // and keeps execute_params a pure timelock check.
+        params.fee_curve.validate()?;
+
         let now = Clock::get()?.unix_timestamp;
         let pool = &mut ctx.accounts.pool;
         let mut params = params;
@@ -946,8 +954,12 @@ pub struct RequestAdvance<'info> {
     /// caller passes `None` (encoded as a missing account); a typed `Account`
     /// without `Option` would fail the discriminator check there. Anchor
     /// runs the four-step verify on `Some` only (issue #4).
+    /// Audit-MED #3 fix: the source_kind byte (`[0]` for Worker) is part of
+    /// the receivable PDA seed, so the address Anchor verifies here can only
+    /// resolve to a Worker-created receivable — an ed25519-attested receivable
+    /// (kind=1/2) lives at a different address and cannot pass this gate.
     #[account(
-        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, agent.key().as_ref(), receivable_id.as_ref()],
+        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, &[0u8], agent.key().as_ref(), receivable_id.as_ref()],
         seeds::program = credmesh_receivable_oracle::ID,
         bump,
     )]

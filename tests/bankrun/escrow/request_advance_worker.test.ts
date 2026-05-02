@@ -192,7 +192,7 @@ describe("credmesh-escrow / request_advance — PDA derivation (pure)", () => {
     expect(adv1.equals(adv2)).to.be.false;
   });
 
-  it("Receivable PDA (oracle): seeds = [RECEIVABLE_SEED, agent, source_id]", () => {
+  it("Receivable PDA (oracle): seeds = [RECEIVABLE_SEED, source_kind, agent, source_id] (Audit-MED #3 namespacing)", () => {
     const agent = Keypair.generate().publicKey;
     const sourceId = Buffer.alloc(32, 4);
     const [recv, bump] = receivablePda(agent, sourceId);

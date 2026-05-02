@@ -56,4 +56,6 @@ pub enum CredmeshError {
     WaterfallSumMismatch,
     #[msg("Late days exceed maximum cap")]
     LateDaysExceeded,
+    #[msg("FeeCurve violates ordering or BPS-bound invariants — see FeeCurve::validate")]
+    InvalidFeeCurve,
 }

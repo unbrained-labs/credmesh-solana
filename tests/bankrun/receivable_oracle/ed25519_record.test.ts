@@ -152,7 +152,7 @@ describe("credmesh-receivable-oracle / ed25519_record — invariants (pure)", ()
     expect(pda.equals(pdaOther)).to.be.false;
   });
 
-  it("Receivable PDA: seeds = [RECEIVABLE_SEED, agent, source_id]", () => {
+  it("Receivable PDA: seeds = [RECEIVABLE_SEED, source_kind, agent, source_id] (Audit-MED #3 namespacing)", () => {
     const agent = Keypair.generate().publicKey;
     const sourceId = Buffer.alloc(32, 0xc3);
     const [pda] = receivablePda(agent, sourceId);

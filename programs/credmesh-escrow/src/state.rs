@@ -48,6 +48,39 @@ pub struct FeeCurve {
     pub pool_loss_surcharge_bps: u16,
 }
 
+impl FeeCurve {
+    /// Audit-MED #5: enforce internal ordering and BPS bounds before any
+    /// curve is stored on a `Pool` (init_pool / propose_params). Without
+    /// this, governance could pre-stage a curve where `kink_rate > max_rate`
+    /// or `kink_bps > BPS_DENOMINATOR`. The fee math doesn't panic on
+    /// such inputs but produces nonsense rates (saturating intermediaries
+    /// hide the bug). Cheap to enforce up-front; costs nothing at runtime.
+    ///
+    /// Required invariants:
+    ///   - `utilization_kink_bps <= BPS_DENOMINATOR`
+    ///   - `base_rate_bps <= kink_rate_bps <= max_rate_bps`
+    ///   - `max_rate_bps <= BPS_DENOMINATOR`
+    pub fn validate(&self) -> Result<()> {
+        require!(
+            (self.utilization_kink_bps as u64) <= BPS_DENOMINATOR,
+            crate::errors::CredmeshError::InvalidFeeCurve
+        );
+        require!(
+            self.base_rate_bps <= self.kink_rate_bps,
+            crate::errors::CredmeshError::InvalidFeeCurve
+        );
+        require!(
+            self.kink_rate_bps <= self.max_rate_bps,
+            crate::errors::CredmeshError::InvalidFeeCurve
+        );
+        require!(
+            (self.max_rate_bps as u64) <= BPS_DENOMINATOR,
+            crate::errors::CredmeshError::InvalidFeeCurve
+        );
+        Ok(())
+    }
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
 pub struct PendingParams {
     pub fee_curve: FeeCurve,
