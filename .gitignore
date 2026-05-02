@@ -2,7 +2,18 @@ node_modules/
 .DS_Store
 .env
 .env.local
-target/
+# Ignore target/ contents but keep the dir traversable so deploy keypairs
+# below can be un-ignored. `target/` (with the trailing slash) would exclude
+# the directory itself, which makes any `!target/...` rule a no-op.
+target/*
+!target/deploy/
+target/deploy/*
+# Commit the devnet program keypairs so the program IDs in `declare_id!` and
+# `Anchor.toml` are reproducible across machines. `credmesh-shared` is a
+# library (never deployed) so its keypair stays out of git.
+!target/deploy/credmesh_escrow-keypair.json
+!target/deploy/credmesh_reputation-keypair.json
+!target/deploy/credmesh_receivable_oracle-keypair.json
 dist/
 .anchor/
 test-ledger/

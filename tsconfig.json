@@ -9,5 +9,5 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["mocha", "chai", "node"]
   },
-  "include": ["tests/**/*"]
+  "include": ["tests/**/*", "scripts/**/*"]
 }

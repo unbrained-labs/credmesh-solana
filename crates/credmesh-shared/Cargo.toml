@@ -1,0 +1,37 @@
+[package]
+name = "credmesh-shared"
+version = "0.1.0"
+description = "Shared seed constants and program IDs for the CredMesh Solana programs"
+edition = "2021"
+rust-version.workspace = true
+
+[lib]
+# `credmesh-shared` is a library consumed by the three deployable programs;
+# it is never deployed on its own and therefore must not produce a `cdylib`.
+# Keeping `cdylib` made `anchor build` traverse it as a program and try to
+# extract an IDL it does not have. See DEPLOYMENT.md §"Toolchain pins".
+crate-type = ["lib"]
+name = "credmesh_shared"
+
+[features]
+default = []
+no-entrypoint = []
+# Anchor 0.30 expects every workspace member that is referenced by an IDL
+# (directly or via re-export) to declare the `idl-build` feature so it can be
+# enabled transitively when `anchor build` extracts the IDL.
+idl-build = ["anchor-lang/idl-build"]
+
+[dependencies]
+anchor-lang = { workspace = true }
+# --- Toolchain-compatibility pins; not consumed by our code ---
+# Pin blake3 to a pre-1.6 release to keep the workspace on
+# `digest 0.10` / `crypto-common 0.1.x`. Newer blake3 (>=1.6) pulls
+# `digest 0.11` and `crypto-common 0.2.1`, whose Cargo manifest requires the
+# `edition2024` Cargo feature — not stabilized until Rust 1.85.
+blake3 = "=1.5.5"
+# Pin proc-macro2 to the version contemporaneous with anchor 0.30.1
+# (2024-06-21). Newer proc-macro2 (>=1.0.92) renamed `Span::source_file()`
+# to `local_file()`; anchor-syn 0.30.1 still calls the former during IDL
+# build, so the workspace will not compile against later proc-macro2.
+# Re-evaluate when bumping Anchor.
+proc-macro2 = "=1.0.86"
