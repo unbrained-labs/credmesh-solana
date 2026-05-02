@@ -450,3 +450,31 @@ This is by design. Do not add a pause.
 - Squads multisig provisioning (Squads UI; document the threshold + signers internally)
 - KYC/MSB compliance for the protocol entity (legal counsel)
 - Insurance fund treasury management (treasury team)
+
+## Devnet deploy log
+
+First devnet deploy executed 2026-05-02 via Track A's documented Docker recipe. Build = current main (post-#30 typed reads + post-#32 audit fixes + post-#34 event-cpi feature flag).
+
+| Program | Devnet program ID | Size | Authority | ProgramData address | Slot |
+|---|---|---|---|---|---|
+| credmesh_reputation | `JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G` | 248,136 B | `6kWsEUqzLNaJgKbkstJUtYFWq56E1ZyYDeQ25XjChm7X` (deployer) | `AgVESbPqPLj6cA1HVobeiLYDZSnsTfv9Xzmj9EDxDxBi` | 459658199 |
+| credmesh_receivable_oracle | `ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk` | 297,784 B | same | `GGT6vzAyPrkdRZMzSF4ixXBjdCm1EaUfdNZj8JEpyDUy` | 459658246 |
+| credmesh_escrow | (program ID `DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF` reserved; not yet deployed — pending wallet top-up) | 467,464 B | — | — | — |
+
+Verify: `solana program show <PROGRAM_ID> --url devnet`.
+
+### Deploy cost (actual)
+- reputation: 1.73 SOL
+- receivable_oracle: 2.08 SOL
+- escrow: ~3.26 SOL (estimated, not deployed)
+- TOTAL needed for full first-deploy: ~7.07 SOL
+
+Funded via faucet.solana.com (web faucet — `solana airdrop` rate-limits the public RPC pool tightly enough that programmatic airdrops cannot reliably acquire the >5 SOL needed in one burst).
+
+### Remaining steps before mainnet
+1. Deploy `credmesh_escrow` once wallet has ≥3.5 SOL (rent + buffer + tx fee margin).
+2. Run `npm run init:oracle` with real governance + worker-authority pubkeys.
+3. Run `npm run init:pool` with the asset_mint (devnet USDC `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`), governance, treasury_ata.
+4. Verify init events on Solana Explorer.
+5. Activate IDL flow (issue #15) so TS clients can construct typed instructions.
+6. Rotate program-deploy keypairs + transfer upgrade authority to a Squads vault before any mainnet move.
