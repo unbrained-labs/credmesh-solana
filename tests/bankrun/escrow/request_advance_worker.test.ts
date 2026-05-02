@@ -40,6 +40,7 @@ import {
   reputationPda,
   fundUsdc,
   TestContext,
+  ESCROW_PROGRAM_ID,
 } from "../setup";
 import { Keypair, PublicKey } from "@solana/web3.js";
 
@@ -146,8 +147,7 @@ function creditFromScoreEma(scoreEma: bigint): bigint {
 
 // -- PDA derivation: pure ------------------------------------------------
 describe("credmesh-escrow / request_advance — PDA derivation (pure)", () => {
-  // From setup.ts; duplicated here for harness-free derivation tests.
-  const ESCROW_PROGRAM_ID = new PublicKey("DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF");
+  // ESCROW_PROGRAM_ID imported from ../setup — single source of truth.
 
   it("Advance PDA: seeds = [ADVANCE_SEED, pool, agent, receivable_id] (AUDIT AM-1)", () => {
     const usdc = Keypair.generate().publicKey;
