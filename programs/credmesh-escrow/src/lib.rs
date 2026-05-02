@@ -23,6 +23,8 @@ pub mod credmesh_escrow {
             CredmeshError::AdvanceExceedsCap
         );
         require!(params.timelock_seconds >= 0, CredmeshError::MathOverflow);
+        // Audit-MED #5: reject malformed fee curves at construction.
+        params.fee_curve.validate()?;
 
         let pool = &mut ctx.accounts.pool;
         pool.bump = ctx.bumps.pool;
@@ -591,6 +593,12 @@ pub mod credmesh_escrow {
     }
 
     pub fn propose_params(ctx: Context<ProposeParams>, params: PendingParams) -> Result<()> {
+        // Audit-MED #5: validate the proposed curve BEFORE staging it under
+        // timelock. Catching this at propose-time (rather than execute-time)
+        // gives governance the full timelock window to fix a bad submission
+        // and keeps execute_params a pure timelock check.
+        params.fee_curve.validate()?;
+
         let now = Clock::get()?.unix_timestamp;
         let pool = &mut ctx.accounts.pool;
         let mut params = params;
