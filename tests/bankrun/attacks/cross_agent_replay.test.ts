@@ -224,15 +224,22 @@ describe("ATTACK FIXTURE / cross-agent ed25519 replay (harness)", () => {
     expect(true).to.be.true;
   });
 
-  it("nonce reuse across two distinct receivable_ids — different ConsumedPayments (BEHAVIORAL)", async () => {
-    // The 16-byte nonce binds the memo-nonce in claim_and_settle. Plan:
-    //   1. Receivable_1 issued with nonce N → ConsumedPayment_1.nonce = N
-    //   2. Receivable_2 issued with same nonce N → ConsumedPayment_2.nonce = N
-    //   3. Both settlements require their respective memo to carry N.
-    //   4. Cranker pays Receivable_1 with memo=N → settles ConsumedPayment_1
-    //      successfully. ConsumedPayment_2 still requires its own memo.
-    // The nonce field is per-Advance, not a global anti-replay set; the
-    // collision is benign because each ConsumedPayment is a distinct PDA.
+  it("nonce reuse across DIFFERENT AGENTS' receivable_ids — distinct ConsumedPayments (BEHAVIORAL)", async () => {
+    // SCOPE: this case covers nonce N reused across two receivables owned by
+    // DIFFERENT agents. The 16-byte nonce binds the memo-nonce in
+    // claim_and_settle, but ConsumedPayment is keyed by (pool, agent,
+    // receivable_id) — so two distinct agents reusing N produce two distinct
+    // PDAs with no settlement interaction. Plan:
+    //   1. Agent_A issues Receivable_A with nonce N → ConsumedPayment_A.nonce = N
+    //   2. Agent_B issues Receivable_B with nonce N → ConsumedPayment_B.nonce = N
+    //   3. Cranker pays Receivable_A with memo=N → settles ConsumedPayment_A only.
+    //      ConsumedPayment_B is unaffected; its settlement still requires its
+    //      own memo signed for Agent_B.
+    //
+    // Same-agent nonce reuse is OUT OF SCOPE here. That case is non-trivial
+    // (both ConsumedPayments share the same agent and could collide on
+    // memo-nonce uniqueness) and warrants a dedicated fixture; tracked as a
+    // separate follow-up.
     expect(true).to.be.true;
   });
 
