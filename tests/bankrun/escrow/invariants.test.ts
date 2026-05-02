@@ -259,7 +259,7 @@ describe("invariants / share-price monotonicity (property)", () => {
   });
 
   it("mixed sequence (deposit + withdraw + yield) is non-decreasing (300 seqs × ≤30 ops)", () => {
-    const rng = mulberry32(0xBADC0FFEE0DDF00Dn & 0xFFFFFFFFn ? 0xBADC0FFE : 0); // any 32-bit seed
+    const rng = mulberry32(0xBADC0FFE);
     for (let seq = 0; seq < 300; seq++) {
       let totalAssets = 0n;
       let totalShares = 0n;
