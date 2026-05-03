@@ -27,3 +27,6 @@ test-ledger/
 # committed to docs/sessions/ as point-in-time snapshots if they're worth
 # keeping)
 ORCHESTRATOR_LOG.md
+
+# Local-only key reference (NEVER commit; document of where keys live on this dev machine)
+KEYS.md
