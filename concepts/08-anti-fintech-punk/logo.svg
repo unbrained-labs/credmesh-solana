@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="CredMesh — anti-fintech-punk logomark">
+  <title>CredMesh</title>
+  <desc>Five tally marks — four sharpie verticals and a riso-red diagonal slash — over a graph-paper grid, with a stenciled CREDMESH wordmark beneath. Hand-drawn, never cleaned up.</desc>
+
+  <defs>
+    <!-- photocopy grit -->
+    <filter id="grit" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7"/>
+      <feColorMatrix values="0 0 0 0 0
+                             0 0 0 0 0
+                             0 0 0 0 0
+                             0 0 0 0.55 0"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+    <!-- subtle ink-bleed jitter -->
+    <filter id="jitter" x="-2%" y="-2%" width="104%" height="104%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3"/>
+      <feDisplacementMap in="SourceGraphic" scale="1.4"/>
+    </filter>
+
+    <!-- graph paper -->
+    <pattern id="graph" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#D9281E" stroke-width="0.35" opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <!-- paper -->
+  <rect width="200" height="200" fill="#F2EEE5"/>
+  <rect width="200" height="200" fill="url(#graph)"/>
+
+  <!-- torn-edge / fold shadow at top -->
+  <path d="M 0 6 L 18 4 L 36 8 L 58 5 L 82 9 L 110 4 L 138 8 L 168 5 L 200 9 L 200 0 L 0 0 Z"
+        fill="#0A0A08" opacity="0.08"/>
+
+  <!-- tally marks: four sharpie verticals -->
+  <g filter="url(#jitter)" stroke="#0A0A08" stroke-linecap="square" fill="none">
+    <line x1="44"  y1="46" x2="46"  y2="138" stroke-width="11"/>
+    <line x1="74"  y1="44" x2="73"  y2="140" stroke-width="11"/>
+    <line x1="104" y1="46" x2="106" y2="139" stroke-width="11"/>
+    <line x1="134" y1="45" x2="133" y2="138" stroke-width="11"/>
+  </g>
+
+  <!-- riso-red diagonal slash (the fifth) -->
+  <line x1="32" y1="135" x2="150" y2="48" stroke="#D9281E" stroke-width="9" stroke-linecap="square" filter="url(#jitter)"/>
+
+  <!-- ink overspill dots -->
+  <g fill="#0A0A08" filter="url(#grit)">
+    <circle cx="46" cy="142" r="2.5"/>
+    <circle cx="76" cy="42"  r="1.6"/>
+    <circle cx="138" cy="141" r="2"/>
+    <circle cx="22" cy="120" r="1.2"/>
+  </g>
+
+  <!-- stenciled wordmark -->
+  <g font-family="'Bungee Inline','Bungee','Arial Black',sans-serif"
+     font-weight="900" letter-spacing="2" fill="#0A0A08">
+    <text x="100" y="172" font-size="22" text-anchor="middle" filter="url(#jitter)">CREDMESH</text>
+  </g>
+
+  <!-- pay-no-more-than footer banner -->
+  <g font-family="'Special Elite','Courier New',monospace" font-size="6.2" fill="#0A0A08">
+    <text x="100" y="188" text-anchor="middle" letter-spacing="1.4">// PAY NO MORE THAN THE TRUTH //</text>
+  </g>
+
+  <!-- top-right "received" stamp, slightly skewed -->
+  <g transform="translate(160 30) rotate(-9)" stroke="#D9281E" fill="none" stroke-width="1.2">
+    <rect x="-14" y="-7" width="28" height="14" rx="1"/>
+    <text x="0" y="3" font-family="'Special Elite','Courier New',monospace"
+          font-size="5.2" fill="#D9281E" text-anchor="middle" letter-spacing="0.6">REC&apos;D</text>
+  </g>
+
+  <!-- global photocopy noise pass -->
+  <rect width="200" height="200" fill="#0A0A08" opacity="0.06" filter="url(#grit)"/>
+</svg>
