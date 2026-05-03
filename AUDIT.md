@@ -214,3 +214,40 @@ Before any handler body is written:
 9. **Pin Squads v4 + MPL Agent Registry verified-build commits** in `Anchor.toml`-adjacent README.
 
 Once 1–9 are answered, handler bodies can be written safely.
+
+---
+
+## Post-EPIC #9 audit pass (2026-04-29 → 2026-05-03)
+
+After the EPIC #9 multi-track engineering work landed, a 5-pass audit was run on the merged main:
+
+| Lens | Auditor | Verdict |
+|---|---|---|
+| AUDIT-invariants on full merged tree (P0/P1/P2 + AM-1..7) | Claude code-reviewer | SECURE |
+| Reputation handler correctness (post-#11/#12/#28/#30) | Claude code-reviewer | PASS |
+| Cross-program correctness self-audit on PR #30 | Claude code-reviewer | SHIP |
+| Test coverage gap analysis vs AUDIT findings | Claude code-reviewer | scaffolds shipped; behavioral activation pending IDL fix #15 |
+| Adversarial bug-hunt (independent model) | Kimi K2 via forge | 2 HIGH + 5 MED + 2 LOW raised |
+
+### Findings from the independent-model pass
+
+**Verified false positives (after source verification):**
+- *HIGH #1*: `skim_protocol_fees doesn't decrement pool.total_assets`. Misread of dual-ledger design — `total_assets` and `accrued_protocol_fees` are intentionally separate (claim_and_settle line 522-528). The actual invariant is `deployed_amount ≤ total_assets`, not `vault + deployed >= total_assets`. Skim correctly only decrements `accrued_protocol_fees`.
+- *HIGH #2*: `liquidate cascading from #1`. Cascade from a non-bug; `total_assets >= deployed_amount` is invariant-enforced, and any outstanding principal is part of `deployed_amount`.
+
+**Verified real findings — all FIXED in PR #32:**
+- *MED #3*: `worker_update_receivable` and `ed25519_record_receivable` both used `init_if_needed` on identical seeds `[RECEIVABLE_SEED, agent, source_id]`, allowing one path to overwrite the other's data. **Status: FIXED.** Receivable PDAs now namespaced by `source_kind` (`[RECEIVABLE_SEED, source_kind_byte, agent, source_id]`). Worker hardcodes `&[0u8]`; ed25519 uses `&[allowed_signer.kind]` (1 = exchange, 2 = x402) — `kind` sourced from the on-chain `AllowedSigner`, not the ix arg.
+- *MED #4*: `require_memo_nonce` looped over all tx instructions unboundedly — DoS vector once `claim_and_settle` becomes permissionless in v1.5. **Status: FIXED.** Capped at `MAX_IX_SCAN = 64` (above Solana's practical tx-size ix-count limit).
+- *MED #5*: `init_pool` and `propose_params` accepted any `FeeCurve` without validating internal invariants. Governance footgun. **Status: FIXED.** New `FeeCurve::validate()` helper enforces `utilization_kink_bps ≤ BPS_DENOMINATOR`, `base_rate_bps ≤ kink_rate_bps ≤ max_rate_bps ≤ BPS_DENOMINATOR`. New `CredmeshError::InvalidFeeCurve` variant (appended; existing discriminants preserved). Called from both `init_pool` and `propose_params`.
+
+**Compile-discovered finding — FIXED in PR #34:**
+- `#[event_cpi]` and `emit_cpi!` (introduced by PR #11) are gated behind `anchor-lang`'s `event-cpi` Cargo feature. None of the 5 audit passes caught this because all reviewed source-only. The first `anchor build --no-idl` for the devnet deploy surfaced it. **Status: FIXED.** Workspace `Cargo.toml` adds `event-cpi` to `anchor-lang` features.
+
+### Lessons from this audit cycle
+
+1. **Source-only review has systematic blind spots.** Compile is the missing test. Future audits should include a `cargo check --workspace` or `anchor build` step.
+2. **Independent-model audits catch what same-family audits miss.** Kimi K2's 3 real MED findings were missed by all 4 Claude reviewers. The cost: 1 HIGH false-positive that needed verification.
+3. **Verification before patching is non-negotiable.** Both Kimi HIGHs would have led to wasted patch effort if accepted at face value. Source-trace each finding one to two hops before acting.
+4. **Re-audit the patch.** PR #32's audit-driven fixes themselves got a dual re-audit (Claude code-reviewer + Kimi K2 on the diff). Both verdicts: SAFE TO MERGE, no regressions introduced.
+
+The methodology pattern (parallel same-family audits + 1 independent-model audit + mandatory source verification) is documented as the `cross-model-code-audit` skill in `~/.claude/skills/`.
