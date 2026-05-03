@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  background: var(--color-zinc-950);
+  color: var(--color-zinc-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+}
+
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* Wallet adapter overrides — align with zinc/indigo */
+.wallet-adapter-button {
+  background: var(--color-indigo-500) !important;
+  color: white !important;
+  border-radius: 0.5rem !important;
+  height: 2.25rem !important;
+  font-size: 0.875rem !important;
+  font-family: var(--font-sans) !important;
+  font-weight: 500 !important;
+  padding: 0 0.875rem !important;
+}
+.wallet-adapter-button:hover { background: var(--color-indigo-400) !important; }
+.wallet-adapter-button-trigger { background: var(--color-indigo-500) !important; }
+.wallet-adapter-modal-wrapper { background: var(--color-zinc-900) !important; color: var(--color-zinc-100) !important; }
+.wallet-adapter-modal-title { color: var(--color-zinc-100) !important; }
+.wallet-adapter-modal-list .wallet-adapter-button { background: var(--color-zinc-800) !important; }
