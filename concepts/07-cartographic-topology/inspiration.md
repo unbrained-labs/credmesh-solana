@@ -2,6 +2,8 @@
 
 References I actually drew on. Each note records what was lifted, not just admired.
 
+(A canonical render of `dashboard-frame.html` lives at `inspiration/preview-dashboard.png` for offline review.)
+
 ## Cartographic primary sources
 
 1. **USGS 7.5′ 1:24,000-scale historical quadrangle (Mt. McHenry's Peak, CO 1957/1992 — USGS sample)**
