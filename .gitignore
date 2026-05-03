@@ -30,3 +30,6 @@ ORCHESTRATOR_LOG.md
 
 # Local-only key reference (NEVER commit; document of where keys live on this dev machine)
 KEYS.md
+
+# Branding work — local WIP, not merge-ready. Excluded until it's finalized.
+branding/
