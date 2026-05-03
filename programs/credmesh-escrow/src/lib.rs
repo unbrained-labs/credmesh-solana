@@ -1,5 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
+// Issue #15: bring `AssociatedToken` into module scope so the IDL-extraction
+// build (`cargo test --features idl-build`) resolves the type. Anchor 0.30's
+// `Program<'info, T>` generic does not see `anchor_spl::associated_token` via
+// the fully-qualified path under that profile even with `anchor-spl/associated_token`
+// active on the `idl-build` feature group.
+use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, Transfer};
 
 pub mod errors;
@@ -1008,7 +1014,7 @@ pub struct RequestAdvance<'info> {
     #[account(address = sysvar_instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, anchor_spl::associated_token::AssociatedToken>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 
