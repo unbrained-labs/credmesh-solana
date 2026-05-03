@@ -40,15 +40,22 @@ cd ts/server && npm install && npm run dev   # http://localhost:3000
 ### Workspace layout
 
 ```
+crates/
+└── credmesh-shared/                 seeds, program IDs, helpers (mpl_identity,
+                                     cross_program, ix_introspection, ed25519_message).
+                                     Library only — never deployed.
 programs/
-├── credmesh-shared/                 seeds, program IDs, helpers (mpl_identity,
-│                                    cross_program, ix_introspection)
 ├── credmesh-escrow/                 Pool vault + share-mint + advance + waterfall
 ├── credmesh-reputation/             8004-shape rolling-digest reputation
 └── credmesh-receivable-oracle/      worker + ed25519 payer-signed receivables
 ts/server/                           Hono backend (SIWS auth, tx-builder, webhook ingress)
+scripts/                             deploy.ts + init_oracle.ts + init_pool.ts
 tests/bankrun/                       anchor-bankrun unit/integration + AUDIT-finding fixtures
+docs/                                ARCHITECTURE.md + LOGIC_FLOW.md (Mermaid diagrams)
 ```
+
+NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses every
+`programs/*` looking for `#[program]` modules; a library would error there.
 
 ### External programs CredMesh **uses** but does not deploy
 
