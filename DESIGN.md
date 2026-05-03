@@ -144,26 +144,26 @@ Burns `shares` from LP, transfers `assets_returned` USDC out, decrements `total_
 Accounts:
 - `agent` (signer) — agent's authority (Squads vault member or directly)
 - `agent_asset` — Solana Agent Registry asset pubkey (read-only, validated)
-- `agent_reputation_pda` — owned by `credmesh-reputation`, read via re-derive
-- `receivable_pda` — owned by `credmesh-receivable-oracle`, read via re-derive
+- `agent_reputation_pda` — typed `Account<'info, credmesh_reputation::AgentReputation>` with `seeds::program = credmesh_reputation::ID`. Anchor 0.30 runs the four-step verify (owner / address / discriminator / typed deserialize) declaratively (PR #30).
+- `receivable_pda` — typed `Option<Account<'info, credmesh_receivable_oracle::Receivable>>` with `seeds::program = credmesh_receivable_oracle::ID`. Resolves to `Some` iff `source_kind = Worker`; `None` for ed25519/x402 paths (which read the receivable from the signed message via instruction introspection instead).
 - `pool` (mut)
-- `advance_pda` (mut, init)
-- `consumed_pda` (mut, init) — replay protection; `init` semantics fail if exists
+- `advance_pda` (mut, init) — seeds `[ADVANCE, pool, agent, receivable_id]`
+- `consumed_pda` (mut, init) — replay protection; `init` (NOT `init_if_needed`) fails if exists. Seeds `[CONSUMED, pool, agent, receivable_id]` (post-#14: agent in seeds, AUDIT issue #8).
 - `pool_usdc_vault` (mut)
 - `agent_usdc_ata` (mut, init_if_needed)
 - `usdc_mint`
-- `token_program`, `system_program`, `rent`
+- `token_program`, `associated_token_program`, `system_program`, `rent`
 
 Optional:
-- `instructions_sysvar` — required if `source_kind = 1` (ed25519 verify pre-instruction)
+- `instructions_sysvar` — required if `source_kind ∈ {Ed25519, X402}` (verify-prev ed25519 introspection)
 
 Logic:
-1. **Replay**: `consumed_pda` init succeeds iff this `receivable_id` has never been used.
+1. **Replay**: `consumed_pda` init succeeds iff this `(pool, agent, receivable_id)` tuple has never been used.
 2. **Receivable verification** by `source_kind`:
-   - `0` (worker): re-derive `receivable_pda`, deserialize, check `last_updated_slot` recency.
-   - `1` (ed25519): instruction-introspection on previous instruction; verify it called the ed25519 program with `(source_signer pubkey, expected message: receivable_id || agent || amount || expiry, signature)`.
-   - `2` (x402): same as `1` but `source_signer` must be in the Pool's allowlist (CredMesh-curated facilitators).
-3. **Credit check**: re-derive `agent_reputation_pda`. Read `score_ema` (u64 with `score_decimals`). Apply `Pool.fee_curve` tier curve to compute `max_credit`.
+   - `Worker (0)`: typed `receivable_pda` resolves to `Some`. The seed shape is `[RECEIVABLE_SEED, &[0u8], agent, source_id]` (post-#32 source_kind namespace). Staleness check: `slot - receivable.last_updated_slot ≤ MAX_STALENESS_SLOTS`.
+   - `Ed25519 (1)`: ix-introspection on previous instruction; verify it called the ed25519 program with the canonical 96-byte `SignedReceivable` message (`receivable_id || agent || amount || expires_at || nonce`). Asymmetric.re/Relay-class index check enforced via `verify_prev_ed25519` in `crates/credmesh-shared::ix_introspection`.
+   - `X402 (2)`: same as Ed25519 but `source_signer` must match an `AllowedSigner` PDA on the oracle program with `kind = 2`.
+3. **Credit check**: typed read of `agent_reputation_pda.score_ema` (u128) and `default_count` (no manual deserialize). Apply `Pool.fee_curve` tier curve via `credit_from_score_ema()` to compute `max_credit`.
 4. **Cap check**: `amount <= min(receivable_amount * max_advance_pct_bps / 10000, max_advance_abs, max_credit)`.
 5. **Fee compute**: `fee_owed = price(amount, utilization_after, duration, risk)` — `pricing.ts` math, ported.
 6. **Settle math**: `Pool.deployed_amount += principal`. Init `Advance` PDA. Transfer `principal` USDC from `pool_usdc_vault` to `agent_usdc_ata`.
@@ -340,7 +340,11 @@ pub struct AllowedSigner {             // for x402 facilitators / known exchange
 - `ed25519_record_receivable(agent, source_id, amount, expires_at)` — caller passes, ed25519 verify in prior instruction; oracle just persists
 - `add_allowed_signer(signer, kind, caps)` / `remove_allowed_signer` — governance only
 
-The escrow's `request_advance` may bypass this program for `source_kind=1` and verify the ed25519 directly without reading a Receivable PDA — that's the cleanest path for x402. The PDA storage is for `source_kind=0` (worker) so the receivable is durable for staleness checks.
+The escrow's `request_advance` bypasses the Receivable PDA for `source_kind ∈ {Ed25519, X402}` and verifies the ed25519 message directly via instruction introspection — that's the cleanest path for x402 facilitators and exchange-signed receivables. The PDA storage is for `source_kind = Worker` so the receivable is durable for staleness checks.
+
+**PDA namespace (post-#32):** Receivable PDAs are seeded as `[RECEIVABLE_SEED, &[source_kind_byte], agent, source_id]`. The Worker writer hardcodes `&[0u8]`; ed25519 writers use `&[allowed_signer.kind]` (1 = exchange, 2 = x402). This eliminates cross-path overwrite (a compromised allowed_signer cannot clobber a worker-attested receivable, and vice versa).
+
+**Reinitialization semantics:** both writer paths use `init_if_needed` so legitimate refreshes (worker re-attests a higher amount, or an exchange re-attests after correction) are allowed. Authority is bounded by per-signer caps (`worker_max_per_period`, `AllowedSigner.max_per_period`).
 
 ## 6. Off-chain server changes
 
