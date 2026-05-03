@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440, initial-scale=1" />
+  <title>CREDMESH — SHEET 02 / AGENT OBSERVATORY</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    body {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+    }
+
+    main.sheet {
+      position: relative;
+      width: 1440px;
+      min-height: 1180px;
+      background: var(--paper);
+      box-shadow: var(--shadow-sheet);
+      background-image:
+        radial-gradient(1200px 700px at 80% -10%, rgba(27,58,111,0.05), transparent 60%),
+        var(--grain-grid);
+      padding: 0 0 36px 0;
+    }
+    .frame { position: absolute; inset: 18px; border: 0.5px solid var(--ink-faint); pointer-events: none; }
+    .frame-inner { position: absolute; inset: 22px; border: 0.5px solid var(--ink-ghost); pointer-events: none; }
+
+    .reg { position: absolute; width: 14px; height: 14px; pointer-events: none; }
+    .reg::before, .reg::after { content: ''; position: absolute; background: var(--ink-soft); }
+    .reg::before { left: 6px; top: 0; bottom: 0; width: 1px; }
+    .reg::after  { top: 6px; left: 0; right: 0; height: 1px; }
+    .reg.tl { top: 8px; left: 8px; }
+    .reg.tr { top: 8px; right: 8px; }
+    .reg.bl { bottom: 8px; left: 8px; }
+    .reg.br { bottom: 8px; right: 8px; }
+
+    /* HEADER */
+    .header {
+      margin: 36px 36px 0;
+      height: 56px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 0.5px solid var(--ink);
+      padding-bottom: 12px;
+    }
+    .header .left, .header .right { display: flex; gap: 28px; align-items: baseline; }
+    .header .meta .k { font-size: var(--t-micro); letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-soft); }
+    .header .meta .v { font-family: var(--face-mono); font-size: var(--t-fine); color: var(--ink); letter-spacing: 0.04em; }
+    .header .title { font-size: var(--t-lg); letter-spacing: 0.4em; font-weight: 500; text-transform: uppercase; color: var(--ink); }
+    .header .subtitle { font-size: var(--t-mini); letter-spacing: 0.45em; color: var(--ink-soft); text-transform: uppercase; margin-left: 14px; }
+
+    /* IDENTITY STRIP — SECTION α */
+    .id-strip {
+      margin: 22px 36px 0;
+      border: 0.6px solid var(--ink);
+      background: var(--paper-warm);
+      display: grid;
+      grid-template-columns: auto 1fr 1fr 1fr auto;
+      align-items: stretch;
+      position: relative;
+    }
+    .id-strip > .corner-mark {
+      position: absolute;
+      width: 8px; height: 8px;
+    }
+    .id-strip > .corner-mark::before, .id-strip > .corner-mark::after { content: ''; position: absolute; background: var(--ink-soft); }
+    .id-strip > .corner-mark::before { left: 4px; top: 0; bottom: 0; width: 0.5px; }
+    .id-strip > .corner-mark::after  { top: 4px; left: 0; right: 0; height: 0.5px; }
+    .id-strip .corner-mark.tl { top: -4px; left: -4px; }
+    .id-strip .corner-mark.tr { top: -4px; right: -4px; }
+    .id-strip .corner-mark.bl { bottom: -4px; left: -4px; }
+    .id-strip .corner-mark.br { bottom: -4px; right: -4px; }
+
+    .id-strip .alpha-mark {
+      width: 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 0.6px solid var(--ink);
+      padding: 14px 6px;
+      gap: 6px;
+      background: var(--paper);
+    }
+    .id-strip .alpha-mark .glyph {
+      font-family: var(--face-mono);
+      font-size: 28px;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .id-strip .alpha-mark .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    .id-strip .id-cell {
+      padding: 14px 22px;
+      border-right: 0.6px solid var(--ink-faint);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .id-strip .id-cell:last-child { border-right: none; }
+    .id-strip .id-cell .role {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .id-strip .id-cell .pk-line {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
+    .id-strip .id-cell .pk-line .full {
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+      display: block;
+      margin-top: 2px;
+    }
+    .id-strip .id-cell .secondary {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    .id-strip .stamp-block {
+      padding: 14px 22px 14px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-end;
+      justify-content: center;
+      background: var(--paper);
+    }
+
+    /* TWO-COLUMN BODY: vitals (380px left) + reputation chart (1fr right) */
+    .vitals-row {
+      margin: 24px 36px 0;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+    .vitals {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+    }
+    .vitals .v-cell {
+      padding: 14px 16px 14px;
+      border-right: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+      position: relative;
+    }
+    .vitals .v-cell:nth-child(2n) { border-right: none; }
+    .vitals .v-cell:nth-last-child(-n+2) { border-bottom: none; }
+    .vitals .v-cell .lbl-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .vitals .v-cell .lbl-row::after {
+      content: '';
+      flex: 1;
+      height: 0.5px;
+      background: var(--ink-faint);
+    }
+    .vitals .v-cell .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .vitals .v-cell .v {
+      font-family: var(--face-mono);
+      font-weight: 300;
+      font-size: 22px;
+      letter-spacing: -0.005em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .vitals .v-cell .v .unit {
+      font-family: var(--face-sans);
+      font-size: 11px;
+      letter-spacing: 0.32em;
+      color: var(--ink-soft);
+      vertical-align: 0.5em;
+      margin-left: 5px;
+    }
+    .vitals .v-cell .v.digest {
+      font-size: 14px;
+      letter-spacing: 0.04em;
+    }
+    .vitals .v-cell .sub {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      margin-top: 6px;
+    }
+
+    /* reputation timeline panel */
+    .rep-chart {
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+      padding: 14px 18px 14px;
+      position: relative;
+    }
+    .rep-chart .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .rep-chart .head .t { display: flex; gap: 10px; align-items: center; }
+    .rep-chart .head .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .rep-chart .head .scale {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .rep-chart svg { display: block; width: 100%; height: 188px; }
+    .rep-chart .digest-row {
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .rep-chart .digest-row .now {
+      color: var(--ink);
+      font-size: var(--t-fine);
+    }
+
+    /* HEALTH PANEL — strip below vitals */
+    .health-row {
+      margin: 20px 36px 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+    }
+    .health-row .h-cell {
+      padding: 12px 16px 14px;
+      border-right: 0.5px solid var(--ink-faint);
+      position: relative;
+    }
+    .health-row .h-cell:last-child { border-right: none; }
+    .health-row .h-cell .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .health-row .h-cell .v {
+      font-family: var(--face-mono);
+      font-size: 18px;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+    .health-row .h-cell .v .unit {
+      font-family: var(--face-sans);
+      font-size: 10px;
+      letter-spacing: 0.32em;
+      color: var(--ink-soft);
+      vertical-align: 0.4em;
+      margin-left: 4px;
+    }
+    .health-row .h-cell .stamp-row { margin-top: 8px; }
+    .health-row .h-cell.warn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--hatch-amber);
+      opacity: 0.10;
+      pointer-events: none;
+    }
+    .health-row .h-cell.warn > * { position: relative; z-index: 1; }
+
+    /* SCHEDULE BLOCK shared */
+    .schedule {
+      margin: 24px 36px 0;
+      padding-top: 30px;
+      position: relative;
+    }
+    .schedule .sched-head {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .schedule .sched-head .l { display: flex; gap: 10px; align-items: center; }
+    .schedule .sched-head .title {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .schedule .sched-head .tag {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+
+    .schedule table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    .schedule thead th {
+      font-family: var(--face-sans);
+      font-weight: 400;
+      font-size: var(--t-micro);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      text-align: left;
+      padding: 6px 8px 6px 0;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .schedule tbody td {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      padding: 7px 8px 7px 0;
+      letter-spacing: 0.02em;
+      border-bottom: 0.5px solid var(--ink-ghost);
+      vertical-align: middle;
+    }
+    .schedule tbody tr:last-child td { border-bottom: 0.5px solid var(--ink-faint); }
+    .schedule .right { text-align: right; padding-right: 0; }
+    .schedule .stamp {
+      font-family: var(--face-sans);
+      font-size: 8.5px;
+      font-weight: 500;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border: 0.6px solid var(--ink);
+      color: var(--ink);
+      background: var(--paper);
+      white-space: nowrap;
+      display: inline-block;
+    }
+    .schedule .stamp.amber { color: var(--amber); border-color: var(--amber); }
+    .schedule .stamp.danger { color: var(--stamp); border-color: var(--stamp); }
+    .schedule .stamp.dim { color: var(--ink-soft); border-color: var(--ink-faint); }
+    .schedule .stamp.invert { background: var(--ink); color: var(--paper); }
+
+    /* TWO-COL: advances (left, wider) + receivable inflow (right, narrower) */
+    .twocol-schedules {
+      margin: 24px 36px 0;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 28px;
+    }
+    .twocol-schedules .schedule { margin: 0; }
+
+    /* ACTION FOOTER — three actions, one destructive */
+    .actions-row {
+      margin: 28px 36px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr;
+      gap: 16px;
+    }
+    .action-card {
+      border: 0.6px solid var(--ink);
+      background: var(--paper);
+      padding: 16px 18px 16px;
+      position: relative;
+    }
+    .action-card .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .action-card .head .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .action-card .head .ref {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .action-card .body {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      letter-spacing: 0.02em;
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+    .action-card button {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      font-weight: 500;
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      padding: 9px 18px;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .action-card.primary button {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .action-card.danger {
+      border: 1.5px solid var(--stamp);
+      position: relative;
+    }
+    .action-card.danger::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--hatch-stamp);
+      opacity: 0.10;
+      pointer-events: none;
+    }
+    .action-card.danger > * { position: relative; z-index: 1; }
+    .action-card.danger .head .label { color: var(--stamp); }
+    .action-card.danger .head .ref {
+      color: var(--stamp);
+      border: 0.5px solid var(--stamp);
+      padding: 2px 6px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+    }
+    .action-card.danger button {
+      border: 1.5px solid var(--stamp);
+      color: var(--stamp);
+      font-weight: 600;
+    }
+    .action-card.danger .check-rubric {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 16px;
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-deep);
+      margin-bottom: 14px;
+      padding-top: 10px;
+      border-top: 0.5px solid var(--stamp);
+    }
+    .action-card.danger .check-rubric .item {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .action-card.danger .check-rubric .box {
+      width: 10px; height: 10px; border: 1px solid var(--stamp); display: inline-block; flex-shrink: 0;
+    }
+    .action-card.danger .check-rubric .box.checked {
+      background: var(--hatch-stamp);
+    }
+
+    /* FOOTER — title block + scale bar + north arrow */
+    .footer {
+      margin: 32px 36px 0;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 32px;
+      align-items: end;
+    }
+    .titleblock {
+      width: 460px;
+      border: 0.6px solid var(--ink);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--paper);
+    }
+    .titleblock .cell {
+      padding: 6px 12px 8px;
+      border-right: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .titleblock .cell:nth-child(2n) { border-right: none; }
+    .titleblock .cell:nth-last-child(-n+2) { border-bottom: none; }
+    .titleblock .cell .k { font-size: var(--t-micro); letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-soft); }
+    .titleblock .cell .v { font-family: var(--face-mono); font-size: var(--t-fine); color: var(--ink); letter-spacing: 0.04em; }
+    .titleblock .full {
+      grid-column: 1 / -1; border-right: none; padding: 7px 12px 9px;
+    }
+    .titleblock .full .v {
+      font-family: var(--face-sans); font-size: var(--t-md);
+      letter-spacing: 0.36em; font-weight: 500; text-transform: uppercase;
+    }
+    .marginalia {
+      flex: 1;
+      max-width: 360px;
+      padding: 0 24px;
+    }
+    .marginalia .note {
+      font-family: var(--face-hand);
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .marginalia .note .strike { text-decoration: line-through; color: var(--ink-soft); }
+
+    .compass {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .compass svg { width: 48px; height: 48px; }
+    .compass .compass-label {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      line-height: 1.4;
+    }
+    .compass .compass-label b { color: var(--ink); font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<main class="sheet">
+  <div class="frame"></div>
+  <div class="frame-inner"></div>
+
+  <span class="reg tl"></span>
+  <span class="reg tr"></span>
+  <span class="reg bl"></span>
+  <span class="reg br"></span>
+
+  <header class="header">
+    <div class="left">
+      <div class="meta"><div class="k">Project</div><div class="v">CREDMESH / SOLANA</div></div>
+      <div class="meta"><div class="k">Cluster</div><div class="v">MAINNET-BETA</div></div>
+      <div class="meta"><div class="k">Sheet</div><div class="v">02 OF 12</div></div>
+    </div>
+    <div style="display: flex; align-items: baseline;">
+      <span class="title">AGENT OBSERVATORY</span>
+      <span class="subtitle">— SECTION B‑B · SUBJECT</span>
+    </div>
+    <div class="right">
+      <div class="meta"><div class="k">Drawn by</div><div class="v">PROTOCOL</div></div>
+      <div class="meta"><div class="k">Checked</div><div class="v">ORACLE</div></div>
+      <div class="meta"><div class="k">Rev.</div><div class="v">D / 2026‑05‑03</div></div>
+    </div>
+  </header>
+
+  <!-- IDENTITY STRIP α -->
+  <section class="id-strip">
+    <span class="corner-mark tl"></span>
+    <span class="corner-mark tr"></span>
+    <span class="corner-mark bl"></span>
+    <span class="corner-mark br"></span>
+
+    <div class="alpha-mark">
+      <span class="glyph">α</span>
+      <span class="label">Subject</span>
+    </div>
+
+    <div class="id-cell">
+      <span class="role">Squads vault · agent</span>
+      <span class="pk-line">5tQp7HxN3aLf<span class="pk-mid">…</span>BkR2m9wK<span class="pk-copy"></span>
+        <span class="full">5tQp7HxN3aLfQz81vBkR2m9wK · v4 multisig 3 of 5</span>
+      </span>
+      <span class="secondary">since slot 268,401,012 · 26 d 14 h online</span>
+    </div>
+
+    <div class="id-cell">
+      <span class="role">MPL Agent registry</span>
+      <span class="pk-line">9p3kT7hRJ2mQ<span class="pk-mid">…</span>x4LDvN8c<span class="pk-copy"></span>
+        <span class="full">delegate ExecuteV1 · expires slot 268,924,000</span>
+      </span>
+      <span class="secondary">controller 7nFq…K2mR · auth chain ✓</span>
+    </div>
+
+    <div class="id-cell">
+      <span class="role">Owner · operator</span>
+      <span class="pk-line">aQ4f9vLp2j7K<span class="pk-mid">…</span>nWy1pX8L<span class="pk-copy"></span>
+        <span class="full">human · Phantom · last-rotated slot 268,012,840</span>
+      </span>
+      <span class="secondary">key rotation due in 11 d · target slot 268,924,000</span>
+    </div>
+
+    <div class="stamp-block">
+      <span class="stamp">Active</span>
+      <span class="stamp dim" style="font-size: 8.5px;">3 advances open</span>
+    </div>
+  </section>
+
+  <!-- VITALS + REPUTATION CHART -->
+  <section class="vitals-row">
+    <div class="vitals">
+      <div class="v-cell">
+        <div class="lbl-row"><span class="label">Outstanding Debt</span></div>
+        <div class="v">42,840.0000<span class="unit">USDC</span></div>
+        <div class="sub">3 ADVANCES · AVG 14.2 D</div>
+      </div>
+      <div class="v-cell">
+        <div class="lbl-row"><span class="label">Reputation Digest</span></div>
+        <div class="v digest">a4f1c0d8e9b62731</div>
+        <div class="sub">↗ +0.018 vs prior · 16-HEX ROLLING</div>
+      </div>
+      <div class="v-cell">
+        <div class="lbl-row"><span class="label">Advances Active</span></div>
+        <div class="v">3<span class="unit">/ 12 LIM</span></div>
+        <div class="sub">CAP 50,000 USDC · USED 85.7%</div>
+      </div>
+      <div class="v-cell">
+        <div class="lbl-row"><span class="label">Last On-Chain</span></div>
+        <div class="v">2 m 14 s<span class="unit">ago</span></div>
+        <div class="sub">slot 268,402,168 · ix request_advance</div>
+      </div>
+    </div>
+
+    <div class="rep-chart">
+      <div class="head">
+        <div class="t">
+          <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">β</span>
+          <span class="label">Reputation Timeline · 30 D</span>
+        </div>
+        <span class="scale">SCALE 1D : 22 PX · 16-HEX DIGEST · STEPPED (NOT INTERPOLATED)</span>
+      </div>
+      <svg viewBox="0 0 700 188" preserveAspectRatio="none">
+        <defs>
+          <pattern id="ao-h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#1B3A6F" stroke-width="0.5" opacity="0.30"/>
+          </pattern>
+        </defs>
+        <g stroke="#1B3A6F" stroke-width="0.4" opacity="0.22">
+          <line x1="0" y1="0" x2="700" y2="0"/>
+          <line x1="0" y1="47" x2="700" y2="47"/>
+          <line x1="0" y1="94" x2="700" y2="94"/>
+          <line x1="0" y1="141" x2="700" y2="141"/>
+          <line x1="0" y1="186" x2="700" y2="186"/>
+        </g>
+        <g font-family="JetBrains Mono" font-size="9" fill="#1B3A6F" opacity="0.55" letter-spacing="0.5">
+          <text x="2" y="9">1.000</text>
+          <text x="2" y="51">0.875</text>
+          <text x="2" y="98">0.750</text>
+          <text x="2" y="145">0.625</text>
+          <text x="2" y="184">0.500</text>
+        </g>
+        <!-- vertical day ticks -->
+        <g stroke="#1B3A6F" stroke-width="0.4" opacity="0.18" stroke-dasharray="2 3">
+          <line x1="120" y1="0" x2="120" y2="186"/>
+          <line x1="240" y1="0" x2="240" y2="186"/>
+          <line x1="360" y1="0" x2="360" y2="186"/>
+          <line x1="480" y1="0" x2="480" y2="186"/>
+          <line x1="600" y1="0" x2="600" y2="186"/>
+        </g>
+        <!-- stepped reputation curve (8 transitions over 30d) -->
+        <path d="M 0 100 L 80 100 L 80 92 L 160 92 L 160 88 L 240 88 L 240 80 L 320 80 L 320 76 L 400 76 L 400 70 L 480 70 L 480 62 L 560 62 L 560 58 L 640 58 L 640 50 L 700 50 L 700 186 L 0 186 Z"
+          fill="url(#ao-h)" stroke="none"/>
+        <path d="M 0 100 L 80 100 L 80 92 L 160 92 L 160 88 L 240 88 L 240 80 L 320 80 L 320 76 L 400 76 L 400 70 L 480 70 L 480 62 L 560 62 L 560 58 L 640 58 L 640 50 L 700 50"
+          fill="none" stroke="#1B3A6F" stroke-width="1.0" stroke-linejoin="miter"/>
+        <!-- digest transition markers (small squares at each step) -->
+        <g fill="#ECE3CD" stroke="#1B3A6F" stroke-width="0.8">
+          <rect x="77" y="89" width="6" height="6"/>
+          <rect x="157" y="85" width="6" height="6"/>
+          <rect x="237" y="77" width="6" height="6"/>
+          <rect x="317" y="73" width="6" height="6"/>
+          <rect x="397" y="67" width="6" height="6"/>
+          <rect x="477" y="59" width="6" height="6"/>
+          <rect x="557" y="55" width="6" height="6"/>
+          <rect x="637" y="47" width="6" height="6"/>
+        </g>
+        <!-- cursor witness -->
+        <line x1="640" y1="0" x2="640" y2="186" stroke="#1B3A6F" stroke-width="0.7" stroke-dasharray="3 2"/>
+        <text x="646" y="44" font-family="JetBrains Mono" font-size="9.5" fill="#1B3A6F" letter-spacing="0.5">slot 268,402,168 · 0.918</text>
+        <text x="646" y="56" font-family="JetBrains Mono" font-size="9" fill="#1B3A6F" opacity="0.65" letter-spacing="0.4">a4f1c0d8e9b62731 · ↗ +0.018</text>
+        <!-- x labels -->
+        <g font-family="JetBrains Mono" font-size="9" fill="#1B3A6F" opacity="0.55" letter-spacing="0.5">
+          <text x="120" y="184">D-25</text>
+          <text x="240" y="184">D-20</text>
+          <text x="360" y="184">D-15</text>
+          <text x="480" y="184">D-10</text>
+          <text x="600" y="184">D-05</text>
+        </g>
+      </svg>
+      <div class="digest-row">
+        <span>cursor digest <span class="now">a4f1c0d8e9b62731</span></span>
+        <span>30D Δ <b style="color: var(--ink); font-weight: 500;">+0.122</b> · 8 transitions</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HEALTH PANEL -->
+  <section class="health-row">
+    <div class="h-cell warn">
+      <span class="label">Oracle Staleness</span>
+      <div class="v">4 d 2 h<span class="unit">since update</span></div>
+      <div class="stamp-row"><span class="stamp amber" style="font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--amber); color: var(--amber); font-weight:500; letter-spacing:0.32em; text-transform:uppercase;">Stale &gt; 2D</span></div>
+    </div>
+    <div class="h-cell">
+      <span class="label">Idle USDC · Sweepable</span>
+      <div class="v">1,284.5012<span class="unit">USDC</span></div>
+      <div class="stamp-row"><span class="stamp" style="font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); color: var(--ink); font-weight:500; letter-spacing:0.32em; text-transform:uppercase;">Withdraw avail.</span></div>
+    </div>
+    <div class="h-cell warn">
+      <span class="label">Key Rotation Due</span>
+      <div class="v">11 d<span class="unit">@ slot 268,924,000</span></div>
+      <div class="stamp-row"><span class="stamp amber" style="font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--amber); color: var(--amber); font-weight:500; letter-spacing:0.32em; text-transform:uppercase;">Schedule</span></div>
+    </div>
+    <div class="h-cell">
+      <span class="label">Circuit Breakers</span>
+      <div class="v">0<span class="unit">tripped / 4</span></div>
+      <div class="stamp-row"><span class="stamp" style="font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); color: var(--ink); font-weight:500; letter-spacing:0.32em; text-transform:uppercase;">Armed · all green</span></div>
+    </div>
+  </section>
+
+  <!-- TWO-COL: ADVANCES + RECEIVABLE INFLOW -->
+  <section class="twocol-schedules">
+
+    <div class="schedule">
+      <div class="sched-head">
+        <div class="l">
+          <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">γ</span>
+          <span class="title">Recent Advances · Subject</span>
+          <span class="tag">— SCHEDULE Γ · 10 LATEST</span>
+        </div>
+        <span class="tag">SLOT WIN. 268,395K → 268,402K</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Pool</th>
+            <th class="right">Principal</th>
+            <th class="right">Fee</th>
+            <th>R-status</th>
+            <th>Slot opened</th>
+            <th>Slot settled</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A-22841</td>
+            <td>P-001</td>
+            <td class="right">12,400.0000</td>
+            <td class="right">204.5612</td>
+            <td><span class="stamp">Settled</span></td>
+            <td>268,398,012</td>
+            <td>268,402,184</td>
+          </tr>
+          <tr>
+            <td>A-22840</td>
+            <td>P-001</td>
+            <td class="right">3,200.0000</td>
+            <td class="right">52.8412</td>
+            <td><span class="stamp amber">Pending</span></td>
+            <td>268,401,032</td>
+            <td>open</td>
+          </tr>
+          <tr>
+            <td>A-22839</td>
+            <td>P-001</td>
+            <td class="right">9,640.0000</td>
+            <td class="right">158.6912</td>
+            <td><span class="stamp">Settled</span></td>
+            <td>268,394,118</td>
+            <td>268,400,888</td>
+          </tr>
+          <tr>
+            <td>A-22838</td>
+            <td>P-002</td>
+            <td class="right">17,800.0000</td>
+            <td class="right">298.0240</td>
+            <td><span class="stamp">Settled</span></td>
+            <td>268,392,001</td>
+            <td>268,398,914</td>
+          </tr>
+          <tr>
+            <td>A-22837</td>
+            <td>P-001</td>
+            <td class="right">5,400.0000</td>
+            <td class="right">88.7200</td>
+            <td><span class="stamp amber">Pending</span></td>
+            <td>268,400,712</td>
+            <td>open</td>
+          </tr>
+          <tr>
+            <td>A-22836</td>
+            <td>P-001</td>
+            <td class="right">2,140.0000</td>
+            <td class="right">35.4940</td>
+            <td><span class="stamp">Settled</span></td>
+            <td>268,389,118</td>
+            <td>268,399,401</td>
+          </tr>
+          <tr>
+            <td>A-22835</td>
+            <td>P-001</td>
+            <td class="right">88,200.0000</td>
+            <td class="right">1,612.4400</td>
+            <td><span class="stamp">Settled</span></td>
+            <td>268,386,002</td>
+            <td>268,400,224</td>
+          </tr>
+          <tr>
+            <td>A-22834</td>
+            <td>P-002</td>
+            <td class="right">4,800.0000</td>
+            <td class="right">76.5200</td>
+            <td><span class="stamp danger">Voided</span></td>
+            <td>268,381,412</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>A-22833</td>
+            <td>P-001</td>
+            <td class="right">26,400.0000</td>
+            <td class="right">412.0080</td>
+            <td><span class="stamp">Settled</span></td>
+            <td>268,378,114</td>
+            <td>268,394,028</td>
+          </tr>
+          <tr>
+            <td>A-22832</td>
+            <td>P-001</td>
+            <td class="right">11,200.0000</td>
+            <td class="right">182.4040</td>
+            <td><span class="stamp">Settled</span></td>
+            <td>268,372,924</td>
+            <td>268,389,011</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schedule">
+      <div class="sched-head">
+        <div class="l">
+          <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">δ</span>
+          <span class="title">Receivable Inflow Log</span>
+          <span class="tag">— SCHEDULE Δ · 10 LATEST</span>
+        </div>
+        <span class="tag">ED25519 + MEMO V2</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Source</th>
+            <th>Payer pk</th>
+            <th>Sig</th>
+            <th>Slot</th>
+            <th class="center">Cons.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>R-04812</td>
+            <td>STRIPE</td>
+            <td><span class="pk">5tQp<span class="pk-mid">…</span>m9wK</span></td>
+            <td><span class="pk">3Hdj<span class="pk-mid">…</span>tQ8x</span></td>
+            <td>268,402,184</td>
+            <td class="center">✓</td>
+          </tr>
+          <tr>
+            <td>R-04811</td>
+            <td>WIRE</td>
+            <td><span class="pk">9p3k<span class="pk-mid">…</span>N8cV</span></td>
+            <td><span class="pk">7nFq<span class="pk-mid">…</span>K2mR</span></td>
+            <td>268,401,907</td>
+            <td class="center" style="color: var(--amber);">…</td>
+          </tr>
+          <tr>
+            <td>R-04810</td>
+            <td>STRIPE</td>
+            <td><span class="pk">2Bvy<span class="pk-mid">…</span>rM4j</span></td>
+            <td><span class="pk">aQ4f<span class="pk-mid">…</span>p8Lm</span></td>
+            <td>268,401,432</td>
+            <td class="center">✓</td>
+          </tr>
+          <tr>
+            <td>R-04809</td>
+            <td>STRIPE</td>
+            <td><span class="pk">7ZxF<span class="pk-mid">…</span>aP2K</span></td>
+            <td><span class="pk">bN2x<span class="pk-mid">…</span>r4Tk</span></td>
+            <td>268,400,888</td>
+            <td class="center" style="color: var(--stamp);">✕</td>
+          </tr>
+          <tr>
+            <td>R-04808</td>
+            <td>WIRE</td>
+            <td><span class="pk">kQz1<span class="pk-mid">…</span>F9pT</span></td>
+            <td><span class="pk">m8jY<span class="pk-mid">…</span>3wXn</span></td>
+            <td>268,400,224</td>
+            <td class="center">✓</td>
+          </tr>
+          <tr>
+            <td>R-04807</td>
+            <td>STRIPE</td>
+            <td><span class="pk">5tQp<span class="pk-mid">…</span>m9wK</span></td>
+            <td><span class="pk">vL3p<span class="pk-mid">…</span>tH7q</span></td>
+            <td>268,399,401</td>
+            <td class="center">✓</td>
+          </tr>
+          <tr>
+            <td>R-04806</td>
+            <td>ACH</td>
+            <td><span class="pk">jR2c<span class="pk-mid">…</span>bH8s</span></td>
+            <td><span class="pk">d6Vt<span class="pk-mid">…</span>aB4r</span></td>
+            <td>268,398,914</td>
+            <td class="center">✓</td>
+          </tr>
+          <tr>
+            <td>R-04805</td>
+            <td>STRIPE</td>
+            <td><span class="pk">9p3k<span class="pk-mid">…</span>N8cV</span></td>
+            <td><span class="pk">eP1k<span class="pk-mid">…</span>n2Xj</span></td>
+            <td>268,397,712</td>
+            <td class="center">✓</td>
+          </tr>
+          <tr>
+            <td>R-04804</td>
+            <td>WIRE</td>
+            <td><span class="pk">2Bvy<span class="pk-mid">…</span>rM4j</span></td>
+            <td><span class="pk">f4Wn<span class="pk-mid">…</span>k7Hp</span></td>
+            <td>268,396,408</td>
+            <td class="center">✓</td>
+          </tr>
+          <tr>
+            <td>R-04803</td>
+            <td>STRIPE</td>
+            <td><span class="pk">7ZxF<span class="pk-mid">…</span>aP2K</span></td>
+            <td><span class="pk">gT8r<span class="pk-mid">…</span>m1Vc</span></td>
+            <td>268,395,127</td>
+            <td class="center" style="color: var(--stamp);">✕</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ACTION FOOTER -->
+  <section class="actions-row">
+    <div class="action-card">
+      <div class="head">
+        <span class="label">Manual Repay</span>
+        <span class="ref">R-02 · LP-IO</span>
+      </div>
+      <div class="body">
+        Closes one open advance. Settles principal + accrued fee against
+        idle USDC in vault. No timelock.
+      </div>
+      <button>Select advance</button>
+    </div>
+
+    <div class="action-card primary">
+      <div class="head">
+        <span class="label">Withdraw Idle USDC</span>
+        <span class="ref">R-03 · LP-IO</span>
+      </div>
+      <div class="body">
+        Routes <span class="mono" style="color: var(--ink);">1,284.5012 USDC</span> from agent vault to owner pubkey
+        <span class="mono" style="color: var(--ink);">aQ4f…pX8L</span>. Lifecycle 3-stage.
+      </div>
+      <button>Sign &amp; Submit</button>
+    </div>
+
+    <div class="action-card danger">
+      <div class="head">
+        <span class="label">Emergency Exit</span>
+        <span class="ref">SHEET R-09</span>
+      </div>
+      <div class="body">
+        Posts <span class="mono" style="color: var(--ink);">CredmeshError::EmergencyExitRequested(0x1A04)</span>.
+        All open advances move to liquidation queue at next settled slot.
+        Reversal requires governance proposal.
+      </div>
+      <div class="check-rubric">
+        <div class="item"><span class="box checked"></span>Operator signed</div>
+        <div class="item"><span class="box checked"></span>Oracle confirmed</div>
+        <div class="item"><span class="box"></span>Checker initial</div>
+        <div class="item"><span class="box"></span>Reviewer approve</div>
+      </div>
+      <button>Stamp &amp; Submit</button>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="titleblock">
+      <div class="cell full"><div class="k">Project</div><div class="v">CREDMESH / SOLANA · LIVE OBSERVATORY</div></div>
+      <div class="cell"><div class="k">Sheet</div><div class="v">02 / 12</div></div>
+      <div class="cell"><div class="k">Scale</div><div class="v">1 : 1</div></div>
+      <div class="cell"><div class="k">Drawn</div><div class="v">PROTOCOL</div></div>
+      <div class="cell"><div class="k">Checked</div><div class="v">ORACLE</div></div>
+      <div class="cell"><div class="k">Date</div><div class="v">2026‑05‑03</div></div>
+      <div class="cell"><div class="k">Rev.</div><div class="v">D</div></div>
+    </div>
+
+    <div class="marginalia">
+      <p class="note">
+        agent borrowed <span class="strike">aggressively</span><br>
+        consistently across pool 001.<br>
+        digest trending toward 1.0 ✓<br>
+        watch oracle staleness — 4 d.
+      </p>
+    </div>
+
+    <div class="compass">
+      <svg viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="22" fill="none" stroke="#1B3A6F" stroke-width="0.6"/>
+        <line x1="24" y1="2" x2="24" y2="46" stroke="#1B3A6F" stroke-width="0.5" opacity="0.5"/>
+        <line x1="2" y1="24" x2="46" y2="24" stroke="#1B3A6F" stroke-width="0.5" opacity="0.5"/>
+        <polygon points="24,4 19,26 24,22 29,26" fill="#1B3A6F"/>
+        <polygon points="24,44 19,22 24,26 29,22" fill="none" stroke="#1B3A6F" stroke-width="0.6"/>
+        <text x="24" y="14" font-family="JetBrains Mono" font-size="6.5" text-anchor="middle" fill="#ECE3CD" font-weight="600">N</text>
+      </svg>
+      <div class="compass-label">North<br><b>Consensus</b></div>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>

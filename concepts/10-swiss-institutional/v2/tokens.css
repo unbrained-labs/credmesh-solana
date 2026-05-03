@@ -1,0 +1,771 @@
+/* ============================================================
+   CredMesh — Statistical Bulletin No. 1 / 2026
+   Concept 10 (Swiss Institutional) · v2 design tokens
+   Imported by every v2 HTML surface.
+   ============================================================ */
+
+/* -----------------------------------------------------------
+   Typography family (Helvetica Neue with Inter fallback)
+   ----------------------------------------------------------- */
+@import url('https://rsms.me/inter/inter.css');
+
+:root {
+  /* === COLOR ============================================== */
+  /* Surfaces */
+  --paper:        #F4F2EE;   /* primary canvas (bond paper) */
+  --paper-2:      #ECE9E2;   /* sunken row, alt strip       */
+  --paper-3:      #E2DED4;   /* hover, pressed state        */
+  --paper-edge:   #DEDBD3;   /* off-page, viewport bg       */
+
+  /* Type */
+  --ink:          #0A0A0A;   /* primary type, hairlines     */
+  --ink-2:        #1A1A1A;   /* second-tier type            */
+  --mute:         #6B6B6B;   /* labels, captions, footnotes */
+  --mute-2:       #908A7E;   /* tertiary, axis ticks        */
+
+  /* Rules */
+  --rule:         #0A0A0A;   /* heavy rule                  */
+  --rule-fine:    #C9C4B7;   /* hairline between rows       */
+  --rule-dot:     #A89E89;   /* dotted leader (TOC)         */
+
+  /* Sovereign red — ONE accent. Use sparingly. */
+  --red:          #C8102E;   /* deltas, destructive flags   */
+  --red-deep:     #8E0B20;   /* engrossed stamp variant     */
+  --red-tint:     #F2D9DD;   /* destructive panel wash      */
+
+  /* === TYPE ROLES ========================================
+     Helvetica 95 Black for masthead/numbers
+     Helvetica 75 Bold for callouts / headings
+     Helvetica 55 Roman for body
+     Helvetica 45 Light for footnotes / captions
+     ===================================================== */
+
+  --font-sans:    'Helvetica Neue', 'Helvetica', 'Inter', 'Arial', sans-serif;
+  --font-mono:    'JetBrains Mono', 'Menlo', 'Consolas', ui-monospace, monospace;
+
+  --w-light:      300;
+  --w-roman:      400;
+  --w-bold:       700;
+  --w-black:      900;
+
+  /* === TYPE LADDER ========================================
+     Named scale, stepped, mapped to UI roles.
+     ===================================================== */
+  --t-foot:       9px;    /* gazette stamp, page number, registry index */
+  --t-fine:       10px;   /* footnote, caption, source line             */
+  --t-rule:       11px;   /* axis tick, secondary table cell, eyebrow  */
+  --t-base:       12px;   /* body, primary table cell                  */
+  --t-lede:       14px;   /* lede paragraph, summary                   */
+  --t-head:       18px;   /* section heading                           */
+  --t-display-s:  24px;   /* sub-display, schedule heading             */
+  --t-display-m:  38px;   /* annex/§ number                            */
+  --t-display-l:  56px;   /* stat hero                                 */
+  --t-display-xl: 80px;   /* annex masthead, dossier name              */
+
+  /* === TRACKING (letter-spacing) ==========================
+     Bulletin convention: tighter on display, looser on caps. */
+  --track-display:  -0.04em;  /* CRED, big numbers   */
+  --track-head:     -0.01em;  /* H2 headings         */
+  --track-body:      0;
+  --track-caps:      0.14em;  /* SECTION LABELS      */
+  --track-microcaps: 0.20em;  /* eyebrow, tab heads  */
+
+  /* === SPACING (4px base) ================================ */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* === GRID ============================================== */
+  --col-count: 12;
+  --col-gutter: 24px;
+  --page-margin: 40px;
+  --page-width: 1360px;
+
+  /* === RULE WEIGHTS ======================================
+     Bulletins use exactly three rule weights. Don't invent more. */
+  --rule-hair:    0.5px;
+  --rule-thin:    1px;
+  --rule-heavy:   1.5px;
+
+  /* === STATUS GLYPHS =====================================
+     Bulletins use marks (✓ ○ †) not icons. */
+  --mark-ok:      "\2713";   /* ✓  finalized      */
+  --mark-pend:    "\25CB";   /* ○  pending        */
+  --mark-sent:    "\25B8";   /* ▸  sent           */
+  --mark-defer:   "\2020";   /* †  deferred       */
+  --mark-err:     "\2716";   /* ✖  errata         */
+  --mark-fn:      "\2767";   /* ❧  source mark    */
+}
+
+/* -----------------------------------------------------------
+   Document defaults
+   ----------------------------------------------------------- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+html { background: var(--paper-edge); }
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01","cv11","tnum","kern";
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-base);
+  font-weight: var(--w-roman);
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection { background: var(--red); color: #fff; }
+
+a { color: inherit; text-underline-offset: 2px; text-decoration-thickness: 0.5px; }
+a:hover { text-decoration: underline; }
+
+/* tabular numbers everywhere a number appears */
+.num,
+.mono,
+table { font-variant-numeric: tabular-nums; }
+
+.mono { font-family: var(--font-mono); }
+
+hr { border: 0; border-top: var(--rule-thin) solid var(--ink); margin: var(--s-5) 0; }
+
+/* -----------------------------------------------------------
+   Page chrome — the bulletin frame
+   ----------------------------------------------------------- */
+.page {
+  width: var(--page-width);
+  margin: var(--s-5) auto var(--s-7);
+  padding: 0 var(--page-margin) var(--s-7);
+  background: var(--paper);
+  border: var(--rule-thin) solid var(--ink);
+  position: relative;
+}
+
+/* corner registration tick (top-left of every page, like a printer's mark) */
+.page::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 18px; height: 18px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) top   left / 18px 0.75px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) top   left / 0.75px 18px no-repeat;
+}
+
+/* -----------------------------------------------------------
+   MASTHEAD — every surface starts with one
+   ----------------------------------------------------------- */
+.masthead {
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto auto auto;
+  gap: var(--s-4);
+  align-items: end;
+  padding: 22px 0 var(--s-3);
+  border-bottom: var(--rule-heavy) solid var(--ink);
+}
+.masthead .swatch {
+  width: 14px; height: 14px;
+  background: var(--red);
+  margin-bottom: var(--s-1);
+}
+.masthead .brand {
+  font-weight: var(--w-black);
+  font-size: 28px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.masthead .brand .pipe { color: var(--mute); margin: 0 14px; font-weight: var(--w-roman); }
+.masthead .brand .sub  {
+  font-weight: var(--w-roman);
+  font-size: var(--t-rule);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+}
+.masthead .stamp {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  text-align: right;
+  line-height: 1.5;
+}
+.masthead .stamp .lab { color: var(--mute); display: block; }
+
+.subhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--s-2) 0 6px;
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  border-bottom: var(--rule-hair) solid var(--ink);
+}
+.subhead em { font-style: normal; color: var(--mute); }
+
+/* heavy double rule under the masthead */
+.heavyrule {
+  height: 4px;
+  margin: 4px 0 0;
+  background:
+    linear-gradient(var(--ink), var(--ink)) top    / 100% 1.5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) bottom / 100% 0.5px no-repeat;
+}
+
+/* -----------------------------------------------------------
+   ANNEX BAR — replaces a TOC. Tabs as bulletin annexes.
+   ----------------------------------------------------------- */
+.annex-bar {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: var(--s-5);
+  align-items: end;
+  padding: var(--s-4) 0 var(--s-3);
+  border-bottom: var(--rule-hair) solid var(--ink);
+}
+.annex-bar .label {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.annex-bar nav {
+  display: flex;
+  gap: var(--s-5);
+  font-size: var(--t-rule);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+}
+.annex-bar nav a {
+  color: var(--mute);
+  text-decoration: none;
+  border-bottom: var(--rule-thin) solid transparent;
+  padding-bottom: 2px;
+}
+.annex-bar nav a.is-current {
+  color: var(--ink);
+  font-weight: var(--w-bold);
+  border-bottom-color: var(--ink);
+}
+.annex-bar .meta {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--mute);
+  line-height: 1.6;
+}
+.annex-bar .meta b { color: var(--ink); font-weight: var(--w-bold); }
+
+/* -----------------------------------------------------------
+   SECTION HEADING — § number + heading + table-ref
+   ----------------------------------------------------------- */
+.section { padding: var(--s-6) 0 var(--s-1); }
+
+.section-head {
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: var(--s-4);
+  align-items: end;
+  padding-bottom: var(--s-2);
+  border-bottom: var(--rule-thin) solid var(--ink);
+  margin-bottom: var(--s-4);
+}
+.section-head .num {
+  font-size: var(--t-display-m);
+  font-weight: var(--w-black);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+}
+.section-head h2 {
+  margin: 0;
+  font-size: var(--t-head);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--track-head);
+}
+.section-head h2 small {
+  display: block;
+  margin-top: var(--s-1);
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: var(--w-roman);
+}
+.section-head .meta {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--mute);
+  text-align: right;
+  line-height: 1.5;
+}
+.section-head .meta b { color: var(--ink); font-weight: var(--w-bold); }
+
+/* -----------------------------------------------------------
+   STAT CELL (used inside .stats grid)
+   ----------------------------------------------------------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: var(--rule-thin) solid var(--ink);
+  border-bottom: var(--rule-thin) solid var(--ink);
+}
+.stats.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.stats.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+.stat {
+  padding: 22px var(--s-5) 22px;
+  border-right: var(--rule-hair) solid var(--ink);
+}
+.stat:last-child { border-right: 0; }
+
+.stat .lab {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+}
+.stat .unit {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--mute);
+  margin: var(--s-1) 0 var(--s-4);
+}
+.stat .val {
+  font-weight: var(--w-black);
+  font-size: var(--t-display-l);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+.stat .val .dec {
+  color: var(--mute);
+  font-weight: var(--w-roman);
+}
+.stat .val sup {
+  font-size: 13px;
+  font-weight: var(--w-roman);
+  vertical-align: super;
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+.stat .delta {
+  margin-top: var(--s-3);
+  font-size: var(--t-rule);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--mute);
+  display: flex;
+  gap: var(--s-3);
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.stat .delta .v          { color: var(--ink); font-weight: var(--w-bold); }
+.stat .delta .v.up::before    { content: "▲ "; color: var(--red); }
+.stat .delta .v.down::before  { content: "▼ "; color: var(--ink); }
+.stat .delta .v.flat::before  { content: "■ "; color: var(--mute); }
+
+/* -----------------------------------------------------------
+   FOOTNOTES BLOCK — every § ends with one
+   ----------------------------------------------------------- */
+.footnotes {
+  padding: var(--s-3) 0 var(--s-5);
+  font-size: var(--t-fine);
+  font-weight: var(--w-light);
+  line-height: 1.55;
+  column-count: 2;
+  column-gap: var(--s-7);
+  border-bottom: var(--rule-hair) solid var(--ink);
+}
+.footnotes.cols-1 { column-count: 1; }
+.footnotes.cols-3 { column-count: 3; }
+.footnotes .fn { display: block; margin-bottom: 4px; break-inside: avoid; }
+.footnotes sup {
+  font-size: 8.5px;
+  margin-right: 4px;
+}
+
+/* inline footnote-ref glyph (used in tables and prose) */
+.fn-ref {
+  font-size: 0.75em;
+  vertical-align: super;
+  color: var(--ink);
+  font-weight: var(--w-bold);
+  margin-left: 1px;
+}
+.fn-ref.red { color: var(--red); }
+
+/* -----------------------------------------------------------
+   SCHEDULE (tables)
+   ----------------------------------------------------------- */
+table.bul {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-base);
+}
+table.bul caption {
+  text-align: left;
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--mute);
+  padding-bottom: 6px;
+  caption-side: top;
+}
+table.bul thead th {
+  text-align: left;
+  font-weight: var(--w-bold);
+  font-size: 9.5px;
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  padding: var(--s-2) 10px 6px;
+  border-top: var(--rule-heavy) solid var(--ink);
+  border-bottom: var(--rule-hair) solid var(--ink);
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+table.bul tbody td {
+  padding: 9px 10px;
+  border-bottom: var(--rule-hair) solid var(--rule-fine);
+  vertical-align: baseline;
+}
+table.bul tbody tr:last-child td { border-bottom: var(--rule-heavy) solid var(--ink); }
+table.bul .num { text-align: right; }
+table.bul .ix  { color: var(--mute); width: 28px; }
+table.bul .mono { font-family: var(--font-mono); font-size: var(--t-rule); }
+table.bul .right { text-align: right; }
+table.bul tbody tr:hover { background: var(--paper-2); }
+
+/* status marks rendered as bulletin glyphs */
+.mk        { font-family: var(--font-sans); margin-right: 4px; }
+.mk.ok::before    { content: "\2713  "; color: var(--ink); }
+.mk.pend::before  { content: "\25CB  "; color: var(--red); }
+.mk.sent::before  { content: "\25B8  "; color: var(--mute); }
+.mk.defer::before { content: "\2020  "; color: var(--mute); }
+.mk.err::before   { content: "\2716  "; color: var(--red); }
+
+/* -----------------------------------------------------------
+   PUBKEY / IDENTITY chip — first-class data, not metadata
+   ----------------------------------------------------------- */
+.pk {
+  font-family: var(--font-mono);
+  font-size: var(--t-rule);
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+.pk .full { color: var(--ink); }
+.pk .role {
+  font-family: var(--font-sans);
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.pk .copy {
+  font-family: var(--font-sans);
+  font-size: var(--t-foot);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  color: var(--mute);
+}
+.pk .copy:hover { color: var(--red); }
+
+/* -----------------------------------------------------------
+   LIFECYCLE LEDGER — Sent → Pending → Finalized
+   each row is a gazetted entry with slot stamp.
+   ----------------------------------------------------------- */
+.ledger {
+  border-top: var(--rule-thin) solid var(--ink);
+  border-bottom: var(--rule-thin) solid var(--ink);
+  font-size: var(--t-rule);
+}
+.ledger .row {
+  display: grid;
+  grid-template-columns: 130px 1fr 220px 110px;
+  gap: var(--s-4);
+  padding: 10px var(--s-4);
+  border-bottom: var(--rule-hair) solid var(--rule-fine);
+  align-items: baseline;
+}
+.ledger .row:last-child { border-bottom: 0; }
+.ledger .row.is-current { background: var(--paper-2); }
+.ledger .row .state {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  font-weight: var(--w-bold);
+}
+.ledger .row .state.sent      { color: var(--mute); }
+.ledger .row .state.pending   { color: var(--red); }
+.ledger .row .state.finalized { color: var(--ink); }
+.ledger .row .desc { color: var(--ink); }
+.ledger .row .sig  { font-family: var(--font-mono); font-size: var(--t-rule); color: var(--mute); }
+.ledger .row .slot { text-align: right; font-family: var(--font-mono); font-size: var(--t-rule); }
+
+/* -----------------------------------------------------------
+   ACTION PANEL — primary cta + secondary
+   destructive variant gets red footnote chrome and stamp
+   ----------------------------------------------------------- */
+.action-panel {
+  border: var(--rule-thin) solid var(--ink);
+  padding: var(--s-5);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-5);
+  align-items: end;
+}
+.action-panel .head {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-bottom: 6px;
+}
+.action-panel h3 {
+  margin: 0 0 var(--s-3);
+  font-size: var(--t-head);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--track-head);
+}
+.action-panel p { margin: 0 0 var(--s-3); font-size: var(--t-base); color: var(--ink-2); max-width: 56ch; }
+.btn {
+  display: inline-block;
+  padding: 12px 20px;
+  font-family: var(--font-sans);
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+  font-weight: var(--w-bold);
+  border: var(--rule-thin) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn.primary    { background: var(--ink); color: var(--paper); }
+.btn.destructive { background: var(--red); color: #fff; border-color: var(--red); }
+.btn.ghost      { background: transparent; }
+.btn:hover { background: var(--paper-2); }
+.btn.primary:hover     { background: var(--ink-2); }
+.btn.destructive:hover { background: var(--red-deep); border-color: var(--red-deep); }
+
+.action-panel.is-destructive {
+  border: var(--rule-heavy) solid var(--red);
+  background: var(--red-tint);
+  position: relative;
+}
+.action-panel.is-destructive::before {
+  content: "DESTRUCTIVE ACTION \2014  ENGROSSED";
+  position: absolute;
+  top: -10px; left: var(--s-5);
+  background: var(--paper);
+  padding: 0 var(--s-2);
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  font-weight: var(--w-bold);
+  color: var(--red);
+}
+.action-panel.is-destructive .head    { color: var(--red); }
+.action-panel.is-destructive .footrule {
+  grid-column: 1 / -1;
+  margin: var(--s-3) 0 0;
+  border-top: var(--rule-thin) solid var(--red);
+  padding-top: var(--s-2);
+  font-size: var(--t-fine);
+  font-weight: var(--w-light);
+  color: var(--red-deep);
+  font-style: italic;
+}
+
+/* engrossed stamp graphic — rotated tag, used on destructive panels
+   and on finalized critical-path advances. */
+.stamp-engrossed {
+  display: inline-block;
+  border: var(--rule-thin) solid var(--red);
+  color: var(--red);
+  padding: 4px 10px;
+  font-size: var(--t-foot);
+  letter-spacing: 0.24em;
+  font-weight: var(--w-bold);
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+  background: var(--paper);
+}
+
+/* -----------------------------------------------------------
+   STATUS PILL (footnote-style superscript pill)
+   ----------------------------------------------------------- */
+.pill {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+  font-weight: var(--w-bold);
+  border: var(--rule-hair) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.pill.ink     { background: var(--ink);  color: var(--paper); border-color: var(--ink); }
+.pill.red     { background: var(--red);  color: #fff; border-color: var(--red); }
+.pill.mute    { color: var(--mute); border-color: var(--mute); }
+.pill .delta  { font-family: var(--font-mono); font-size: 8.5px; margin-left: 4px; opacity: 0.85; }
+
+/* -----------------------------------------------------------
+   COLOPHON — every page ends with a compiled-at stamp
+   ----------------------------------------------------------- */
+.colophon {
+  margin-top: var(--s-6);
+  padding-top: var(--s-4);
+  border-top: var(--rule-heavy) solid var(--ink);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-5);
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+}
+.colophon .left .blurb {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--t-fine);
+  color: var(--mute);
+  margin-top: var(--s-2);
+  max-width: 720px;
+  line-height: 1.55;
+  font-weight: var(--w-light);
+}
+.colophon .right { text-align: right; line-height: 1.7; color: var(--mute); }
+.colophon .right b { color: var(--ink); font-weight: var(--w-bold); }
+.colophon .right .mono { font-family: var(--font-mono); font-size: var(--t-rule); letter-spacing: 0; text-transform: none; }
+
+/* -----------------------------------------------------------
+   REGISTRY INDEX — bottom-of-page pubkey table
+   resolves every short pubkey shown on the page back to its full form.
+   ----------------------------------------------------------- */
+.registry {
+  margin-top: var(--s-5);
+  border-top: var(--rule-thin) solid var(--ink);
+  padding-top: var(--s-3);
+}
+.registry h4 {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+  font-weight: var(--w-bold);
+  color: var(--mute);
+}
+.registry table { width: 100%; border-collapse: collapse; font-size: var(--t-fine); font-weight: var(--w-light); }
+.registry td {
+  padding: 3px 10px 3px 0;
+  vertical-align: baseline;
+  border-bottom: var(--rule-hair) dotted var(--rule-dot);
+}
+.registry td.ix   { color: var(--mute); width: 36px; }
+.registry td.role { color: var(--mute); width: 200px; letter-spacing: var(--track-caps); text-transform: uppercase; font-size: 9.5px; }
+.registry td.full { font-family: var(--font-mono); font-size: var(--t-rule); }
+
+/* -----------------------------------------------------------
+   ERRATA — failed / pending tx block
+   ----------------------------------------------------------- */
+.errata {
+  margin-top: var(--s-4);
+  border-top: var(--rule-thin) solid var(--red);
+  border-bottom: var(--rule-thin) solid var(--red);
+  padding: var(--s-3) 0;
+  font-size: var(--t-fine);
+  font-weight: var(--w-light);
+  background: var(--red-tint);
+  padding-left: var(--s-4);
+  padding-right: var(--s-4);
+}
+.errata h4 {
+  margin: 0 0 var(--s-2);
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-microcaps);
+  text-transform: uppercase;
+  font-weight: var(--w-bold);
+  color: var(--red-deep);
+}
+.errata .item { display: grid; grid-template-columns: 90px 1fr 200px; gap: var(--s-3); padding: 4px 0; }
+.errata .item .code { font-family: var(--font-mono); color: var(--red-deep); }
+.errata .item .desc { color: var(--ink-2); }
+.errata .item .desc s { color: var(--mute); }
+.errata .item .slot { font-family: var(--font-mono); color: var(--mute); text-align: right; }
+
+/* -----------------------------------------------------------
+   STEP CHART (reputation timeline) — uses CSS grid on SVG-like
+   primitives. Step transitions are discrete, not interpolated.
+   ----------------------------------------------------------- */
+.step-chart {
+  width: 100%;
+  height: 180px;
+  display: block;
+}
+
+/* -----------------------------------------------------------
+   ANNEX MASTHEAD — bigger version used on observatory/governance
+   to identify "Annex B — Counterparty Dossier", etc.
+   ----------------------------------------------------------- */
+.annex-masthead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--s-5);
+  align-items: end;
+  padding: var(--s-5) 0 var(--s-3);
+  border-bottom: var(--rule-thin) solid var(--ink);
+}
+.annex-masthead .annex-no {
+  font-size: var(--t-display-xl);
+  font-weight: var(--w-black);
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+}
+.annex-masthead .annex-no small {
+  display: block;
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: var(--w-roman);
+  margin-top: var(--s-2);
+}
+.annex-masthead h1 {
+  margin: 0;
+  font-size: var(--t-display-s);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--track-head);
+}
+.annex-masthead h1 small {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--t-rule);
+  letter-spacing: 0;
+  font-weight: var(--w-roman);
+  color: var(--mute);
+}
+.annex-masthead .stamp {
+  font-size: var(--t-foot);
+  letter-spacing: var(--track-caps);
+  text-transform: uppercase;
+  text-align: right;
+  line-height: 1.6;
+  color: var(--mute);
+}
+.annex-masthead .stamp b { color: var(--ink); font-weight: var(--w-bold); }
+.annex-masthead .stamp .mono { font-family: var(--font-mono); font-size: var(--t-rule); letter-spacing: 0; text-transform: none; }
