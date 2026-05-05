@@ -16,33 +16,78 @@ declare_id!("JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G");
 pub mod credmesh_reputation {
     use super::*;
 
-    /// Onboards a new agent with an initial credit profile. Mirrors the EVM
-    /// lane's `POST /agents/register` (`credit-worker/src/routes/agents.ts`)
-    /// — one tx, agent's keypair as signer, no MPL Core or Squads required.
-    /// Computes initial credit_score and credit_limit_atoms via the scoring
-    /// module (port of `credit.ts:24-56`).
-    pub fn register_agent(
-        ctx: Context<RegisterAgent>,
-        params: AgentRegistrationParams,
-    ) -> Result<()> {
-        require!(params.trust_score <= 100, ReputationError::TrustScoreOutOfRange);
-
+    /// Onboards a new agent. Self-service — agent signs, no writer needed.
+    /// All attestation fields (trust_score, attestation_count,
+    /// cooperation_success_count, successful_jobs, failed_jobs,
+    /// average_completed_payout) are forced to zero. The writer authority
+    /// (configured at deploy time on credmesh-receivable-oracle's
+    /// OracleConfig.reputation_writer_authority — see DECISIONS Q4) boosts
+    /// these via `update_agent_attestations` based on off-chain validation
+    /// (ERC-8004 lookup, SAS attestation, marketplace history check, etc.).
+    /// `record_settlement_outcome` and `record_default` increment the
+    /// repaid/defaulted/successful/failed counters as advances close.
+    ///
+    /// `identity_registered` is set to true only if the caller passes a
+    /// valid MPL Core asset whose stored owner field equals the agent's
+    /// signing key. This is the on-chain proof of identity attestation
+    /// (the Solana equivalent of EVM's `identityRegistered` bool, which
+    /// EVM derives from an ERC-8004 registry read).
+    ///
+    /// The fresh-agent default credit limit (no history, no identity) is
+    /// $40 atoms (= 0 score * 8 + 0 repay rate * 120 + 0.5 completion
+    /// default * 80 = 40 dollars). With identity attached: ~$120. Real
+    /// limit growth comes from successful settlements + writer attestations.
+    pub fn register_agent(ctx: Context<RegisterAgent>) -> Result<()> {
         let reputation = &mut ctx.accounts.reputation;
         reputation.bump = ctx.bumps.reputation;
         reputation.agent = ctx.accounts.agent.key();
 
-        reputation.trust_score = params.trust_score;
-        reputation.attestation_count = params.attestation_count;
-        reputation.cooperation_success_count = params.cooperation_success_count;
-        reputation.successful_jobs = params.successful_jobs;
-        reputation.failed_jobs = params.failed_jobs;
-        reputation.average_completed_payout_atoms = params.average_completed_payout_atoms;
-        reputation.identity_registered = params.identity_registered;
+        // CRITICAL: all attestation fields start at zero. Self-attestation
+        // is NOT permitted — the writer authority gates any boost.
+        reputation.trust_score = 0;
+        reputation.attestation_count = 0;
+        reputation.cooperation_success_count = 0;
+        reputation.successful_jobs = 0;
+        reputation.failed_jobs = 0;
+        reputation.average_completed_payout_atoms = 0;
         reputation.outstanding_balance_atoms = 0;
         reputation.repaid_advances = 0;
         reputation.defaulted_advances = 0;
 
-        // First score + limit pass.
+        // identity_registered: only true if a valid MPL Core asset is
+        // attached AND its stored `owner` field (byte offset 1..33 of the
+        // BaseAssetV1 struct) equals the agent's signing pubkey. This is
+        // the same identity-binding helper used by escrow's request_advance
+        // for the optional MPL flow (DECISIONS Q1, post-amendment).
+        reputation.identity_registered = match ctx.accounts.agent_asset.as_ref() {
+            Some(asset) => {
+                // Verify owner-program is MPL_CORE (no spoofing).
+                require_keys_eq!(
+                    *asset.owner,
+                    credmesh_shared::program_ids::MPL_CORE,
+                    ReputationError::IdentityProofInvalid
+                );
+                // Read the asset's stored owner field at the canonical offset.
+                let data = asset.try_borrow_data()
+                    .map_err(|_| ReputationError::IdentityProofInvalid)?;
+                require!(
+                    data.len() >= credmesh_shared::mpl_core_asset::OWNER_OFFSET
+                        + credmesh_shared::mpl_core_asset::OWNER_LEN,
+                    ReputationError::IdentityProofInvalid
+                );
+                let mut owner_bytes = [0u8; 32];
+                owner_bytes.copy_from_slice(
+                    &data[credmesh_shared::mpl_core_asset::OWNER_OFFSET
+                        ..credmesh_shared::mpl_core_asset::OWNER_OFFSET
+                            + credmesh_shared::mpl_core_asset::OWNER_LEN],
+                );
+                let asset_owner = Pubkey::new_from_array(owner_bytes);
+                asset_owner == ctx.accounts.agent.key()
+            }
+            None => false,
+        };
+
+        // Compute fresh score and limit from the all-zeros baseline.
         reputation.credit_score = scoring::compute_credit_score(reputation);
         reputation.credit_limit_atoms = scoring::compute_credit_limit_atoms(reputation);
 
@@ -60,6 +105,51 @@ pub mod credmesh_reputation {
             credit_limit_atoms: reputation.credit_limit_atoms,
             trust_score: reputation.trust_score,
             identity_registered: reputation.identity_registered,
+        });
+
+        Ok(())
+    }
+
+    /// Writer-gated incremental update of attestation fields. Mirrors the
+    /// EVM credit-worker's role of being source-of-truth for off-chain
+    /// validation outputs (ERC-8004 lookups, SAS attestations, marketplace
+    /// history). Each field is Option<...>; only Some(...) values are
+    /// written. Recomputes credit_score + credit_limit at the end.
+    pub fn update_agent_attestations(
+        ctx: Context<RecordReputationEvent>,
+        update: AgentAttestationUpdate,
+    ) -> Result<()> {
+        require_writer_authority(&ctx.accounts.attestor, &ctx.accounts.oracle_config)?;
+
+        let reputation = &mut ctx.accounts.reputation;
+        if let Some(v) = update.trust_score {
+            require!(v <= 100, ReputationError::TrustScoreOutOfRange);
+            reputation.trust_score = v;
+        }
+        if let Some(v) = update.attestation_count {
+            reputation.attestation_count = v;
+        }
+        if let Some(v) = update.cooperation_success_count {
+            reputation.cooperation_success_count = v;
+        }
+        if let Some(v) = update.average_completed_payout_atoms {
+            reputation.average_completed_payout_atoms = v;
+        }
+        if let Some(v) = update.identity_registered {
+            reputation.identity_registered = v;
+        }
+
+        reputation.credit_score = scoring::compute_credit_score(reputation);
+        reputation.credit_limit_atoms = scoring::compute_credit_limit_atoms(reputation);
+        reputation.last_event_slot = Clock::get()?.slot;
+
+        emit!(CreditProfileUpdated {
+            agent: reputation.agent,
+            credit_score: reputation.credit_score,
+            credit_limit_atoms: reputation.credit_limit_atoms,
+            outstanding_balance_atoms: reputation.outstanding_balance_atoms,
+            repaid_advances: reputation.repaid_advances,
+            defaulted_advances: reputation.defaulted_advances,
         });
 
         Ok(())
@@ -301,6 +391,13 @@ pub struct RegisterAgent<'info> {
         bump
     )]
     pub reputation: Account<'info, AgentReputation>,
+    /// CHECK: Optional MPL Core asset providing identity attestation. When
+    /// provided, the handler verifies (a) account-owner is MPL_CORE and
+    /// (b) the asset's stored `owner` field at byte offset 1..33 equals
+    /// the agent's signing pubkey. Either check failing rejects the tx.
+    /// When `None`, identity_registered stays false; the agent can still
+    /// register but with the bare-bones fresh credit baseline.
+    pub agent_asset: Option<UncheckedAccount<'info>>,
     pub system_program: Program<'info, System>,
 }
 

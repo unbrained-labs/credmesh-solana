@@ -18,4 +18,6 @@ pub enum ReputationError {
     UnauthorizedWriter,
     #[msg("Outstanding balance underflow — settle/liquidate amount exceeds tracked outstanding")]
     OutstandingUnderflow,
+    #[msg("Identity proof invalid — MPL Core asset owner mismatch or wrong account-owner program")]
+    IdentityProofInvalid,
 }

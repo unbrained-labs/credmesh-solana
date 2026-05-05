@@ -66,19 +66,17 @@ pub struct AgentReputation {
     pub last_event_slot: u64,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct AgentRegistrationParams {
-    /// Initial trust score 0..100. EVM lane sources this from ERC-8004
-    /// registry or SAS attestations. Pass 0 for unknown.
-    pub trust_score: u32,
-    pub attestation_count: u32,
-    pub cooperation_success_count: u32,
-    pub successful_jobs: u32,
-    pub failed_jobs: u32,
-    /// Average completed payout in USDC atoms. EVM uses dollars; we keep
-    /// atoms throughout to avoid the unit confusion.
-    pub average_completed_payout_atoms: u64,
-    pub identity_registered: bool,
+/// Update payload for `update_agent_attestations` (writer-gated). Each field
+/// is `Option` so the writer can update only the values they have new
+/// evidence for. Mirrors the EVM credit-worker's incremental updates to its
+/// AgentRecord via the `/credit/profile` endpoint, but on-chain.
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
+pub struct AgentAttestationUpdate {
+    pub trust_score: Option<u32>,
+    pub attestation_count: Option<u32>,
+    pub cooperation_success_count: Option<u32>,
+    pub average_completed_payout_atoms: Option<u64>,
+    pub identity_registered: Option<bool>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
