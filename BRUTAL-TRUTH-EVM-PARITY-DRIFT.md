@@ -172,6 +172,32 @@ Order of operations:
 
 Each step lands as its own commit on `dev` so the diff is reviewable.
 
+## Investigation note — issue #15 IDL extraction (2026-05-06)
+
+Spent a session attempting reproduction. The actual error in
+anchor-syn 0.30.1 is at `src/idl/external.rs:21`:
+
+```rust
+std::env::var("ANCHOR_IDL_BUILD_PROGRAM_PATH").expect("Failed to get program path");
+```
+
+This is **set by the `anchor build` CLI when it invokes the IDL pass** —
+NOT by raw `cargo build --features idl-build`. So:
+
+- Local `cargo build --features idl-build` will always panic with
+  "Failed to get program path" because the env var isn't exported.
+- The original issue #15 is about a DIFFERENT failure mode: the IDL
+  pass not resolving the `AssociatedToken` type even when invoked
+  correctly via `anchor build`. The escrow already has a workaround
+  comment about this in `instructions/request_advance.rs`.
+- Reproducing the actual issue #15 needs the Anchor CLI + the Docker
+  recipe in DEPLOYMENT.md § Build environment (Docker).
+
+**Status:** deferred. Needs a session with the Docker pinning + Anchor
+CLI installed to actually reproduce + fix. Not blocking the on-chain
+program correctness — every program builds and runs; the gap is the
+TS-side typed-client generation.
+
 ## What this is NOT
 
 - A new branch or fork. Everything goes on `dev`.
