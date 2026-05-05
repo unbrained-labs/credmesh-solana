@@ -103,9 +103,20 @@ pub mod mpl_delegate_record {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum SourceKind {
+    /// CredMesh worker observed the receivable via off-chain integration.
+    /// Lowest trust; matches EVM `worker_attested` (10% claim ratio).
     Worker,
+    /// Receivable face value signed by an `AllowedSigner` ed25519 key
+    /// (e.g. an exchange withdrawal proof). Matches EVM `signed_receivable`
+    /// (20% claim ratio).
     Ed25519,
+    /// X402 facilitator-attested receivable (variant of Ed25519 path with
+    /// distinct AllowedSigner kind = 2).
     X402,
+    /// Permissionless marketplace post — any caller can create. Pays rent
+    /// for the Receivable PDA (self-limiting against spam). EVM-parity
+    /// with `POST /marketplace/jobs`. Same claim ratio as Worker (10%).
+    Marketplace,
 }
 
 impl SourceKind {
@@ -118,7 +129,19 @@ impl SourceKind {
             0 => Some(Self::Worker),
             1 => Some(Self::Ed25519),
             2 => Some(Self::X402),
+            3 => Some(Self::Marketplace),
             _ => None,
+        }
+    }
+
+    /// Claim-type ratio in basis points (port of EVM CLAIM_RATIOS in
+    /// `protocol-spec/index.js:23-27`). Returned in bps (10000 = 100%).
+    pub fn claim_ratio_bps(self) -> u16 {
+        match self {
+            // worker_attested: 0.1 = 1000 bps
+            Self::Worker | Self::Marketplace => 1000,
+            // signed_receivable: 0.2 = 2000 bps
+            Self::Ed25519 | Self::X402 => 2000,
         }
     }
 }

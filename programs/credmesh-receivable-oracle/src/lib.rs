@@ -47,6 +47,54 @@ pub mod credmesh_receivable_oracle {
         Ok(())
     }
 
+    /// Permissionless marketplace post. Any caller (the marketplace, the
+    /// agent itself, a third-party facilitator) creates a `Receivable` PDA
+    /// for the agent. Caller pays the rent — that's the spam cost.
+    /// EVM-parity with `POST /marketplace/jobs`
+    /// (`packages/credit-worker/src/routes/marketplace.ts`).
+    /// Lives at `[RECEIVABLE_SEED, &[3u8], agent, source_id]` so it cannot
+    /// collide with worker-attested or ed25519-attested receivables.
+    /// Escrow's `request_advance` underwrites against the lower of
+    /// `pool.max_advance_pct_bps` and `SourceKind::claim_ratio_bps()`.
+    pub fn register_job(
+        ctx: Context<RegisterJob>,
+        source_id: [u8; 32],
+        amount: u64,
+        expires_at: i64,
+    ) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        let slot = Clock::get()?.slot;
+
+        require!(expires_at > now, OracleError::ReceivableExpired);
+        require!(amount > 0, OracleError::MathOverflow);
+
+        let receivable = &mut ctx.accounts.receivable;
+        receivable.bump = ctx.bumps.receivable;
+        receivable.agent = ctx.accounts.agent.key();
+        receivable.source_id = source_id;
+        receivable.source_kind = credmesh_shared::SourceKind::Marketplace.as_u8();
+        receivable.source_signer = None;
+        receivable.amount = amount;
+        receivable.expires_at = expires_at;
+        receivable.last_updated_slot = slot;
+        // The poster is recorded as authority for transparency — but it is
+        // NOT a privilege. Anyone can poster, and the agent's standing
+        // credit limit (not the poster's identity) governs the actual cap.
+        receivable.authority = ctx.accounts.poster.key();
+
+        emit!(ReceivableUpdated {
+            agent: receivable.agent,
+            source_id,
+            source_kind: receivable.source_kind,
+            source_signer: None,
+            amount,
+            expires_at,
+            authority: receivable.authority,
+        });
+
+        Ok(())
+    }
+
     pub fn worker_update_receivable(
         ctx: Context<WorkerUpdateReceivable>,
         source_id: [u8; 32],
@@ -355,6 +403,36 @@ pub struct WorkerUpdateReceivable<'info> {
         payer = worker,
         space = Receivable::SIZE,
         seeds = [RECEIVABLE_SEED, &[0u8], agent.key().as_ref(), source_id.as_ref()],
+        bump
+    )]
+    pub receivable: Account<'info, Receivable>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(source_id: [u8; 32])]
+pub struct RegisterJob<'info> {
+    /// Permissionless caller. May be the agent itself, the marketplace, or
+    /// any third party. The poster pays rent for the Receivable PDA — that
+    /// is the spam cost. The agent's standing `credit_limit_atoms` and
+    /// `outstanding_balance_atoms` (on credmesh-reputation) cap any actual
+    /// advance, so a fake high-face-value job cannot extract funds.
+    #[account(mut)]
+    pub poster: Signer<'info>,
+    /// CHECK: The agent the job is for. Used as a seed; identity binding
+    /// happens later when the agent (or its delegate) calls `request_advance`
+    /// against this Receivable.
+    pub agent: UncheckedAccount<'info>,
+    /// `init` (not `init_if_needed`) so a fresh `register_job` cannot
+    /// silently overwrite an existing Marketplace-posted Receivable that
+    /// might have an active advance referencing it. Marketplace =
+    /// `SourceKind::Marketplace.as_u8() = 3`. Distinct namespace from
+    /// Worker (0), Ed25519 (1), X402 (2).
+    #[account(
+        init,
+        payer = poster,
+        space = Receivable::SIZE,
+        seeds = [RECEIVABLE_SEED, &[3u8], agent.key().as_ref(), source_id.as_ref()],
         bump
     )]
     pub receivable: Account<'info, Receivable>,

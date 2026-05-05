@@ -14,7 +14,7 @@ use crate::state::{
 };
 
 #[derive(Accounts)]
-#[instruction(receivable_id: [u8; 32])]
+#[instruction(receivable_id: [u8; 32], _amount: u64, source_kind: u8)]
 pub struct RequestAdvance<'info> {
     #[account(mut)]
     pub agent: Signer<'info>,
@@ -42,12 +42,15 @@ pub struct RequestAdvance<'info> {
     /// caller passes `None` (encoded as a missing account); a typed `Account`
     /// without `Option` would fail the discriminator check there. Anchor
     /// runs the four-step verify on `Some` only (issue #4).
-    /// Audit-MED #3 fix: the source_kind byte (`[0]` for Worker) is part of
-    /// the receivable PDA seed, so the address Anchor verifies here can only
-    /// resolve to a Worker-created receivable — an ed25519-attested receivable
-    /// (kind=1/2) lives at a different address and cannot pass this gate.
+    /// Receivable PDA owned by credmesh-receivable-oracle, required for
+    /// Worker (kind=0) and Marketplace (kind=3) source kinds. For Ed25519
+    /// (1) and X402 (2) the receivable data comes from ix introspection;
+    /// caller passes `None` here.
+    /// Audit-MED #3 fix: source_kind byte is part of the seed so each kind
+    /// has its own address namespace (a Worker receivable can't collide
+    /// with a Marketplace one or an ed25519 one).
     #[account(
-        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, &[0u8], agent.key().as_ref(), receivable_id.as_ref()],
+        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, &[source_kind], agent.key().as_ref(), receivable_id.as_ref()],
         seeds::program = credmesh_receivable_oracle::ID,
         bump,
     )]
@@ -149,7 +152,10 @@ pub fn handler(
     // signed receivable (Ed25519/X402 paths). Issue #4: same Anchor-typed
     // pattern; the Worker path resolves the `Option<Account>` to `Some`.
     let (receivable_amount, receivable_expires_at, source_signer) = match kind {
-        credmesh_shared::SourceKind::Worker => {
+        credmesh_shared::SourceKind::Worker | credmesh_shared::SourceKind::Marketplace => {
+            // Both Worker- and Marketplace-attested receivables resolve to a
+            // typed Receivable PDA (Anchor's seeds::program runs the
+            // four-step verify). Marketplace path is permissionless to post.
             let receivable = ctx
                 .accounts
                 .receivable_pda
@@ -215,8 +221,21 @@ pub fn handler(
 
     require!(receivable_expires_at > now, CredmeshError::ReceivableExpired);
 
-    // (4) Cap checks: amount <= min(receivable * pct_bps / 10000, abs_cap, credit_from_score).
+    // (4) Cap checks: amount <= min(claim_ratio_cap, pool_pct_cap, abs_cap,
+    // available_credit). claim_ratio_cap mirrors EVM `getClaimCap` — each
+    // claim type has a hardcoded ratio (Worker/Marketplace = 10%, Ed25519/
+    // X402 = 20%). Pool's max_advance_pct_bps is a governance-tunable
+    // additional ceiling.
     let pool = &ctx.accounts.pool;
+    let claim_ratio_bps = kind.claim_ratio_bps() as u128;
+    let claim_cap = (receivable_amount as u128)
+        .checked_mul(claim_ratio_bps)
+        .ok_or(CredmeshError::MathOverflow)?
+        .checked_div(BPS_DENOMINATOR as u128)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let claim_cap = u64::try_from(claim_cap).map_err(|_| error!(CredmeshError::MathOverflow))?;
+    require!(amount <= claim_cap, CredmeshError::AdvanceExceedsCap);
+
     let pct_cap = (receivable_amount as u128)
         .checked_mul(pool.max_advance_pct_bps as u128)
         .ok_or(CredmeshError::MathOverflow)?
