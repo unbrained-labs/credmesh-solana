@@ -71,7 +71,8 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
 - **PDA seeds come from `credmesh-shared::seeds`.** Never re-declare seed bytes in two crates — they will silently drift.
 - **`ConsumedPayment` is permanent** (AUDIT P0-5). Closing it reopens close-then-reinit replay. Don't add a close handler.
 - **`request_advance` has no pause path.** Advance issuance is never gated by governance. The "no pause on issuance" invariant is load-bearing — see DESIGN §3.5 and AUDIT P0-6.
-- **`claim_and_settle` is two-mode** (DECISIONS Q9, supersedes AUDIT P0-3/P0-4 deferral). Mode A = agent self-cranks (legacy v1 path, bit-for-bit preserved); Mode B = third-party relayer cranks via SPL `Approve` delegate granted by `request_advance`. Source-of-funds and destination-of-funds ATAs are constrained per-account so cranker identity is not load-bearing for safety. Full design: `research/CONTRARIAN-permissionless-settle.md`.
+- **`claim_and_settle` is three-mode** (DECISIONS Q9 + Q10). Mode A = agent self-cranks; Mode B = relayer settles via SPL delegate granted at `request_advance`; Mode 3 = cranker funds repayment from own ATA (EVM-parity `settle(advanceId, payout)` — marketplace pays directly with its own USDC, agent never involved). Source-of-funds owner pinned dynamically to {agent, cranker}; substitution defenses don't depend on cranker identity. Full design: `research/CONTRARIAN-permissionless-settle.md`.
+- **EVM-parity credit-line model is the v1 default** (BRUTAL-TRUTH-EVM-PARITY-DRIFT.md, DECISIONS Q3 amended). AgentReputation has `credit_limit_atoms` + `outstanding_balance_atoms`; underwriting enforces `available = limit - outstanding` (EVM `availableCredit`). Score formula in `programs/credmesh-reputation/src/scoring.rs` is a port of `credit-worker/src/credit.ts:24-56`. **MPL Core and Squads-as-configAuthority are OPT-IN.** Raw-keypair agents are first-class; `register_agent` is one tx with the agent as signer.
 - **Three-key topology** (DESIGN §10): fee-payer, oracle worker authority, reputation writer authority must NEVER share keys. The off-chain config and rotation flow enforce this.
 - **All math is `checked_*`** or wrapped in u128. Cargo.toml sets `overflow-checks = true` in release; don't rely on it.
 - **Errors map to typed enums** (`CredmeshError`, `ReputationError`, `OracleError`). No `unwrap()` in handlers.
@@ -97,7 +98,7 @@ Per DESIGN §9:
 - Mobile Wallet Adapter / Solana Mobile
 - Hyperliquid Lazer publisher
 - Light Protocol compressed PDAs
-- Plain-EOA agents (Squads-only for v1)
+- ~~Plain-EOA agents (Squads-only for v1)~~ **REVERSED 2026-05-06 — raw-keypair agents are first-class; Squads is opt-in. DECISIONS Q3 amended.**
 - Multi-asset pools (USDC only)
 - Per-instruction-type timelock granularity
 - Token-2022 USDC handling (Circle hasn't migrated)

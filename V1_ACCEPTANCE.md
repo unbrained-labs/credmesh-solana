@@ -97,13 +97,26 @@ Per DESIGN §9:
 - Mobile Wallet Adapter / Solana Mobile
 - Hyperliquid Lazer publisher
 - Light Protocol compressed PDAs
-- Plain-EOA agents (Squads-only for v1)
+- ~~Plain-EOA agents (Squads-only for v1)~~ **REVERSED 2026-05-06 — raw-keypair agents are first-class. Squads is opt-in. DECISIONS Q3 amended; see BRUTAL-TRUTH-EVM-PARITY-DRIFT.md.**
 - Multi-asset pools (USDC only)
 - Per-instruction-type timelock granularity
 - Token-2022 USDC handling (DRAFT spike in PR #31, never merge to main per starter prompt)
 - Embedded-wallet (Phantom Portal) auth
-- ~~Permissionless `claim_and_settle` cranking~~ **landed via DECISIONS Q9** — SPL `Approve` delegate granted in `request_advance`; two-mode dispatch in handler. See `research/CONTRARIAN-permissionless-settle.md`.
+- ~~Permissionless `claim_and_settle` cranking~~ **landed via DECISIONS Q9** — SPL `Approve` delegate + Mode 3 (cranker funds). See `research/CONTRARIAN-permissionless-settle.md`.
 - Multi-issuer SAS attestations (deferred to v1.5; schema documented now)
+
+## EVM-parity port status (BRUTAL-TRUTH-EVM-PARITY-DRIFT.md)
+
+8 structural drifts identified; 6 closed on `dev`:
+
+- [x] AgentReputation gets `credit_limit_atoms` + `outstanding_balance_atoms` (port of EVM `creditLimit`/`availableCredit`)
+- [x] `register_agent` ix — one-tx onboarding, agent's keypair signs, no MPL/Squads required
+- [x] `register_job` ix — permissionless marketplace primitive, claim-type-based ratios (EVM `POST /marketplace/jobs`)
+- [x] Mode 3 settlement — cranker funds repayment from own ATA (EVM `settle(advanceId, payout)`)
+- [x] Issue #40 — Squads CPI verification helper for governance ixs
+- [x] Outreach agent integration — Solana worker exposes `/.well-known/agent.json` with `outreach` block
+- [ ] `transfer_checked` migration — CLAUDE.md hard-rule violation, not parity-blocking
+- [ ] EVM-side outreach scanner (`packages/outreach-agent/src/scanners/solana.ts`) — separate work in the EVM repo
 
 ## Legend
 

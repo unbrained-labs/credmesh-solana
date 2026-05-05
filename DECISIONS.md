@@ -33,9 +33,21 @@ These choices unblock handler-body implementation. Where the decision required c
 
 ---
 
-## Q3. Squads onboarding → **Path A (Controlled Multisig with sovereignty off-ramp)**
+## Q3. Squads onboarding → **AMENDED 2026-05-06: Squads is OPT-IN, not the default**
 
-**Decision**: Each agent's vault is a Squads v4 multisig with `configAuthority = CredMesh's governance vault PDA`. CredMesh holds unilateral authority to add/update SpendingLimit PDAs on the agent's vault. Onboarding is **two transactions** (verified): (1) `multisig_create_v2` signed by the agent + an ephemeral `create_key`, (2) CredMesh governance executes a vault transaction whose inner ix is `multisig_add_spending_limit` against the agent's multisig. The vault is an *implicit PDA*, not a separately created account.
+**Original decision (DEPRECATED, see BRUTAL-TRUTH-EVM-PARITY-DRIFT.md):** Path A — every agent's vault is a Squads v4 multisig with `configAuthority = CredMesh's governance vault PDA`, and CredMesh holds unilateral authority over SpendingLimits. The off-ramp was bilateral.
+
+**Revised decision (this branch):** Squads-as-configAuthority is **opt-in** for agents who want a multisig treasury. It is **NOT** required to use the protocol. The default agent is a raw Solana keypair (or any Squads vault the agent themselves controls without CredMesh as configAuthority).
+
+**Why the revision:** the bilateral off-ramp from the original decision is structurally a human-approval gate ("agent requests → CredMesh governance executes a vault tx setting config_authority = Pubkey::default()"). For an *autonomous-agent* protocol (the EVM lane's stated thesis: agent2agent credit card with no human in the loop), CredMesh holding a release veto is incompatible with the value proposition.
+
+**What changes in code:**
+- `request_advance` no longer requires an MPL Core asset OR a Squads vault. AgentReputation is keyed off the agent's signing pubkey.
+- `register_agent` (new ix on credmesh-reputation) takes a profile in one tx; the agent is the only signer needed.
+- The MPL Core flow remains as opt-in (`agent_asset` and `agent_identity` are `Option<UncheckedAccount>` on `RequestAdvance`). When provided, they boost trust score per the EVM lane's `identityRegistered` flag.
+- Squads governance for the *protocol's* fee curve and treasury (Pool.governance) stays — that's CredMesh's own multisig over the protocol parameters, not a control surface on agents. Issue #40 fix lands the CPI verification helper.
+
+**Original Path A rationale** (kept for reference; no longer applies as default):
 
 **Off-ramp (corrected from initial draft)**: revoking `configAuthority` requires `multisig_set_config_authority` whose signer must be **the current `config_authority`** (= CredMesh governance). So the off-ramp is *bilateral*: agent requests → CredMesh governance executes a vault transaction setting `config_authority = Pubkey::default()`. This is not a one-click unilateral exit. The honest framing for the agent: "if you want to leave, ask CredMesh to release you; if CredMesh refuses, your unilateral path is to migrate funds out via your own member-controlled vault transactions before any new spending limit applies." Document this clearly in the dashboard onboarding flow.
 
@@ -146,6 +158,11 @@ Constants live in `credmesh-shared::ed25519_message`.
 | Q6 | PayAI for v1, self-host Kora documented for v2 | TS server config (no on-chain change) |
 | Q8 | 96-byte ed25519 layout (already speculative); nonce derivation rule | Locked in `credmesh-shared::ed25519_message` |
 | Q9 | Permissionless `claim_and_settle` via SPL `Approve` delegate (overrides AUDIT P0-3/P0-4 deferral) | Two-mode dispatch in `claim_and_settle`; `request_advance` CPIs `token::approve`; design in `research/CONTRARIAN-permissionless-settle.md` |
+| Q3 (amended 2026-05-06) | Squads-as-configAuthority is **opt-in**, not default. MPL Core is opt-in. AgentReputation keyed off agent's pubkey. | `register_agent` ix; MPL fields become `Option<UncheckedAccount>`; bilateral off-ramp removed from default flow |
+| Q10 | Three-mode settlement: A self-crank, B SPL-delegate relayer, **3 cranker funds repayment from own ATA (EVM `settle(advanceId, payout)` parity)** | `claim_and_settle` dispatches on (cranker, payer.owner) |
+| Q11 | Permissionless marketplace primitive: `register_job` ix on credmesh-receivable-oracle (no authority, caller pays rent) | EVM-parity with `POST /marketplace/jobs`; SourceKind::Marketplace = 3 |
+| Q12 | Issue #40 fix — Squads CPI verification on `propose_params`/`skim_protocol_fees` via `require_squads_governance_cpi` | governance becomes UncheckedAccount address-pinned to pool.governance |
+| Q13 | Cross-lane outreach loop — Solana worker exposes `/.well-known/agent.json` with `outreach` block; EVM-side scanner pitches CredMesh-Solana to underperforming Solana DeFi vault operators | Agent card lives at `ts/server/`; scanner lives in EVM repo (follow-up) |
 
 ## What's now unblocked
 
