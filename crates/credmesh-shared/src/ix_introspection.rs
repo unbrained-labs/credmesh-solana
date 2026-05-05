@@ -14,7 +14,7 @@ use anchor_lang::solana_program::sysvar::instructions::{
     load_current_index_checked, load_instruction_at_checked,
 };
 
-use crate::program_ids::{ED25519, MEMO};
+use crate::program_ids::{ED25519, MEMO, SQUADS_V4};
 
 #[derive(Clone, Copy, Debug)]
 pub enum IxIntrospectionError {
@@ -142,4 +142,41 @@ pub fn require_memo_nonce(
         }
     }
     Err(IxIntrospectionError::MemoNotFound)
+}
+
+/// Verify the current tx contains a Squads v4 instruction that references
+/// the expected governance vault PDA among its accounts. This is the
+/// defensive check that gates governance instructions on credmesh-escrow
+/// (propose_params, skim_protocol_fees) — Squads vault PDAs cannot be
+/// `Signer`s in Anchor, so the equivalent of "must be signed by Squads"
+/// is "must be in a tx that contains a Squads ix touching this vault."
+///
+/// Threat model: an attacker tx that includes BOTH (a) a Squads ix
+/// touching the right vault for some unrelated purpose AND (b) the
+/// gated CredMesh ix would pass this check. Mitigation: such an attack
+/// requires authorization from the Squads multisig members anyway, so
+/// the practical surface is "Squads multisig is compromised" — same as
+/// any direct-Signer authorization.
+///
+/// For tighter binding (verifying the inner ix matches THIS handler
+/// call), we'd need to parse Squads `vault_transaction_execute` data.
+/// That's a v1.5 hardening; v1 accepts the same-tx heuristic.
+pub fn require_squads_governance_cpi(
+    sysvar_instructions_ai: &AccountInfo<'_>,
+    expected_vault: &Pubkey,
+) -> std::result::Result<(), IxIntrospectionError> {
+    for idx in 0..MAX_IX_SCAN {
+        match load_instruction_at_checked(idx, sysvar_instructions_ai) {
+            Ok(ix) => {
+                if ix.program_id != SQUADS_V4 {
+                    continue;
+                }
+                if ix.accounts.iter().any(|a| a.pubkey == *expected_vault) {
+                    return Ok(());
+                }
+            }
+            Err(_) => break,
+        }
+    }
+    Err(IxIntrospectionError::PrevIxNotFound)
 }
