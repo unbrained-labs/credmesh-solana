@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
-use anchor_spl::token::{self, Mint, Revoke, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, Revoke, Token, TokenAccount, TransferChecked};
 
 use crate::errors::CredmeshError;
 use crate::events::AdvanceSettled;
@@ -219,30 +219,39 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
         None
     };
 
+    let usdc_mint_ai = ctx.accounts.usdc_mint.to_account_info();
+    let usdc_decimals = ctx.accounts.usdc_mint.decimals;
+
     settle_transfer(
         token_program_ai.clone(),
         payer_ata_ai.clone(),
+        usdc_mint_ai.clone(),
         ctx.accounts.protocol_treasury_ata.to_account_info(),
         authority_ai.clone(),
         signer_seeds,
         protocol_cut,
+        usdc_decimals,
     )?;
     settle_transfer(
         token_program_ai.clone(),
         payer_ata_ai.clone(),
+        usdc_mint_ai.clone(),
         ctx.accounts.pool_usdc_vault.to_account_info(),
         authority_ai.clone(),
         signer_seeds,
         lp_cut,
+        usdc_decimals,
     )?;
     if !payer_eq_agent {
         settle_transfer(
             token_program_ai.clone(),
             payer_ata_ai.clone(),
+            usdc_mint_ai.clone(),
             ctx.accounts.agent_usdc_ata.to_account_info(),
             authority_ai.clone(),
             signer_seeds,
             agent_net,
+            usdc_decimals,
         )?;
     }
 
@@ -302,29 +311,35 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
     Ok(())
 }
 
-/// One-shot SPL transfer that picks signer-vs-non-signer CPI shape based on
-/// whether the caller passed PDA seeds. Used by `claim_and_settle`'s two-mode
-/// waterfall: Mode A passes `None` (cranker-signed); Mode B passes the pool
-/// PDA seeds (program-signed via the SPL `Approve` delegate). Free function
-/// rather than a closure because `Transfer<'info>` is invariant over `'info`
-/// and closures cannot name an outer lifetime they don't capture.
+/// One-shot SPL transfer_checked that picks signer-vs-non-signer CPI shape
+/// based on whether the caller passed PDA seeds. Used by `claim_and_settle`'s
+/// three-mode waterfall (Mode A self-crank, Mode B SPL-delegate, Mode 3
+/// cranker-funded). Free function rather than a closure because
+/// `TransferChecked<'info>` is invariant over `'info` and closures cannot
+/// name an outer lifetime they don't capture.
+///
+/// transfer_checked (vs bare transfer) asserts the mint's decimals match
+/// the supplied value — Token-2022 forward-compat per CLAUDE.md hard rule.
 fn settle_transfer<'info>(
     token_program: AccountInfo<'info>,
     from: AccountInfo<'info>,
+    mint: AccountInfo<'info>,
     to: AccountInfo<'info>,
     authority: AccountInfo<'info>,
     signer_seeds: Option<&[&[&[u8]]]>,
     amount: u64,
+    decimals: u8,
 ) -> Result<()> {
     if amount == 0 {
         return Ok(());
     }
-    let accounts = Transfer { from, to, authority };
+    let accounts = TransferChecked { from, mint, to, authority };
     match signer_seeds {
-        Some(seeds) => token::transfer(
+        Some(seeds) => token::transfer_checked(
             CpiContext::new_with_signer(token_program, accounts, seeds),
             amount,
+            decimals,
         ),
-        None => token::transfer(CpiContext::new(token_program, accounts), amount),
+        None => token::transfer_checked(CpiContext::new(token_program, accounts), amount, decimals),
     }
 }

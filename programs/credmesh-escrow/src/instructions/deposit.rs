@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, TransferChecked};
 
 use crate::errors::CredmeshError;
 use crate::events::Deposited;
@@ -28,6 +28,10 @@ pub struct Deposit<'info> {
         token::authority = lp
     )]
     pub lp_share_ata: Account<'info, TokenAccount>,
+    /// USDC mint, address-pinned to pool.asset_mint. Required for the
+    /// transfer_checked CPI's decimals assertion.
+    #[account(address = pool.asset_mint)]
+    pub usdc_mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -42,16 +46,18 @@ pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
     require!(shares_to_mint > 0, CredmeshError::MathOverflow);
 
     // Transfer USDC LP → vault. Authority is the LP's signer.
-    token::transfer(
+    token::transfer_checked(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
-            Transfer {
+            TransferChecked {
                 from: ctx.accounts.lp_usdc_ata.to_account_info(),
+                mint: ctx.accounts.usdc_mint.to_account_info(),
                 to: ctx.accounts.usdc_vault.to_account_info(),
                 authority: ctx.accounts.lp.to_account_info(),
             },
         ),
         amount,
+        ctx.accounts.usdc_mint.decimals,
     )?;
 
     // Mint shares to LP. Authority is the Pool PDA, signed by seeds.
@@ -59,6 +65,9 @@ pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
     let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
     let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
+    // Note: anchor-spl 0.30.1 does NOT expose mint_to_checked. CLAUDE.md
+    // mandates transfer_checked but mint_to has no checked variant in the
+    // anchor-spl wrapper. Stays as bare mint_to.
     token::mint_to(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),

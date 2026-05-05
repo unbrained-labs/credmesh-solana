@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{self, Approve, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Approve, Mint, Token, TokenAccount, TransferChecked};
 
 use crate::errors::CredmeshError;
 use crate::events::{AdvanceIssued, SettlementDelegateApproved};
@@ -275,17 +275,19 @@ pub fn handler(
     let pool_seeds = pool.signer_seeds(&bump_arr);
     let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
-    token::transfer(
+    token::transfer_checked(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
-            Transfer {
+            TransferChecked {
                 from: ctx.accounts.pool_usdc_vault.to_account_info(),
+                mint: ctx.accounts.usdc_mint.to_account_info(),
                 to: ctx.accounts.agent_usdc_ata.to_account_info(),
                 authority: ctx.accounts.pool.to_account_info(),
             },
             signer_seeds,
         ),
         amount,
+        ctx.accounts.usdc_mint.decimals,
     )?;
 
     // (6b) Grant pool PDA delegate authority on agent's USDC ATA so Mode B

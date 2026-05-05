@@ -79,6 +79,7 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
 - **Cross-program seed constants come from `credmesh-shared`.** Each program `pub use`s only the seeds it actually uses, so its own clients can derive PDAs without depending on `credmesh-shared`.
 - **Events are emitted as the LAST step of each handler.** A partial failure mid-handler shouldn't emit a misleading event.
 - **No `find_program_address` in hot paths** when the bump is already cached. Per HANDLER_PATTERNS.md Pattern 2 (~1500 CU per call). Use `Pubkey::create_program_address(seeds_with_bump, program_id)` instead.
+- **Use `transfer_checked` not bare `transfer`.** All 6 transfer call sites in credmesh-escrow have been migrated. anchor-spl 0.30.1 does NOT expose `mint_to_checked` or `burn_checked` — those stay as bare `mint_to` / `burn` (one site each: `deposit::handler` and `withdraw::handler`); upgrade when anchor-spl ships the wrappers.
 - **`emit!` is the LAST line.** Anti-pattern: emitting before all CPIs succeed.
 
 ## What NOT to do
@@ -89,7 +90,7 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
 - Don't introduce Light Protocol compressed PDAs or Token-2022 features in v1. Both are explicitly v2+.
 - Don't add per-record SQL persistence on the off-chain server. State migrates to on-chain PDAs (DESIGN §6); SQLite is a derived-view cache only.
 - Don't use `init_if_needed` for replay-protection PDAs — only `init`. AUDIT P0-5.
-- Don't use bare `transfer` — Token-2022 forward-compat requires `transfer_checked`.
+- ~~Don't use bare `transfer` — Token-2022 forward-compat requires `transfer_checked`.~~ **Done — 0 bare transfer sites in credmesh-escrow as of 2026-05-06. Bare `mint_to` and `burn` remain at 1 site each because anchor-spl 0.30.1 doesn't expose checked variants for those.**
 
 ## V1 explicitly NOT in scope (deferred)
 

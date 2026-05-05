@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount, TransferChecked};
 
 use crate::errors::CredmeshError;
 use crate::events::Withdrew;
@@ -28,6 +28,10 @@ pub struct Withdraw<'info> {
         token::authority = lp
     )]
     pub lp_share_ata: Account<'info, TokenAccount>,
+    /// USDC mint, address-pinned to pool.asset_mint. Required for the
+    /// transfer_checked CPI's decimals assertion.
+    #[account(address = pool.asset_mint)]
+    pub usdc_mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -50,6 +54,8 @@ pub fn handler(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
     );
 
     // Burn LP shares first (no signer needed; lp is authority).
+    // Note: anchor-spl 0.30.1 does not expose burn_checked. Bare burn is
+    // used here; transfer_checked is enforced everywhere it IS available.
     token::burn(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -67,17 +73,19 @@ pub fn handler(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
     let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
     let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
-    token::transfer(
+    token::transfer_checked(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
-            Transfer {
+            TransferChecked {
                 from: ctx.accounts.usdc_vault.to_account_info(),
+                mint: ctx.accounts.usdc_mint.to_account_info(),
                 to: ctx.accounts.lp_usdc_ata.to_account_info(),
                 authority: ctx.accounts.pool.to_account_info(),
             },
             signer_seeds,
         ),
         assets_to_return,
+        ctx.accounts.usdc_mint.decimals,
     )?;
 
     let pool = &mut ctx.accounts.pool;

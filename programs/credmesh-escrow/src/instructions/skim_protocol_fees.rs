@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 
 use crate::errors::CredmeshError;
 use crate::events::ProtocolFeesSkimmed;
@@ -28,6 +28,10 @@ pub struct SkimProtocolFees<'info> {
         address = pool.treasury_ata
     )]
     pub recipient_ata: Account<'info, TokenAccount>,
+    /// USDC mint, address-pinned to pool.asset_mint. Required for the
+    /// transfer_checked CPI's decimals assertion.
+    #[account(address = pool.asset_mint)]
+    pub usdc_mint: Account<'info, Mint>,
     /// CHECK: AUDIT P1-2 — pinned to the canonical sysvar instructions account.
     #[account(address = sysvar_instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,
@@ -52,17 +56,19 @@ pub fn handler(ctx: Context<SkimProtocolFees>, amount: u64) -> Result<()> {
     let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
     let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
-    token::transfer(
+    token::transfer_checked(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
-            Transfer {
+            TransferChecked {
                 from: ctx.accounts.pool_usdc_vault.to_account_info(),
+                mint: ctx.accounts.usdc_mint.to_account_info(),
                 to: ctx.accounts.recipient_ata.to_account_info(),
                 authority: ctx.accounts.pool.to_account_info(),
             },
             signer_seeds,
         ),
         amount,
+        ctx.accounts.usdc_mint.decimals,
     )?;
 
     let pool = &mut ctx.accounts.pool;
