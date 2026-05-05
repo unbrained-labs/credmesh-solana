@@ -47,27 +47,6 @@ pub fn preview_redeem(shares: u64, total_assets: u64, total_shares: u64) -> Resu
     u64::try_from(assets).map_err(|_| error!(CredmeshError::MathOverflow))
 }
 
-/// Map agent's reputation score (u128 with 18 decimals) into a max-credit cap
-/// in USDC atoms. Tier curve per DECISIONS Q6 (no ML in v1).
-///
-/// Curve: score 0 → $0; score 50 (10⁶ × 50 in 18-dec representation) → $25;
-///         score 80 → $100; score 95+ → $250 (KYC tier).
-/// Hard ceiling = pool.max_advance_abs.
-#[inline]
-pub fn credit_from_score_ema(score_ema: u128, _curve: &FeeCurve) -> Result<u64> {
-    // score_ema is u128 with 18 decimals — divide by 10^18 to get integer 0..100.
-    let score_int = (score_ema / 1_000_000_000_000_000_000u128) as u64;
-    let credit_usd = match score_int {
-        0..=20 => 0u64,
-        21..=49 => 10_000_000,   // $10
-        50..=69 => 25_000_000,   // $25
-        70..=84 => 100_000_000,  // $100
-        85..=94 => 200_000_000,  // $200
-        _ => 250_000_000,        // $250 (95-100; KYC-tier-equivalent)
-    };
-    Ok(credit_usd)
-}
-
 /// Compute the per-issuance fee. Mirrors `pricing.ts` shape:
 /// utilization premium + duration premium + risk premium + (pool loss surcharge omitted in v1).
 /// Returns USDC atoms (6 decimals).

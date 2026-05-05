@@ -6,7 +6,7 @@ use anchor_spl::token::{self, Approve, Mint, Token, TokenAccount, Transfer};
 use crate::errors::CredmeshError;
 use crate::events::{AdvanceIssued, SettlementDelegateApproved};
 use crate::pricing::{
-    compute_fee_amount, compute_late_penalty_per_day, compute_utilization_bps, credit_from_score_ema,
+    compute_fee_amount, compute_late_penalty_per_day, compute_utilization_bps,
 };
 use crate::state::{
     Advance, AdvanceState, ConsumedPayment, Pool, ADVANCE_SEED, BPS_DENOMINATOR, CONSUMED_SEED,
@@ -18,23 +18,20 @@ use crate::state::{
 pub struct RequestAdvance<'info> {
     #[account(mut)]
     pub agent: Signer<'info>,
-    /// CHECK: DECISIONS Q1 — agent_asset is an MPL Core asset (Solana account-owner
-    /// is MPL_CORE, NOT the registry program). The handler reads the asset's
-    /// `BaseAssetV1.owner` field at byte offset 1..33, then verifies the agent
-    /// signer is either the owner or a registered DelegateExecutionV1 delegate
-    /// (account-read against MPL Agent Tools — no CPI).
-    #[account(owner = credmesh_shared::program_ids::MPL_CORE @ CredmeshError::InvalidAgentAsset)]
-    pub agent_asset: UncheckedAccount<'info>,
-    /// CHECK: AgentIdentityV2 PDA (or V1, both readable) owned by MPL Agent Registry.
-    /// Handler re-derives ["agent_identity", agent_asset.key()] under MPL_AGENT_REGISTRY
-    /// and asserts equality. Required to prove agent_asset is registered as an Agent.
-    pub agent_identity: UncheckedAccount<'info>,
-    /// AgentReputation PDA owned by credmesh-reputation. Issue #4: Anchor's
-    /// typed Account + seeds::program does the four-step verify (owner →
-    /// address → discriminator → deserialize) declaratively. The handler
-    /// reads `score_ema` / `default_count` directly off this typed account.
+    /// CHECK: OPTIONAL MPL Core asset for agents who opted in to ERC-8004-style
+    /// identity attestation. When `Some`, the handler runs `verify_agent_signer`
+    /// (asset.owner OR registered DelegateExecutionV1 delegate). When `None`,
+    /// the agent's keypair is sole authority. Per the EVM-parity port,
+    /// MPL Core is **opt-in**, not required (DECISIONS Q1 amended).
+    pub agent_asset: Option<UncheckedAccount<'info>>,
+    /// CHECK: Optional AgentIdentityV2 PDA. Pair with `agent_asset`.
+    pub agent_identity: Option<UncheckedAccount<'info>>,
+    /// AgentReputation PDA owned by credmesh-reputation, seeded by the
+    /// agent's primary signing key (not by an MPL asset). The handler
+    /// underwrites against `credit_limit_atoms - outstanding_balance_atoms`
+    /// (EVM-parity port of `availableCredit` from credit.ts:44).
     #[account(
-        seeds = [credmesh_shared::seeds::REPUTATION_SEED, agent_asset.key().as_ref()],
+        seeds = [credmesh_shared::seeds::REPUTATION_SEED, agent.key().as_ref()],
         seeds::program = credmesh_reputation::ID,
         bump,
     )]
@@ -118,24 +115,30 @@ pub fn handler(
     let now = clock.unix_timestamp;
     let slot = clock.slot;
 
-    // (1) Verify agent identity (MPL Core asset + DelegateExecutionV1).
-    // Per DECISIONS Q1; account-read only, no CPI.
-    let exec_profile = ctx.accounts.executive_profile.as_ref().map(|a| a.as_ref());
-    let exec_record = ctx.accounts.execution_delegate_record.as_ref().map(|a| a.as_ref());
-    credmesh_shared::mpl_identity::verify_agent_signer(
-        &ctx.accounts.agent.key(),
-        &ctx.accounts.agent_asset.to_account_info(),
-        &ctx.accounts.agent_identity.to_account_info(),
-        exec_profile,
-        exec_record,
-    )
-    .map_err(|e| match e {
-        credmesh_shared::mpl_identity::IdentityError::NotACoreAsset
-        | credmesh_shared::mpl_identity::IdentityError::AgentNotRegistered => {
-            error!(CredmeshError::InvalidAgentAsset)
-        }
-        _ => error!(CredmeshError::AgentBindingMismatch),
-    })?;
+    // (1) Optional MPL Core identity verification. EVM-parity: ERC-8004
+    // attestation is opt-in; raw-keypair agents are first-class. When
+    // `agent_asset` is None, the agent's signature is sole authority.
+    if let (Some(asset), Some(identity)) = (
+        ctx.accounts.agent_asset.as_ref(),
+        ctx.accounts.agent_identity.as_ref(),
+    ) {
+        let exec_profile = ctx.accounts.executive_profile.as_ref().map(|a| a.as_ref());
+        let exec_record = ctx.accounts.execution_delegate_record.as_ref().map(|a| a.as_ref());
+        credmesh_shared::mpl_identity::verify_agent_signer(
+            &ctx.accounts.agent.key(),
+            &asset.to_account_info(),
+            &identity.to_account_info(),
+            exec_profile,
+            exec_record,
+        )
+        .map_err(|e| match e {
+            credmesh_shared::mpl_identity::IdentityError::NotACoreAsset
+            | credmesh_shared::mpl_identity::IdentityError::AgentNotRegistered => {
+                error!(CredmeshError::InvalidAgentAsset)
+            }
+            _ => error!(CredmeshError::AgentBindingMismatch),
+        })?;
+    }
 
     // (2) Read AgentReputation cross-program. Issue #4: typed `Account` with
     // `seeds::program` runs Anchor's owner+address+discriminator+deserialize
@@ -198,8 +201,10 @@ pub fn handler(
                 msg_recv_id == receivable_id.as_ref(),
                 CredmeshError::Ed25519MessageMismatch
             );
+            // EVM-parity port: ed25519 messages are bound to the agent's
+            // signing key (not to an MPL asset). Raw-keypair agents work.
             require!(
-                msg_agent == ctx.accounts.agent_asset.key().as_ref(),
+                msg_agent == ctx.accounts.agent.key().as_ref(),
                 CredmeshError::Ed25519MessageMismatch
             );
             require!(msg_nonce == nonce.as_ref(), CredmeshError::Ed25519MessageMismatch);
@@ -221,18 +226,28 @@ pub fn handler(
     require!(amount <= pct_cap, CredmeshError::AdvanceExceedsCap);
     require!(amount <= pool.max_advance_abs, CredmeshError::AdvanceExceedsCap);
 
-    let credit_from_score = credit_from_score_ema(reputation.score_ema, &pool.fee_curve)?;
-    require!(amount <= credit_from_score, CredmeshError::AdvanceExceedsCredit);
+    // EVM-parity: enforce against the agent's STANDING credit line minus
+    // their rolling outstanding exposure. credit_limit_atoms and
+    // outstanding_balance_atoms are maintained by credmesh-reputation
+    // (register_agent + record_advance_issued + record_settlement_outcome
+    // + record_default). Score / limit formulas mirror credit.ts:24-56.
+    let available_credit = reputation
+        .credit_limit_atoms
+        .saturating_sub(reputation.outstanding_balance_atoms);
+    require!(amount <= available_credit, CredmeshError::AdvanceExceedsCredit);
 
     // (5) Compute fee from the on-chain curve. The off-chain server's
     // pricing.ts must produce the same number; tests assert the equality.
     let duration_seconds = receivable_expires_at.saturating_sub(now).max(0) as u64;
     let utilization = compute_utilization_bps(pool)?;
+    // Approximate default count by total defaults; the EVM lane's
+    // computeFeeAmount uses the same proxy.
+    let default_count = reputation.defaulted_advances;
     let fee_owed = compute_fee_amount(
         amount,
         duration_seconds,
         utilization,
-        reputation.default_count,
+        default_count,
         &pool.fee_curve,
     )?;
 

@@ -12,4 +12,10 @@ pub enum ReputationError {
     NotOriginalSigner,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Trust score must be 0-100")]
+    TrustScoreOutOfRange,
+    #[msg("Caller is not the configured reputation_writer_authority")]
+    UnauthorizedWriter,
+    #[msg("Outstanding balance underflow — settle/liquidate amount exceeds tracked outstanding")]
+    OutstandingUnderflow,
 }

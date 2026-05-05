@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 pub mod errors;
 pub mod events;
+pub mod scoring;
 pub mod state;
 
 pub use errors::ReputationError;
@@ -15,24 +16,186 @@ declare_id!("JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G");
 pub mod credmesh_reputation {
     use super::*;
 
-    pub fn init_reputation(ctx: Context<InitReputation>) -> Result<()> {
+    /// Onboards a new agent with an initial credit profile. Mirrors the EVM
+    /// lane's `POST /agents/register` (`credit-worker/src/routes/agents.ts`)
+    /// — one tx, agent's keypair as signer, no MPL Core or Squads required.
+    /// Computes initial credit_score and credit_limit_atoms via the scoring
+    /// module (port of `credit.ts:24-56`).
+    pub fn register_agent(
+        ctx: Context<RegisterAgent>,
+        params: AgentRegistrationParams,
+    ) -> Result<()> {
+        require!(params.trust_score <= 100, ReputationError::TrustScoreOutOfRange);
+
         let reputation = &mut ctx.accounts.reputation;
         reputation.bump = ctx.bumps.reputation;
-        reputation.agent_asset = ctx.accounts.agent_asset.key();
+        reputation.agent = ctx.accounts.agent.key();
+
+        reputation.trust_score = params.trust_score;
+        reputation.attestation_count = params.attestation_count;
+        reputation.cooperation_success_count = params.cooperation_success_count;
+        reputation.successful_jobs = params.successful_jobs;
+        reputation.failed_jobs = params.failed_jobs;
+        reputation.average_completed_payout_atoms = params.average_completed_payout_atoms;
+        reputation.identity_registered = params.identity_registered;
+        reputation.outstanding_balance_atoms = 0;
+        reputation.repaid_advances = 0;
+        reputation.defaulted_advances = 0;
+
+        // First score + limit pass.
+        reputation.credit_score = scoring::compute_credit_score(reputation);
+        reputation.credit_limit_atoms = scoring::compute_credit_limit_atoms(reputation);
+
+        // Permissionless feedback log fields start fresh.
         reputation.feedback_count = 0;
         reputation.feedback_digest = [0u8; 32];
         reputation.score_ema = 0;
         reputation.default_count = 0;
         reputation.last_event_slot = Clock::get()?.slot;
 
-        emit!(ReputationInitialized {
-            agent_asset: reputation.agent_asset,
+        emit!(AgentRegistered {
+            agent: reputation.agent,
             reputation_pda: reputation.key(),
+            credit_score: reputation.credit_score,
+            credit_limit_atoms: reputation.credit_limit_atoms,
+            trust_score: reputation.trust_score,
+            identity_registered: reputation.identity_registered,
         });
 
         Ok(())
     }
 
+    /// Increments outstanding_balance when an advance is issued. Authorized to
+    /// `oracle_config.reputation_writer_authority` (the CredMesh worker key
+    /// per DECISIONS Q4). For Phase-2 on-chain autonomy this becomes a CPI
+    /// from credmesh-escrow's pool PDA — Phase-1 keeps the writer-gated path
+    /// matching the EVM credit-worker model.
+    pub fn record_advance_issued(
+        ctx: Context<RecordReputationEvent>,
+        principal_atoms: u64,
+    ) -> Result<()> {
+        require_writer_authority(&ctx.accounts.attestor, &ctx.accounts.oracle_config)?;
+
+        let reputation = &mut ctx.accounts.reputation;
+        reputation.outstanding_balance_atoms = reputation
+            .outstanding_balance_atoms
+            .checked_add(principal_atoms)
+            .ok_or(ReputationError::MathOverflow)?;
+        // Score depends on outstanding_balance penalty; refresh.
+        reputation.credit_score = scoring::compute_credit_score(reputation);
+        reputation.credit_limit_atoms = scoring::compute_credit_limit_atoms(reputation);
+        reputation.last_event_slot = Clock::get()?.slot;
+
+        emit!(AdvanceRecorded {
+            agent: reputation.agent,
+            principal_atoms,
+            outstanding_after_atoms: reputation.outstanding_balance_atoms,
+        });
+
+        Ok(())
+    }
+
+    /// Decrements outstanding_balance + bumps repaid_advances + (optionally)
+    /// updates successful_jobs / average_payout. Triggered by escrow's
+    /// AdvanceSettled event (off-chain writer in Phase 1).
+    pub fn record_settlement_outcome(
+        ctx: Context<RecordReputationEvent>,
+        principal_atoms: u64,
+        bump_successful_job: bool,
+        completed_payout_atoms: u64,
+    ) -> Result<()> {
+        require_writer_authority(&ctx.accounts.attestor, &ctx.accounts.oracle_config)?;
+
+        let reputation = &mut ctx.accounts.reputation;
+        reputation.outstanding_balance_atoms = reputation
+            .outstanding_balance_atoms
+            .checked_sub(principal_atoms)
+            .ok_or(ReputationError::OutstandingUnderflow)?;
+        reputation.repaid_advances = reputation
+            .repaid_advances
+            .checked_add(1)
+            .ok_or(ReputationError::MathOverflow)?;
+
+        if bump_successful_job {
+            // Update running average payout: (avg * n + new) / (n + 1)
+            let prev_n = reputation.successful_jobs as u128;
+            let prev_avg = reputation.average_completed_payout_atoms as u128;
+            let new_n = prev_n
+                .checked_add(1)
+                .ok_or(ReputationError::MathOverflow)?;
+            let total = prev_avg
+                .checked_mul(prev_n)
+                .ok_or(ReputationError::MathOverflow)?
+                .checked_add(completed_payout_atoms as u128)
+                .ok_or(ReputationError::MathOverflow)?;
+            reputation.average_completed_payout_atoms = (total / new_n) as u64;
+            reputation.successful_jobs = reputation
+                .successful_jobs
+                .checked_add(1)
+                .ok_or(ReputationError::MathOverflow)?;
+        }
+
+        reputation.credit_score = scoring::compute_credit_score(reputation);
+        reputation.credit_limit_atoms = scoring::compute_credit_limit_atoms(reputation);
+        reputation.last_event_slot = Clock::get()?.slot;
+
+        emit!(SettlementRecorded {
+            agent: reputation.agent,
+            principal_atoms,
+            outstanding_after_atoms: reputation.outstanding_balance_atoms,
+            credit_limit_after_atoms: reputation.credit_limit_atoms,
+            repaid_advances_after: reputation.repaid_advances,
+        });
+
+        Ok(())
+    }
+
+    /// Decrements outstanding_balance + bumps defaulted_advances and
+    /// failed_jobs. Triggered by escrow's AdvanceLiquidated event.
+    pub fn record_default(
+        ctx: Context<RecordReputationEvent>,
+        principal_atoms: u64,
+    ) -> Result<()> {
+        require_writer_authority(&ctx.accounts.attestor, &ctx.accounts.oracle_config)?;
+
+        let reputation = &mut ctx.accounts.reputation;
+        reputation.outstanding_balance_atoms = reputation
+            .outstanding_balance_atoms
+            .checked_sub(principal_atoms)
+            .ok_or(ReputationError::OutstandingUnderflow)?;
+        reputation.defaulted_advances = reputation
+            .defaulted_advances
+            .checked_add(1)
+            .ok_or(ReputationError::MathOverflow)?;
+        reputation.failed_jobs = reputation
+            .failed_jobs
+            .checked_add(1)
+            .ok_or(ReputationError::MathOverflow)?;
+        reputation.default_count = reputation
+            .default_count
+            .checked_add(1)
+            .ok_or(ReputationError::MathOverflow)?;
+
+        reputation.credit_score = scoring::compute_credit_score(reputation);
+        reputation.credit_limit_atoms = scoring::compute_credit_limit_atoms(reputation);
+        reputation.last_event_slot = Clock::get()?.slot;
+
+        emit!(DefaultRecorded {
+            agent: reputation.agent,
+            principal_atoms,
+            outstanding_after_atoms: reputation.outstanding_balance_atoms,
+            credit_limit_after_atoms: reputation.credit_limit_atoms,
+            defaulted_advances_after: reputation.defaulted_advances,
+        });
+
+        Ok(())
+    }
+
+    /// Permissionless feedback (DECISIONS Q4): anyone can attest, only
+    /// `reputation_writer_authority`-signed feedback updates `score_ema`.
+    /// `score_ema` is kept separate from the EVM-port `credit_score` for v1
+    /// (the EMA feeds the SAS / 8004 indexer ecosystem; underwriting uses
+    /// `credit_score` derived from explicit job/advance counters).
     pub fn give_feedback(ctx: Context<GiveFeedback>, input: FeedbackInput) -> Result<()> {
         require!(input.score <= 100, ReputationError::InvalidScore);
         require!(
@@ -40,25 +203,10 @@ pub mod credmesh_reputation {
             ReputationError::UriTooLong
         );
 
-        let now = Clock::get()?.unix_timestamp;
-        let slot = Clock::get()?.slot;
-
-        // (1) Read OracleConfig cross-program ONLY for the writer-authority
-        // gate. Per-period cap state can NOT be persisted from this handler
-        // (we only own the AgentReputation PDA, not OracleConfig). v1 enforces
-        // reputation write rate-limits OFF-CHAIN at the worker — the on-chain
-        // gate is purely the writer-authority equality check below.
-        // v1.5 will move the per-period state to a dedicated ReputationConfig
-        // PDA owned by credmesh-reputation. See V1_ACCEPTANCE.md.
-        // Issue #4: typed `Account` + `seeds::program` runs the four-step
-        // verify in the accounts struct; no handler-side manual read needed.
         let oracle_config = &ctx.accounts.oracle_config;
-
-        // (2) Always: append to digest + bump count + emit event.
         let attestor = ctx.accounts.attestor.key();
         let reputation = &mut ctx.accounts.reputation;
 
-        // Rolling keccak digest = keccak(prev_digest || event_hash).
         let event_hash = anchor_lang::solana_program::keccak::hashv(&[
             attestor.as_ref(),
             &[input.score],
@@ -81,20 +229,14 @@ pub mod credmesh_reputation {
             .ok_or(ReputationError::MathOverflow)?;
         let feedback_index = reputation.feedback_count - 1;
 
-        // (3) Writer-gating per DECISIONS Q4: only the configured writer's
-        // feedback updates `score_ema`. Permissionless writes still emit and
-        // update the digest (8004 ergonomics) but don't move the score.
         if attestor == oracle_config.reputation_writer_authority {
             require!(
                 input.score as u32 <= oracle_config.reputation_max_per_tx_score as u32,
                 ReputationError::InvalidScore
             );
 
-            // EMA update with N = EMA_WINDOW. score is u8 0..100; multiply by
-            // 1e18 to get the 18-decimal representation, then EMA.
             let score_scaled = (input.score as u128).saturating_mul(1_000_000_000_000_000_000u128);
             let n = EMA_WINDOW as u128;
-            // ema_new = (ema_old * (n - 1) + new_score) / n
             let ema_old = reputation.score_ema;
             let weighted_old = ema_old
                 .checked_mul(n.saturating_sub(1))
@@ -105,22 +247,17 @@ pub mod credmesh_reputation {
             reputation.score_ema = sum.checked_div(n).ok_or(ReputationError::MathOverflow)?;
 
             if input.reason_code & 0x8000 != 0 {
-                // Convention: high bit of reason_code indicates a default event.
                 reputation.default_count = reputation
                     .default_count
                     .checked_add(1)
                     .ok_or(ReputationError::MathOverflow)?;
             }
 
-            reputation.last_event_slot = slot;
+            reputation.last_event_slot = Clock::get()?.slot;
         }
 
-        // Issue #3: emit via CPI inner-instruction so the event survives
-        // a noisy-log adversary tx that pushes the LogCollector past 10 KB.
-        // NewFeedback carries variable-length fields (feedback_uri up to 200 B)
-        // and is the only event in this program at risk of truncation.
         emit_cpi!(NewFeedback {
-            agent_asset: reputation.agent_asset,
+            agent: reputation.agent,
             feedback_index,
             attestor,
             score: input.score,
@@ -136,57 +273,57 @@ pub mod credmesh_reputation {
 
         Ok(())
     }
+}
 
-    pub fn append_response(
-        ctx: Context<AppendResponse>,
-        feedback_index: u64,
-        response_uri: String,
-        response_hash: [u8; 32],
-    ) -> Result<()> {
-        let _ = (ctx, feedback_index, response_uri, response_hash);
-        Ok(())
-    }
-
-    pub fn revoke_feedback(ctx: Context<RevokeFeedback>, feedback_index: u64) -> Result<()> {
-        let _ = (ctx, feedback_index);
-        Ok(())
-    }
+fn require_writer_authority<'info>(
+    attestor: &Signer<'info>,
+    oracle_config: &Account<'info, credmesh_receivable_oracle::OracleConfig>,
+) -> Result<()> {
+    require!(
+        attestor.key() == oracle_config.reputation_writer_authority,
+        ReputationError::UnauthorizedWriter
+    );
+    Ok(())
 }
 
 #[derive(Accounts)]
-pub struct InitReputation<'info> {
+pub struct RegisterAgent<'info> {
+    /// The agent being registered. Signs the tx so a third party cannot
+    /// register a profile in someone else's name.
+    pub agent: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
-    /// CHECK: Agent registry asset; just a key seed. Q1 will determine which
-    /// program owns this account; once Q1 lands, add `owner = agent_registry::ID`.
-    pub agent_asset: UncheckedAccount<'info>,
     #[account(
         init,
         payer = payer,
         space = 8 + AgentReputation::INIT_SPACE,
-        seeds = [REPUTATION_SEED, agent_asset.key().as_ref()],
+        seeds = [REPUTATION_SEED, agent.key().as_ref()],
         bump
     )]
     pub reputation: Account<'info, AgentReputation>,
     pub system_program: Program<'info, System>,
 }
 
-#[event_cpi]
 #[derive(Accounts)]
-pub struct GiveFeedback<'info> {
+pub struct RecordReputationEvent<'info> {
+    /// Must equal `oracle_config.reputation_writer_authority`. Verified in
+    /// the handler. Phase-2 will swap this for a Pool-PDA-signed CPI from
+    /// credmesh-escrow.
     pub attestor: Signer<'info>,
-    /// CHECK: Just a seed source.
-    pub agent_asset: UncheckedAccount<'info>,
+    /// The agent whose reputation is being updated. Not a signer here —
+    /// settle/liquidate events fire after the fact, with no agent
+    /// involvement (matches EVM's worker-driven update model).
+    /// CHECK: Identity verified by the seeds derivation on `reputation`.
+    pub agent: UncheckedAccount<'info>,
     #[account(
         mut,
-        seeds = [REPUTATION_SEED, agent_asset.key().as_ref()],
+        seeds = [REPUTATION_SEED, agent.key().as_ref()],
         bump = reputation.bump
     )]
     pub reputation: Account<'info, AgentReputation>,
-    /// OracleConfig PDA owned by credmesh-receivable-oracle. Issue #4: typed
-    /// `Account` with `seeds::program` runs Anchor's owner+address+discriminator+
-    /// deserialize verify automatically. Read for the writer-authority gate
-    /// (`reputation_writer_authority` + `reputation_max_per_tx_score`).
+    /// OracleConfig PDA owned by credmesh-receivable-oracle. Anchor's typed
+    /// Account + seeds::program runs the four-step verify. Read for the
+    /// writer-authority gate.
     #[account(
         seeds = [credmesh_shared::seeds::ORACLE_CONFIG_SEED],
         seeds::program = credmesh_receivable_oracle::ID,
@@ -195,27 +332,22 @@ pub struct GiveFeedback<'info> {
     pub oracle_config: Account<'info, credmesh_receivable_oracle::OracleConfig>,
 }
 
+#[event_cpi]
 #[derive(Accounts)]
-pub struct AppendResponse<'info> {
-    pub responder: Signer<'info>,
-    /// CHECK: Seed source.
-    pub agent_asset: UncheckedAccount<'info>,
-    #[account(
-        seeds = [REPUTATION_SEED, agent_asset.key().as_ref()],
-        bump = reputation.bump
-    )]
-    pub reputation: Account<'info, AgentReputation>,
-}
-
-#[derive(Accounts)]
-pub struct RevokeFeedback<'info> {
-    pub original_attestor: Signer<'info>,
-    /// CHECK: Seed source.
-    pub agent_asset: UncheckedAccount<'info>,
+pub struct GiveFeedback<'info> {
+    pub attestor: Signer<'info>,
+    /// CHECK: Just a seed source.
+    pub agent: UncheckedAccount<'info>,
     #[account(
         mut,
-        seeds = [REPUTATION_SEED, agent_asset.key().as_ref()],
+        seeds = [REPUTATION_SEED, agent.key().as_ref()],
         bump = reputation.bump
     )]
     pub reputation: Account<'info, AgentReputation>,
+    #[account(
+        seeds = [credmesh_shared::seeds::ORACLE_CONFIG_SEED],
+        seeds::program = credmesh_receivable_oracle::ID,
+        bump,
+    )]
+    pub oracle_config: Account<'info, credmesh_receivable_oracle::OracleConfig>,
 }
