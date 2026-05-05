@@ -129,26 +129,88 @@ for (const m of writeMounts) {
   app.use(m, authMiddleware);
 }
 
+// Routes below are explicitly NOT implemented. Each returns 501 with a
+// machine-readable `unblocker` reference so a calling agent (or dashboard)
+// can detect-and-route around them rather than getting silent placeholder
+// JSON. The unblocker for everything that needs a typed program client is
+// issue #15 (Anchor 0.30 IDL extraction). When that lands, a Codama-
+// generated client replaces these stubs.
+
+const NOT_IMPLEMENTED_AGENT_READ = {
+  status: "not_implemented",
+  reason: "On-chain account read requires Codama IDL client.",
+  unblocker: {
+    issue: 15,
+    title: "Anchor 0.30 IDL extraction fails on AssociatedToken",
+    workaround:
+      "Read the AgentReputation PDA directly via @solana/web3.js; PDA seeds are [\"agent_reputation\", agent_pubkey] under program JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G. Field layout in programs/credmesh-reputation/src/state.rs.",
+  },
+} as const;
+
+const NOT_IMPLEMENTED_TX_BUILDER = {
+  status: "not_implemented",
+  reason: "Transaction builder requires Codama IDL client to serialize ix data.",
+  unblocker: {
+    issue: 15,
+    title: "Anchor 0.30 IDL extraction fails on AssociatedToken",
+    workaround:
+      "Agent-side: call request_advance directly via @solana/web3.js with manually-borsh-encoded args. Account list and ix-arg layout in programs/credmesh-escrow/src/instructions/request_advance.rs.",
+  },
+} as const;
+
 app.get("/agents/:address", (c) => {
-  return c.json({
-    address: c.req.param("address"),
-    note: "TODO: read agent state from on-chain PDAs + derived-view cache",
-  });
+  return c.json(
+    {
+      address: c.req.param("address"),
+      ...NOT_IMPLEMENTED_AGENT_READ,
+    },
+    501,
+  );
 });
 
 app.post("/agents/:address/advance", (c) => {
-  return c.json({
-    status: "TODO",
-    message: "buildRequestAdvanceTx — returns base64 unsigned VersionedTransaction. See DESIGN §6.",
-  });
+  return c.json(
+    {
+      address: c.req.param("address"),
+      ...NOT_IMPLEMENTED_TX_BUILDER,
+    },
+    501,
+  );
 });
 
+/**
+ * Helius webhook ingest. Verifies the X-Helius-Auth secret (operator
+ * sets HELIUS_WEBHOOK_SECRET in env), then accepts the event payload.
+ *
+ * Payload persistence to a SQLite derived-view cache lands together with
+ * issue #42 (server route handlers); for now the endpoint validates auth
+ * and acknowledges receipt without persisting. This is NOT a silent
+ * placeholder — the response explicitly carries a `persistence` field
+ * indicating the cache write is deferred. Operators monitoring the
+ * webhook see the auth gate work; downstream consumers see the explicit
+ * "not_yet_persisted" signal and can fall back to direct chain reads.
+ */
 app.post("/webhooks/helius", async (c) => {
   const expected = process.env.HELIUS_WEBHOOK_SECRET;
   if (expected && c.req.header("X-Helius-Auth") !== expected) {
     return c.json({ error: "unauthorized" }, 401);
   }
-  return c.json({ ok: true, ingested: 0 });
+  let payloadCount = 0;
+  try {
+    const body = await c.req.json();
+    payloadCount = Array.isArray(body) ? body.length : 1;
+  } catch {
+    payloadCount = 0;
+  }
+  return c.json({
+    ok: true,
+    received: payloadCount,
+    persistence: "not_yet_persisted",
+    unblocker: {
+      issue: 42,
+      title: "ts/server route handlers — wire SQLite derived-view cache + SSE relay",
+    },
+  });
 });
 
 const port = Number(process.env.PORT) || 3000;

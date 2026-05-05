@@ -9,7 +9,8 @@ pub use errors::ReputationError;
 pub use events::*;
 pub use state::*;
 
-// PLACEHOLDER — replace before deploy via `anchor keys sync`. See DEPLOYMENT.md.
+// Devnet program ID — the keypair is reserved per DEPLOYMENT.md § Devnet deploy log.
+// Mainnet uses a different keypair generated via `anchor keys sync` before promotion.
 declare_id!("JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G");
 
 #[program]
