@@ -53,17 +53,15 @@ pub struct ClaimAndSettle<'info> {
     /// AUDIT P0-3: pinned to the Pool's stored treasury ATA.
     #[account(mut, address = pool.treasury_ata)]
     pub protocol_treasury_ata: Account<'info, TokenAccount>,
-    /// Source of settlement funds. Pinned to `token::authority = advance.agent`
-    /// so the cranker (who may be any relayer in Mode B) cannot substitute an
-    /// attacker-owned ATA. In Mode B the handler additionally requires
-    /// `payer_usdc_ata.key() == agent_usdc_ata.key()`; in Mode A a distinct
-    /// payer ATA owned by the agent is still allowed (e.g., agent settles from
-    /// a treasury ATA different from the disbursement ATA).
-    #[account(
-        mut,
-        token::mint = pool.asset_mint,
-        token::authority = advance.agent
-    )]
+    /// Source of settlement funds. Mint-pinned to USDC; ownership verified
+    /// dynamically by the handler (see Mode A/B/3 dispatch). The handler
+    /// requires `payer_usdc_ata.owner` to be EITHER `advance.agent` (Mode A
+    /// or Mode B) OR `cranker.key()` (Mode 3 — EVM-parity
+    /// `settle(advanceId, payout)` where the marketplace funds the
+    /// repayment with its own USDC and the agent is never involved in
+    /// settlement). Substitution is blocked because in any case the
+    /// payer's owner must be a known principal whose USDC will move.
+    #[account(mut, token::mint = pool.asset_mint)]
     pub payer_usdc_ata: Account<'info, TokenAccount>,
     #[account(address = pool.asset_mint)]
     pub usdc_mint: Account<'info, Mint>,
@@ -149,20 +147,50 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
         CredmeshError::WaterfallSumMismatch
     );
 
-    // Two-mode dispatch (see ClaimAndSettle doc): Mode A signs with the
-    // cranker; Mode B signs with the pool PDA via the SPL delegate.
-    let is_self_crank = ctx.accounts.cranker.key() == ctx.accounts.advance.agent;
+    // Three-mode dispatch on (cranker identity, payer ownership):
+    //
+    //   Mode A — agent self-cranks. cranker == agent && payer.owner == agent.
+    //     Cranker signs as ATA owner; auto-revoke at end.
+    //
+    //   Mode B — relayer settles via SPL delegate. cranker != agent
+    //     && payer.owner == agent (== agent_usdc_ata) && pool is the
+    //     SPL delegate granted at request_advance time. Pool PDA signs
+    //     via PDA seeds. SPL Token decrements delegated_amount per
+    //     transfer.
+    //
+    //   Mode 3 — cranker funds the repayment from their own ATA
+    //     (EVM-parity `settle(advanceId, payout)`). cranker != agent
+    //     && payer.owner == cranker. Cranker signs as ATA owner; the
+    //     marketplace funds repayment with its own USDC and the agent
+    //     is never involved in settlement.
+    //
+    // Substitution defense: payer_usdc_ata.mint is pinned to USDC by
+    // account-struct constraint. Owner is verified here against the only
+    // two principals whose USDC may legitimately move (agent or cranker).
+    let cranker_key = ctx.accounts.cranker.key();
+    let agent_key = ctx.accounts.advance.agent;
+    let payer_owner = ctx.accounts.payer_usdc_ata.owner;
+    let is_self_crank = cranker_key == agent_key;
     let payer_eq_agent =
         ctx.accounts.payer_usdc_ata.key() == ctx.accounts.agent_usdc_ata.key();
+
+    // Mode disambiguation:
+    let owner_signs = payer_owner == cranker_key; // Mode A or Mode 3
+    let delegate_signs = !owner_signs && payer_owner == agent_key; // Mode B
+    require!(
+        owner_signs || delegate_signs,
+        CredmeshError::PayerOwnerInvalid
+    );
 
     let pool_pda_key = ctx.accounts.pool.key();
     let bump_arr = [ctx.accounts.pool.bump];
     let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
     let pool_signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
-    if !is_self_crank {
-        // Belt-and-suspenders: SPL Token enforces these too, but failing
-        // here yields a typed error and skips the failed CPI's CU cost.
+    if delegate_signs {
+        // Mode B preconditions: payer must be agent_usdc_ata (the ATA the
+        // delegate was granted on); pool must be the recorded delegate;
+        // delegated_amount covers total_owed.
         require!(payer_eq_agent, CredmeshError::PayerMustBeAgentInPermissionless);
         let delegate = ctx
             .accounts
@@ -178,15 +206,17 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
 
     let token_program_ai = ctx.accounts.token_program.to_account_info();
     let payer_ata_ai = ctx.accounts.payer_usdc_ata.to_account_info();
-    let authority_ai = if is_self_crank {
+    let authority_ai = if owner_signs {
+        // Mode A or Mode 3: cranker is the owner of payer_ata, signs.
         ctx.accounts.cranker.to_account_info()
     } else {
+        // Mode B: pool PDA signs as delegate.
         ctx.accounts.pool.to_account_info()
     };
-    let signer_seeds: Option<&[&[&[u8]]]> = if is_self_crank {
-        None
-    } else {
+    let signer_seeds: Option<&[&[&[u8]]]> = if delegate_signs {
         Some(pool_signer_seeds)
+    } else {
+        None
     };
 
     settle_transfer(
@@ -216,12 +246,13 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
         )?;
     }
 
-    // Mode A: zero out the SPL delegation that `request_advance` granted.
-    // Mode B's transfers naturally decrement `delegated_amount` via the
-    // delegate-authorized path, leaving only the bounded late-penalty
-    // residual; off-chain Revoke happens when the agent is online. Mode A
-    // signs as owner, so the program can CPI Revoke directly here.
-    if is_self_crank {
+    // Mode A: agent self-cranked AND payer is the agent's own ATA — we
+    // can CPI Revoke (cranker == agent == owner) to zero out the
+    // request_advance approval. Mode B's transfers natively decrement
+    // delegated_amount; off-chain Revoke happens when the agent is online.
+    // Mode 3 doesn't touch the agent's delegation at all (cranker pays
+    // from their own ATA), so no revoke applies.
+    if is_self_crank && payer_eq_agent {
         token::revoke(CpiContext::new(
             token_program_ai,
             Revoke {
@@ -248,8 +279,7 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
         .ok_or(CredmeshError::MathOverflow)?;
 
     let advance_key = ctx.accounts.advance.key();
-    let agent_key = ctx.accounts.advance.agent;
-    let cranker_key = ctx.accounts.cranker.key();
+    // (agent_key, cranker_key already cached above for the dispatch.)
 
     // The Anchor `close = agent` constraint on the Advance account
     // closes it at end-of-handler; rent goes to agent (neutralizes MEV

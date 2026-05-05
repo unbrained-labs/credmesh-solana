@@ -62,6 +62,8 @@ pub enum CredmeshError {
     DelegateNotApproved,
     #[msg("Delegated amount on agent's USDC ATA is less than total_owed — re-approve before settlement")]
     DelegateAmountInsufficient,
-    #[msg("In permissionless settlement, payer_usdc_ata must equal agent_usdc_ata (v1 limitation)")]
+    #[msg("In permissionless settlement (Mode B), payer_usdc_ata must equal agent_usdc_ata")]
     PayerMustBeAgentInPermissionless,
+    #[msg("payer_usdc_ata owner must be either advance.agent (Mode A/B) or cranker (Mode 3)")]
+    PayerOwnerInvalid,
 }
