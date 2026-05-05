@@ -37,6 +37,18 @@ pub struct Pool {
     pub pending_params: Option<PendingParams>,
 }
 
+impl Pool {
+    /// PDA seeds for signing as the pool authority. Caller stack-allocates
+    /// the bump array (Solana's `&[u8]` slot needs storage that outlives
+    /// the CPI call). Pattern: `let bump = [pool.bump]; let seeds =
+    /// pool.signer_seeds(&bump); let signer: &[&[&[u8]]] = &[&seeds];`.
+    /// Centralizes the seed shape so a future seed change updates one site.
+    #[inline]
+    pub fn signer_seeds<'a>(&'a self, bump: &'a [u8; 1]) -> [&'a [u8]; 3] {
+        [POOL_SEED, self.asset_mint.as_ref(), bump]
+    }
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Default, InitSpace)]
 pub struct FeeCurve {
     pub utilization_kink_bps: u16,

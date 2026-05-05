@@ -36,7 +36,6 @@ pub fn handler(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
 
     let total_assets = ctx.accounts.pool.total_assets;
     let total_shares = ctx.accounts.pool.total_shares;
-    let asset_mint = ctx.accounts.pool.asset_mint;
     let pool_bump = ctx.accounts.pool.bump;
 
     let assets_to_return = preview_redeem(shares, total_assets, total_shares)?;
@@ -65,8 +64,8 @@ pub fn handler(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
 
     // Transfer USDC vault → LP. Authority is the Pool PDA.
     let bump_arr = [pool_bump];
-    let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
-    let signer_seeds = &[pool_seeds];
+    let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
+    let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
     token::transfer(
         CpiContext::new_with_signer(

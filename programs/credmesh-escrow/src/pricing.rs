@@ -10,6 +10,7 @@ use crate::state::{
 /// inflation attack costs ≥10⁶× any extractable profit.
 ///
 /// shares_minted = (amount * (total_shares + V_S)) / (total_assets + V_A)
+#[inline]
 pub fn preview_deposit(amount: u64, total_assets: u64, total_shares: u64) -> Result<u64> {
     let amount_u = amount as u128;
     let shares_off = (total_shares as u128)
@@ -28,6 +29,7 @@ pub fn preview_deposit(amount: u64, total_assets: u64, total_shares: u64) -> Res
 }
 
 /// assets_returned = (shares * (total_assets + V_A)) / (total_shares + V_S)
+#[inline]
 pub fn preview_redeem(shares: u64, total_assets: u64, total_shares: u64) -> Result<u64> {
     let shares_u = shares as u128;
     let assets_off = (total_assets as u128)
@@ -51,6 +53,7 @@ pub fn preview_redeem(shares: u64, total_assets: u64, total_shares: u64) -> Resu
 /// Curve: score 0 → $0; score 50 (10⁶ × 50 in 18-dec representation) → $25;
 ///         score 80 → $100; score 95+ → $250 (KYC tier).
 /// Hard ceiling = pool.max_advance_abs.
+#[inline]
 pub fn credit_from_score_ema(score_ema: u128, _curve: &FeeCurve) -> Result<u64> {
     // score_ema is u128 with 18 decimals — divide by 10^18 to get integer 0..100.
     let score_int = (score_ema / 1_000_000_000_000_000_000u128) as u64;
@@ -68,6 +71,7 @@ pub fn credit_from_score_ema(score_ema: u128, _curve: &FeeCurve) -> Result<u64> 
 /// Compute the per-issuance fee. Mirrors `pricing.ts` shape:
 /// utilization premium + duration premium + risk premium + (pool loss surcharge omitted in v1).
 /// Returns USDC atoms (6 decimals).
+#[inline]
 pub fn compute_fee_amount(
     principal: u64,
     duration_seconds: u64,
@@ -119,6 +123,7 @@ pub fn compute_fee_amount(
     u64::try_from(fee_u128).map_err(|_| error!(CredmeshError::MathOverflow))
 }
 
+#[inline]
 pub fn compute_late_penalty_per_day(principal: u64, curve: &FeeCurve) -> Result<u64> {
     // 0.1% per day of principal, multiplied by pool_loss_surcharge_bps if active.
     let base = (principal as u128)
@@ -138,6 +143,7 @@ pub fn compute_late_penalty_per_day(principal: u64, curve: &FeeCurve) -> Result<
     u64::try_from(total).map_err(|_| error!(CredmeshError::MathOverflow))
 }
 
+#[inline]
 pub fn compute_utilization_bps(pool: &Pool) -> Result<u64> {
     if pool.total_assets == 0 {
         return Ok(BPS_DENOMINATOR);

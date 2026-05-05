@@ -11,12 +11,11 @@ use crate::state::{
 
 #[derive(Accounts)]
 pub struct ClaimAndSettle<'info> {
-    /// Any signer; pays tx fee. Handler dispatches Mode A (cranker == agent,
-    /// legacy v1) or Mode B (any cranker, pool PDA signs via SPL delegate
-    /// granted in `request_advance`). Supersedes the AUDIT P0-3/P0-4
-    /// deferral; substitution defenses now live in the per-account
-    /// constraints below, none of which depend on cranker identity. See
-    /// DECISIONS Q9 + `research/CONTRARIAN-permissionless-settle.md`.
+    /// Any signer; pays tx fee. Mode A (cranker == agent) signs as ATA
+    /// owner; Mode B (any cranker) settles via the pool-PDA SPL delegate
+    /// granted in `request_advance`. Substitution defenses are enforced
+    /// by the per-account constraints below — none depend on cranker
+    /// identity. See DECISIONS Q9 + `research/CONTRARIAN-permissionless-settle.md`.
     #[account(mut)]
     pub cranker: Signer<'info>,
     #[account(
@@ -156,12 +155,10 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
     let payer_eq_agent =
         ctx.accounts.payer_usdc_ata.key() == ctx.accounts.agent_usdc_ata.key();
 
-    let asset_mint = ctx.accounts.pool.asset_mint;
-    let pool_bump = ctx.accounts.pool.bump;
     let pool_pda_key = ctx.accounts.pool.key();
-    let bump_arr = [pool_bump];
-    let pool_seeds_arr: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
-    let pool_signer_seeds: &[&[&[u8]]] = &[pool_seeds_arr];
+    let bump_arr = [ctx.accounts.pool.bump];
+    let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
+    let pool_signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
     if !is_self_crank {
         // Belt-and-suspenders: SPL Token enforces these too, but failing

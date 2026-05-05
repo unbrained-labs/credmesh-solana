@@ -114,8 +114,9 @@ pub fn handler(
     let kind = credmesh_shared::SourceKind::from_u8(source_kind)
         .ok_or(CredmeshError::ReceivableStale)?;
 
-    let now = Clock::get()?.unix_timestamp;
-    let slot = Clock::get()?.slot;
+    let clock = Clock::get()?;
+    let now = clock.unix_timestamp;
+    let slot = clock.slot;
 
     // (1) Verify agent identity (MPL Core asset + DelegateExecutionV1).
     // Per DECISIONS Q1; account-read only, no CPI.
@@ -236,11 +237,9 @@ pub fn handler(
     )?;
 
     // (6) Transfer USDC vault → agent. PDA-signed.
-    let asset_mint = pool.asset_mint;
-    let pool_bump = pool.bump;
-    let bump_arr = [pool_bump];
-    let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
-    let signer_seeds = &[pool_seeds];
+    let bump_arr = [pool.bump];
+    let pool_seeds = pool.signer_seeds(&bump_arr);
+    let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
     token::transfer(
         CpiContext::new_with_signer(

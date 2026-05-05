@@ -36,7 +36,6 @@ pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
 
     let total_assets = ctx.accounts.pool.total_assets;
     let total_shares = ctx.accounts.pool.total_shares;
-    let asset_mint = ctx.accounts.pool.asset_mint;
     let pool_bump = ctx.accounts.pool.bump;
 
     let shares_to_mint = preview_deposit(amount, total_assets, total_shares)?;
@@ -57,8 +56,8 @@ pub fn handler(ctx: Context<Deposit>, amount: u64) -> Result<()> {
 
     // Mint shares to LP. Authority is the Pool PDA, signed by seeds.
     let bump_arr = [pool_bump];
-    let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
-    let signer_seeds = &[pool_seeds];
+    let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
+    let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
     token::mint_to(
         CpiContext::new_with_signer(

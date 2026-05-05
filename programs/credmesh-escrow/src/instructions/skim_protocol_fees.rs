@@ -32,11 +32,9 @@ pub fn handler(ctx: Context<SkimProtocolFees>, amount: u64) -> Result<()> {
         CredmeshError::MathOverflow
     );
 
-    let asset_mint = ctx.accounts.pool.asset_mint;
-    let pool_bump = ctx.accounts.pool.bump;
-    let bump_arr = [pool_bump];
-    let pool_seeds: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
-    let signer_seeds = &[pool_seeds];
+    let bump_arr = [ctx.accounts.pool.bump];
+    let pool_seeds = ctx.accounts.pool.signer_seeds(&bump_arr);
+    let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
 
     token::transfer(
         CpiContext::new_with_signer(
