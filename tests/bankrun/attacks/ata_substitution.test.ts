@@ -1,38 +1,31 @@
 /**
  * AUDIT P0-3 / P0-4 — ATA substitution attacks on `claim_and_settle`.
  *
- * Source: programs/credmesh-escrow/src/lib.rs:1010-1066 (ClaimAndSettle struct).
+ * Source: programs/credmesh-escrow/src/lib.rs (ClaimAndSettle struct).
  *
- * Threat model: a malicious cranker swaps in attacker-controlled ATAs in
- * place of the legitimate destination accounts, hoping to redirect either
- * the protocol's 15% cut, the LP's principal+fee, or the agent's net
- * payout into their own wallet.
+ * **Update (permissionless-settle branch):** the original v1 defense leaned
+ * partly on `cranker == advance.agent` to collapse the agent-net redirect
+ * surface. With the two-mode dispatch landed, the cranker is now ANY signer.
+ * This file's defenses must hold without that constraint — and they do,
+ * because every destination-of-funds ATA is independently address- or
+ * authority-pinned to a value the cranker cannot influence:
  *
- * Defenses under test (each is a discrete Anchor constraint):
+ *   protocol_treasury_ata — `address = pool.treasury_ata`
+ *   agent_usdc_ata        — `token::authority = advance.agent`
+ *   payer_usdc_ata        — `token::authority = advance.agent`
+ *                           (was: `= cranker`; tightened to the agent so a
+ *                           Mode-B relayer can't substitute their own ATA)
+ *   agent UncheckedAccount — `address = advance.agent` (rent recipient)
  *
- *   protocol_treasury_ata
- *     `address = pool.treasury_ata` (lib.rs:1052)
- *     The Pool stored the treasury at init time. Any ATA whose pubkey
- *     != pool.treasury_ata is rejected before the transfer.
+ * The `payer_usdc_ata` constraint shift is the load-bearing change. Pre-
+ * branch, the constraint was "payer is whoever crank signs" and we relied on
+ * the separate `cranker == agent` rule to make that mean "payer is owned by
+ * agent". Post-branch, the cranker can be anyone, so we must directly assert
+ * the source-of-funds belongs to the agent.
  *
- *   agent_usdc_ata
- *     `token::mint = pool.asset_mint, token::authority = advance.agent`
- *     (lib.rs:1042-1045)
- *     Two-step bind: ATA must be mint-USDC AND owned by the original agent.
- *     Stops "transfer to attacker's USDC ATA" (auth check) AND "transfer to
- *     attacker's WIF token ATA" (mint check).
- *
- *   payer_usdc_ata
- *     `token::mint = pool.asset_mint, token::authority = cranker`
- *     (lib.rs:1056-1059)
- *     Funds-source ATA must be cranker-owned (no draining victim wallets).
- *
- *   cranker == advance.agent (v1)
- *     `constraint = cranker.key() == advance.agent` (lib.rs:1015)
- *     Permissionless cranking deferred (P0-3/P0-4); only the agent that
- *     issued the advance can settle it. This collapses the agent-net
- *     redirect surface to zero in v1 because agent_usdc_ata authority IS
- *     the cranker.
+ * Threat model — defenses must hold for BOTH:
+ *   • Mode A (cranker == advance.agent): legacy v1 path
+ *   • Mode B (cranker != advance.agent): permissionless relayer
  *
  * Scaffold: behavioral specs encoded as comment-fenced plans.
  */
@@ -60,12 +53,21 @@ describe("ATTACK FIXTURE / ATA substitution — constraint shape (pure)", () => 
     );
   });
 
-  it("docs: payer_usdc_ata authority == cranker (signer-bound, P0-4)", () => {
-    expect("token::authority = cranker").to.include("cranker");
+  it("docs: payer_usdc_ata authority == advance.agent (post-permissionless branch)", () => {
+    // Was `= cranker` in original v1; tightened so a Mode-B relayer cannot
+    // substitute their own ATA as the funds source.
+    expect("token::authority = advance.agent").to.include("advance.agent");
   });
 
-  it("docs: cranker.key() == advance.agent in v1 (P0-3/P0-4)", () => {
-    expect("cranker.key() == advance.agent").to.include("advance.agent");
+  it("docs: cranker is ANY signer (post-permissionless branch — relies on per-account constraints)", () => {
+    // The defense no longer routes through `cranker == agent`. Each
+    // destination-of-funds account is independently constrained.
+    const constraintRefs = [
+      "address = pool.treasury_ata",          // protocol_treasury_ata
+      "token::authority = advance.agent",     // agent_usdc_ata, payer_usdc_ata
+      "address = advance.agent",              // agent UncheckedAccount (rent)
+    ];
+    expect(constraintRefs).to.have.lengthOf(3);
   });
 
   it("constraint structure: distinct keys cannot satisfy address binding", () => {
@@ -108,23 +110,31 @@ describe("ATTACK FIXTURE / ATA substitution (harness)", () => {
     expect(true).to.be.true;
   });
 
-  it("substituting attacker ATA for payer_usdc_ata fails (P0-4 authority)", async () => {
-    // Plan: cranker is the agent (v1 constraint). Pass an ATA whose
-    // authority is some OTHER pubkey (not the cranker). Anchor rejects with
-    // ConstraintTokenOwner.
-    //
-    // The scarier variant — payer_usdc_ata authority == VICTIM — is gated by
-    // the cranker constraint (cranker must sign as authority for the payer
-    // transfer, but cranker is bound to advance.agent), so even if the
-    // token::authority check were absent, the transfer CPI would fail
-    // because cranker is not the victim's signer.
+  it("Mode B relayer cannot substitute own ATA as payer (token::authority = advance.agent)", async () => {
+    // Plan: a third-party relayer cranks. They pass `payer_usdc_ata` =
+    // their own USDC ATA (authority = relayer). Anchor account-struct
+    // constraint `token::authority = advance.agent` rejects with
+    // ConstraintTokenOwner before the handler runs. This is the post-
+    // branch ATA-substitution defense for the payer slot.
     expect(true).to.be.true;
   });
 
-  it("non-agent cranker cannot call claim_and_settle in v1", async () => {
-    // Plan: build a claim_and_settle tx where the cranker signer is a
-    // fresh keypair (not advance.agent). Constraint at lib.rs:1015 rejects
-    // with `InvalidPayer` (the typed alias for the cranker-binding check).
+  it("Mode B relayer cannot pump the agent's funds out by faking delegation", async () => {
+    // Plan: relayer crafts a separate USDC ATA controlled by them, sets
+    // pool PDA as delegate (using their own approve), then attempts
+    // claim_and_settle with that ATA as payer_usdc_ata. The
+    // `token::authority = advance.agent` constraint blocks substitution
+    // before the delegate check runs. Layered defense.
+    expect(true).to.be.true;
+  });
+
+  it("non-agent cranker IS now allowed (Mode B) but still routes funds correctly", async () => {
+    // Plan: cranker is a relayer keypair (not advance.agent). All other
+    // accounts are constructed normally. Tx succeeds; protocol_cut goes to
+    // pool.treasury_ata, lp_cut to pool_usdc_vault, agent_net stays in
+    // agent_usdc_ata. Relayer's wallet only changes by the tx fee debit.
+    // This is a CAPABILITY test (the new path works) AND a SAFETY test
+    // (the relayer didn't get any of the funds).
     expect(true).to.be.true;
   });
 

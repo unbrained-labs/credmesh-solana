@@ -28,14 +28,21 @@ File: `programs/credmesh-escrow/src/lib.rs` (`Liquidate` struct)
 - The agent net (substitute `agent_usdc_ata`)
 - Drain a victim's USDC (substitute `payer_usdc_ata` if signing logic is loose)
 
-**Status: PARTIALLY FIXED in this commit.**
+**Status: FULLY FIXED. The original deferral has been lifted (see DECISIONS Q9 + `research/CONTRARIAN-permissionless-settle.md`).**
+
+Original audit fix:
 - Added `treasury_ata: Pubkey` field to `Pool`.
 - `protocol_treasury_ata` now `address = pool.treasury_ata`.
-- `agent_usdc_ata` now `token::mint = pool.asset_mint, token::authority = advance.agent` (pending P0-2 decision on what `advance.agent` actually is).
-- `payer_usdc_ata` requires `cranker.key() == advance.agent` for now (agent-self-crank only). Permissionless cranker support deferred to v2 with explicit payer-binding on the receivable.
+- `agent_usdc_ata` now `token::mint = pool.asset_mint, token::authority = advance.agent`.
+- `payer_usdc_ata` originally required `cranker.key() == advance.agent` (agent-self-crank only). **This shortcut is now lifted.**
+
+Post-deferral fix (this branch):
+- `payer_usdc_ata.token::authority` tightened from `cranker` to `advance.agent` — closes the substitution surface without depending on cranker identity.
+- `cranker == advance.agent` constraint dropped from the account struct; cranker is now any signer.
+- Handler dispatches two modes: Mode A (cranker == agent) signs with cranker authority (legacy); Mode B (any cranker) signs with pool PDA authority via SPL `Approve` delegate granted in `request_advance`.
 
 ### P0-4. `payer_usdc_ata` no signer-authority binding
-Same fix as P0-3: in v1, only `advance.agent` can be the cranker. Permissionless settle requires a future "payer-pre-authorized" pattern (Token-2022 delegate or pre-signed `transfer_checked`). **Status: FIXED via P0-3 fix.**
+**Status: FULLY FIXED.** The original "future payer-pre-authorized pattern (Token-2022 delegate or pre-signed `transfer_checked`)" turned out to be plain SPL Token classic `Approve` — it was already in the SPL Token program since 2020. The audit note conflated `PermanentDelegate` (mint-level Token-2022 extension we can't use because Circle owns USDC's mint) with `ApproveChecked` (per-account, same shape as classic `Approve`). The classic primitive is sufficient and Token-2022-independent. See `research/CONTRARIAN-permissionless-settle.md` for the full design pass.
 
 ### P0-5. `ConsumedPayment` close-then-reinit replay
 Closing `ConsumedPayment` at settle/liquidate destroys replay protection. Attacker bundles `[liquidate(X), request_advance(receivable_id=X)]` in one tx; the closed PDA re-inits with the same `receivable_id`.

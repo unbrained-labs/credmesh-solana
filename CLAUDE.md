@@ -71,7 +71,7 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
 - **PDA seeds come from `credmesh-shared::seeds`.** Never re-declare seed bytes in two crates — they will silently drift.
 - **`ConsumedPayment` is permanent** (AUDIT P0-5). Closing it reopens close-then-reinit replay. Don't add a close handler.
 - **`request_advance` has no pause path.** Advance issuance is never gated by governance. The "no pause on issuance" invariant is load-bearing — see DESIGN §3.5 and AUDIT P0-6.
-- **`claim_and_settle` requires `cranker == advance.agent` in v1.** Permissionless cranking is deferred — needs a payer-pre-auth pattern that doesn't exist yet (AUDIT P0-3/P0-4).
+- **`claim_and_settle` is two-mode** (DECISIONS Q9, supersedes AUDIT P0-3/P0-4 deferral). Mode A = agent self-cranks (legacy v1 path, bit-for-bit preserved); Mode B = third-party relayer cranks via SPL `Approve` delegate granted by `request_advance`. Source-of-funds and destination-of-funds ATAs are constrained per-account so cranker identity is not load-bearing for safety. Full design: `research/CONTRARIAN-permissionless-settle.md`.
 - **Three-key topology** (DESIGN §10): fee-payer, oracle worker authority, reputation writer authority must NEVER share keys. The off-chain config and rotation flow enforce this.
 - **All math is `checked_*`** or wrapped in u128. Cargo.toml sets `overflow-checks = true` in release; don't rely on it.
 - **Errors map to typed enums** (`CredmeshError`, `ReputationError`, `OracleError`). No `unwrap()` in handlers.
@@ -84,7 +84,7 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
 
 - Don't add a `paused` field back to `Pool`. The "no pause on issuance" invariant is load-bearing — AUDIT P0-6.
 - Don't close `ConsumedPayment`. Permanent. AUDIT P0-5.
-- Don't make `claim_and_settle` permissionless in v1. AUDIT P0-3/P0-4.
+- ~~Don't make `claim_and_settle` permissionless in v1. AUDIT P0-3/P0-4.~~ **Superseded by DECISIONS Q9 — permissionless cranking landed via SPL `Approve` delegate. Two-mode dispatch in handler. See `research/CONTRARIAN-permissionless-settle.md`.**
 - Don't introduce Light Protocol compressed PDAs or Token-2022 features in v1. Both are explicitly v2+.
 - Don't add per-record SQL persistence on the off-chain server. State migrates to on-chain PDAs (DESIGN §6); SQLite is a derived-view cache only.
 - Don't use `init_if_needed` for replay-protection PDAs — only `init`. AUDIT P0-5.
@@ -100,9 +100,9 @@ Per DESIGN §9:
 - Plain-EOA agents (Squads-only for v1)
 - Multi-asset pools (USDC only)
 - Per-instruction-type timelock granularity
-- Token-2022 USDC handling
+- Token-2022 USDC handling (Circle hasn't migrated)
 - Embedded-wallet (Phantom Portal) auth
-- Permissionless `claim_and_settle` cranking
+- ~~Permissionless `claim_and_settle` cranking~~ **landed in v1 — DECISIONS Q9**
 - Multi-issuer SAS attestations (deferred to v1.5; schema documented now)
 
 ## Sister repo

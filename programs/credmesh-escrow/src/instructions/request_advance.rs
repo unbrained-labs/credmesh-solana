@@ -1,16 +1,16 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Approve, Mint, Token, TokenAccount, Transfer};
 
 use crate::errors::CredmeshError;
-use crate::events::AdvanceIssued;
+use crate::events::{AdvanceIssued, SettlementDelegateApproved};
 use crate::pricing::{
     compute_fee_amount, compute_late_penalty_per_day, compute_utilization_bps, credit_from_score_ema,
 };
 use crate::state::{
     Advance, AdvanceState, ConsumedPayment, Pool, ADVANCE_SEED, BPS_DENOMINATOR, CONSUMED_SEED,
-    MIN_ADVANCE_ATOMS, POOL_SEED,
+    MAX_LATE_DAYS, MIN_ADVANCE_ATOMS, POOL_SEED,
 };
 
 #[derive(Accounts)]
@@ -255,6 +255,35 @@ pub fn handler(
         amount,
     )?;
 
+    // (6b) Grant pool PDA delegate authority on agent's USDC ATA so Mode B
+    // crankers can settle without the agent's key. Approval cap covers
+    // worst-case settlement (principal + fee + max-late). Bundling into
+    // request_advance avoids a UX race where the agent issues but forgets
+    // to approve, leaving the advance unsettleable until liquidation.
+    // Lingering residual after settlement is bounded by the late-penalty
+    // curve and revocable by the agent. See DECISIONS Q9.
+    let late_penalty_per_day = compute_late_penalty_per_day(amount, &pool.fee_curve)?;
+    let max_late_penalty = (MAX_LATE_DAYS as u64)
+        .checked_mul(late_penalty_per_day)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let settle_delegate_amount = amount
+        .checked_add(fee_owed)
+        .ok_or(CredmeshError::MathOverflow)?
+        .checked_add(max_late_penalty)
+        .ok_or(CredmeshError::MathOverflow)?;
+
+    token::approve(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Approve {
+                to: ctx.accounts.agent_usdc_ata.to_account_info(),
+                delegate: ctx.accounts.pool.to_account_info(),
+                authority: ctx.accounts.agent.to_account_info(),
+            },
+        ),
+        settle_delegate_amount,
+    )?;
+
     // (7) Init Advance + ConsumedPayment (Anchor handled via `init`).
     let advance = &mut ctx.accounts.advance;
     advance.bump = ctx.bumps.advance;
@@ -262,7 +291,7 @@ pub fn handler(
     advance.receivable_id = receivable_id;
     advance.principal = amount;
     advance.fee_owed = fee_owed;
-    advance.late_penalty_per_day = compute_late_penalty_per_day(amount, &pool.fee_curve)?;
+    advance.late_penalty_per_day = late_penalty_per_day;
     advance.issued_at = now;
     advance.expires_at = receivable_expires_at;
     advance.source_kind = source_kind;
@@ -289,14 +318,22 @@ pub fn handler(
         CredmeshError::InsufficientIdleLiquidity
     );
 
+    let pool_key = pool.key();
     emit!(AdvanceIssued {
-        pool: pool.key(),
+        pool: pool_key,
         agent: ctx.accounts.agent.key(),
         advance: advance_key,
         principal: amount,
         fee_owed,
         expires_at: receivable_expires_at,
         source_kind,
+    });
+    emit!(SettlementDelegateApproved {
+        pool: pool_key,
+        agent: ctx.accounts.agent.key(),
+        advance: advance_key,
+        agent_usdc_ata: ctx.accounts.agent_usdc_ata.key(),
+        approved_amount: settle_delegate_amount,
     });
 
     Ok(())

@@ -102,7 +102,7 @@ Per DESIGN §9:
 - Per-instruction-type timelock granularity
 - Token-2022 USDC handling (DRAFT spike in PR #31, never merge to main per starter prompt)
 - Embedded-wallet (Phantom Portal) auth
-- Permissionless `claim_and_settle` cranking
+- ~~Permissionless `claim_and_settle` cranking~~ **landed via DECISIONS Q9** — SPL `Approve` delegate granted in `request_advance`; two-mode dispatch in handler. See `research/CONTRARIAN-permissionless-settle.md`.
 - Multi-issuer SAS attestations (deferred to v1.5; schema documented now)
 
 ## Legend

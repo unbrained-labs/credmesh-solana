@@ -145,16 +145,49 @@ Constants live in `credmesh-shared::ed25519_message`.
 | Q5 | SAS write-along in v1.5 | v1.5 schema documented in DESIGN.md |
 | Q6 | PayAI for v1, self-host Kora documented for v2 | TS server config (no on-chain change) |
 | Q8 | 96-byte ed25519 layout (already speculative); nonce derivation rule | Locked in `credmesh-shared::ed25519_message` |
+| Q9 | Permissionless `claim_and_settle` via SPL `Approve` delegate (overrides AUDIT P0-3/P0-4 deferral) | Two-mode dispatch in `claim_and_settle`; `request_advance` CPIs `token::approve`; design in `research/CONTRARIAN-permissionless-settle.md` |
 
 ## What's now unblocked
 
 Handler bodies for `init_pool`, `deposit`, `withdraw`, `request_advance` (worker-attested path), `claim_and_settle` (agent-cranked path), `liquidate`, and the reputation/oracle write paths can all be implemented. The ed25519 introspection helper, MPL Agent Registry owner-or-delegate verification, and Squads CPI verification are the three load-bearing helpers worth writing in `credmesh-shared` first.
 
+## Q9. Permissionless `claim_and_settle` → **landed in v1 via SPL `Approve` delegate**
+
+**Decision**: `claim_and_settle` becomes permissionless via SPL Token classic `Approve`. The agent grants the pool PDA delegate authority over their USDC ATA inside `request_advance` (CPI'd in the same tx the agent already signs); a third-party relayer can then submit `claim_and_settle` as a non-agent cranker, with the pool PDA as the SPL transfer authority.
+
+**Why it overrides the AUDIT P0-3/P0-4 deferral**:
+- The auditor's deferral note explicitly cited a "future payer-pre-authorized signing pattern (Token-2022 delegate or pre-signed `transfer_checked`)" as the prerequisite. **The right primitive turned out to be plain SPL `Approve`** — same delegation primitive that's been in Token classic since 2020. The Token-2022 reference in the audit note conflated `PermanentDelegate` (mint-level extension, can't be set on USDC because Circle owns the mint) with `ApproveChecked` (per-account, same as classic `Approve`). The classic primitive is sufficient and Token-2022-independent.
+- The original P0-3 attack surface (ATA substitution) is closed by per-account constraints that don't depend on cranker identity:
+  - `protocol_treasury_ata`: `address = pool.treasury_ata`
+  - `agent_usdc_ata`: `token::authority = advance.agent`
+  - `payer_usdc_ata`: `token::authority = advance.agent` *(tightened from `= cranker`)*
+  - `agent`: `address = advance.agent` (rent recipient)
+
+**Why the v1-deferral was unacceptable for an autonomous-agent protocol**: with `cranker == advance.agent` enforced, an agent process that crashes, restarts, rotates keys mid-window, or goes offline causes the LP's principal to stick until liquidation (14 days post-expiry). That breaks the autonomous-agent thesis exactly when the agent is most vulnerable. The PayAI hosted facilitator model (Q6) requires permissionless cranking by definition.
+
+**Two-mode dispatch** (handler branches on `cranker.key() == advance.agent`):
+- **Mode A** — agent self-cranks. Bit-for-bit identical to original v1 path. No `Approve` consumed.
+- **Mode B** — third-party relayer. Pool PDA must be the SPL delegate on `agent_usdc_ata` with `delegated_amount >= total_owed`. Pool PDA signs the transfers via PDA seeds.
+
+**Approval cap**: `principal + fee_owed + (MAX_LATE_DAYS × late_penalty_per_day)`. Worst-case ≈ `1.365 × principal + fee_owed`. Residual approval after settlement is bounded by `MAX_LATE_DAYS × late_penalty_per_day`; agent can `Revoke` any time post-settle (the off-chain worker bundles `Revoke` when the agent is online).
+
+**Code changes**:
+- `programs/credmesh-escrow/src/lib.rs` `request_advance` — adds `token::approve` CPI after the vault→agent transfer.
+- `programs/credmesh-escrow/src/lib.rs` `ClaimAndSettle` accounts struct — drops `cranker == advance.agent` constraint; tightens `payer_usdc_ata.token::authority` from `cranker` to `advance.agent`.
+- `programs/credmesh-escrow/src/lib.rs` `claim_and_settle` handler — two-mode dispatch on cranker identity.
+- `programs/credmesh-escrow/src/errors.rs` — adds `DelegateNotApproved`, `DelegateAmountInsufficient`, `PayerMustBeAgentInPermissionless`.
+- `programs/credmesh-escrow/src/events.rs` — `AdvanceSettled.cranker: Pubkey` for indexer observability.
+
+**Full design + threat-model pass**: `research/CONTRARIAN-permissionless-settle.md`.
+
+---
+
 ## What's still open (intentionally not v1)
 
-- Permissionless `claim_and_settle` cranking — needs payer-pre-auth pattern; deferred.
 - Plain-EOA agents — Squads-only for v1.
 - ML-derived credit curve.
 - Mobile Wallet Adapter / Solana Mobile.
 - Light Protocol compressed PDAs.
 - Hyperliquid Lazer publisher.
+- Multi-payer source ATAs in Mode B (Mode B requires `payer_usdc_ata == agent_usdc_ata`).
+- Pre-`request_advance` standing approvals (long-lived delegations across multiple advances).

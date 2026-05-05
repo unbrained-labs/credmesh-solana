@@ -75,6 +75,6 @@ If you're picking up new work, run an `anchor build --no-idl` first to confirm y
 
 - Don't add the `paused` flag back to `Pool`. The "no pause on issuance" invariant is load-bearing — see DESIGN §3.5 / AUDIT P0-6.
 - Don't close `ConsumedPayment`. It must be permanent — closing reopens replay. See AUDIT P0-5.
-- Don't make `claim_and_settle` permissionless in v1. Cranker must equal `advance.agent` until a payer-pre-auth pattern lands. See AUDIT P0-3 / P0-4.
+- `claim_and_settle` is two-mode (DECISIONS Q9, supersedes AUDIT P0-3 / P0-4 deferral). Mode A: cranker == advance.agent (legacy v1, preserved). Mode B: any signer; pool PDA is the SPL `Approve` delegate on `agent_usdc_ata` (granted by `request_advance`). Source-of-funds and destination-of-funds ATAs are pinned per-account, so cranker identity is not load-bearing for safety. See `research/CONTRARIAN-permissionless-settle.md`.
 - Don't introduce `Light Protocol compressed PDAs` or `Token-2022` features in v1. Both are explicitly v2+.
 - Don't add per-record SQL persistence on the off-chain server. State migrates to on-chain PDAs (DESIGN §6); SQLite is a derived-view cache only.

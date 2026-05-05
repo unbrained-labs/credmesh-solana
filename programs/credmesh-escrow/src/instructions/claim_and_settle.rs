@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, Revoke, Token, TokenAccount, Transfer};
 
 use crate::errors::CredmeshError;
 use crate::events::AdvanceSettled;
@@ -11,13 +11,13 @@ use crate::state::{
 
 #[derive(Accounts)]
 pub struct ClaimAndSettle<'info> {
-    /// AUDIT P0-3/P0-4: in v1, the cranker MUST be the agent so the source-of-funds
-    /// transfer is signer-authorized. Permissionless cranking deferred to a future
-    /// version that introduces a payer-pre-authorized signing pattern.
-    #[account(
-        mut,
-        constraint = cranker.key() == advance.agent @ CredmeshError::InvalidPayer
-    )]
+    /// Any signer; pays tx fee. Handler dispatches Mode A (cranker == agent,
+    /// legacy v1) or Mode B (any cranker, pool PDA signs via SPL delegate
+    /// granted in `request_advance`). Supersedes the AUDIT P0-3/P0-4
+    /// deferral; substitution defenses now live in the per-account
+    /// constraints below, none of which depend on cranker identity. See
+    /// DECISIONS Q9 + `research/CONTRARIAN-permissionless-settle.md`.
+    #[account(mut)]
     pub cranker: Signer<'info>,
     #[account(
         mut,
@@ -54,11 +54,16 @@ pub struct ClaimAndSettle<'info> {
     /// AUDIT P0-3: pinned to the Pool's stored treasury ATA.
     #[account(mut, address = pool.treasury_ata)]
     pub protocol_treasury_ata: Account<'info, TokenAccount>,
-    /// AUDIT P0-4: payer ATA must be authority-bound to the cranker (= agent in v1).
+    /// Source of settlement funds. Pinned to `token::authority = advance.agent`
+    /// so the cranker (who may be any relayer in Mode B) cannot substitute an
+    /// attacker-owned ATA. In Mode B the handler additionally requires
+    /// `payer_usdc_ata.key() == agent_usdc_ata.key()`; in Mode A a distinct
+    /// payer ATA owned by the agent is still allowed (e.g., agent settles from
+    /// a treasury ATA different from the disbursement ATA).
     #[account(
         mut,
         token::mint = pool.asset_mint,
-        token::authority = cranker
+        token::authority = advance.agent
     )]
     pub payer_usdc_ata: Account<'info, TokenAccount>,
     #[account(address = pool.asset_mint)]
@@ -145,57 +150,88 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
         CredmeshError::WaterfallSumMismatch
     );
 
-    // CPIs. Authority is the cranker (which == advance.agent in v1 per the
-    // account-struct constraint).
-    let cranker_ai = ctx.accounts.cranker.to_account_info();
-    let payer_ata_ai = ctx.accounts.payer_usdc_ata.to_account_info();
+    // Two-mode dispatch (see ClaimAndSettle doc): Mode A signs with the
+    // cranker; Mode B signs with the pool PDA via the SPL delegate.
+    let is_self_crank = ctx.accounts.cranker.key() == ctx.accounts.advance.agent;
+    let payer_eq_agent =
+        ctx.accounts.payer_usdc_ata.key() == ctx.accounts.agent_usdc_ata.key();
+
+    let asset_mint = ctx.accounts.pool.asset_mint;
+    let pool_bump = ctx.accounts.pool.bump;
+    let pool_pda_key = ctx.accounts.pool.key();
+    let bump_arr = [pool_bump];
+    let pool_seeds_arr: &[&[u8]] = &[POOL_SEED, asset_mint.as_ref(), &bump_arr];
+    let pool_signer_seeds: &[&[&[u8]]] = &[pool_seeds_arr];
+
+    if !is_self_crank {
+        // Belt-and-suspenders: SPL Token enforces these too, but failing
+        // here yields a typed error and skips the failed CPI's CU cost.
+        require!(payer_eq_agent, CredmeshError::PayerMustBeAgentInPermissionless);
+        let delegate = ctx
+            .accounts
+            .agent_usdc_ata
+            .delegate
+            .ok_or(error!(CredmeshError::DelegateNotApproved))?;
+        require!(delegate == pool_pda_key, CredmeshError::DelegateNotApproved);
+        require!(
+            ctx.accounts.agent_usdc_ata.delegated_amount >= total_owed,
+            CredmeshError::DelegateAmountInsufficient
+        );
+    }
+
     let token_program_ai = ctx.accounts.token_program.to_account_info();
+    let payer_ata_ai = ctx.accounts.payer_usdc_ata.to_account_info();
+    let authority_ai = if is_self_crank {
+        ctx.accounts.cranker.to_account_info()
+    } else {
+        ctx.accounts.pool.to_account_info()
+    };
+    let signer_seeds: Option<&[&[&[u8]]]> = if is_self_crank {
+        None
+    } else {
+        Some(pool_signer_seeds)
+    };
 
-    if protocol_cut > 0 {
-        token::transfer(
-            CpiContext::new(
-                token_program_ai.clone(),
-                Transfer {
-                    from: payer_ata_ai.clone(),
-                    to: ctx.accounts.protocol_treasury_ata.to_account_info(),
-                    authority: cranker_ai.clone(),
-                },
-            ),
-            protocol_cut,
-        )?;
-    }
-
-    if lp_cut > 0 {
-        token::transfer(
-            CpiContext::new(
-                token_program_ai.clone(),
-                Transfer {
-                    from: payer_ata_ai.clone(),
-                    to: ctx.accounts.pool_usdc_vault.to_account_info(),
-                    authority: cranker_ai.clone(),
-                },
-            ),
-            lp_cut,
-        )?;
-    }
-
-    // agent_net: the cranker IS the agent in v1; if payer_usdc_ata ==
-    // agent_usdc_ata (typical), this is a self-transfer that we skip.
-    // If the payer ATA is distinct from the agent's USDC ATA, transfer.
-    if agent_net > 0
-        && ctx.accounts.payer_usdc_ata.key() != ctx.accounts.agent_usdc_ata.key()
-    {
-        token::transfer(
-            CpiContext::new(
-                token_program_ai.clone(),
-                Transfer {
-                    from: payer_ata_ai.clone(),
-                    to: ctx.accounts.agent_usdc_ata.to_account_info(),
-                    authority: cranker_ai.clone(),
-                },
-            ),
+    settle_transfer(
+        token_program_ai.clone(),
+        payer_ata_ai.clone(),
+        ctx.accounts.protocol_treasury_ata.to_account_info(),
+        authority_ai.clone(),
+        signer_seeds,
+        protocol_cut,
+    )?;
+    settle_transfer(
+        token_program_ai.clone(),
+        payer_ata_ai.clone(),
+        ctx.accounts.pool_usdc_vault.to_account_info(),
+        authority_ai.clone(),
+        signer_seeds,
+        lp_cut,
+    )?;
+    if !payer_eq_agent {
+        settle_transfer(
+            token_program_ai.clone(),
+            payer_ata_ai.clone(),
+            ctx.accounts.agent_usdc_ata.to_account_info(),
+            authority_ai.clone(),
+            signer_seeds,
             agent_net,
         )?;
+    }
+
+    // Mode A: zero out the SPL delegation that `request_advance` granted.
+    // Mode B's transfers naturally decrement `delegated_amount` via the
+    // delegate-authorized path, leaving only the bounded late-penalty
+    // residual; off-chain Revoke happens when the agent is online. Mode A
+    // signs as owner, so the program can CPI Revoke directly here.
+    if is_self_crank {
+        token::revoke(CpiContext::new(
+            token_program_ai,
+            Revoke {
+                source: ctx.accounts.agent_usdc_ata.to_account_info(),
+                authority: authority_ai,
+            },
+        ))?;
     }
 
     // Update Pool: principal returns to vault, lp_fee accrues to LPs via
@@ -216,9 +252,11 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
 
     let advance_key = ctx.accounts.advance.key();
     let agent_key = ctx.accounts.advance.agent;
+    let cranker_key = ctx.accounts.cranker.key();
 
     // The Anchor `close = agent` constraint on the Advance account
-    // closes it at end-of-handler; rent goes to agent (neutralizes MEV).
+    // closes it at end-of-handler; rent goes to agent (neutralizes MEV
+    // even when the cranker is a third-party relayer in Mode B).
     // We still set state for the (zero-data) post-close visibility.
     ctx.accounts.advance.state = AdvanceState::Settled;
 
@@ -231,7 +269,35 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
         protocol_cut,
         agent_net,
         late_days: late_days as u32,
+        cranker: cranker_key,
     });
 
     Ok(())
+}
+
+/// One-shot SPL transfer that picks signer-vs-non-signer CPI shape based on
+/// whether the caller passed PDA seeds. Used by `claim_and_settle`'s two-mode
+/// waterfall: Mode A passes `None` (cranker-signed); Mode B passes the pool
+/// PDA seeds (program-signed via the SPL `Approve` delegate). Free function
+/// rather than a closure because `Transfer<'info>` is invariant over `'info`
+/// and closures cannot name an outer lifetime they don't capture.
+fn settle_transfer<'info>(
+    token_program: AccountInfo<'info>,
+    from: AccountInfo<'info>,
+    to: AccountInfo<'info>,
+    authority: AccountInfo<'info>,
+    signer_seeds: Option<&[&[&[u8]]]>,
+    amount: u64,
+) -> Result<()> {
+    if amount == 0 {
+        return Ok(());
+    }
+    let accounts = Transfer { from, to, authority };
+    match signer_seeds {
+        Some(seeds) => token::transfer(
+            CpiContext::new_with_signer(token_program, accounts, seeds),
+            amount,
+        ),
+        None => token::transfer(CpiContext::new(token_program, accounts), amount),
+    }
 }

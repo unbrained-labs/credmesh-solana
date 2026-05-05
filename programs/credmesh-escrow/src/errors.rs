@@ -58,4 +58,10 @@ pub enum CredmeshError {
     LateDaysExceeded,
     #[msg("FeeCurve violates ordering or BPS-bound invariants — see FeeCurve::validate")]
     InvalidFeeCurve,
+    #[msg("Pool PDA is not the approved delegate on agent's USDC ATA — re-issue the advance to refresh the approval")]
+    DelegateNotApproved,
+    #[msg("Delegated amount on agent's USDC ATA is less than total_owed — re-approve before settlement")]
+    DelegateAmountInsufficient,
+    #[msg("In permissionless settlement, payer_usdc_ata must equal agent_usdc_ata (v1 limitation)")]
+    PayerMustBeAgentInPermissionless,
 }

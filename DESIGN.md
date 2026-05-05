@@ -167,20 +167,22 @@ Logic:
 4. **Cap check**: `amount <= min(receivable_amount * max_advance_pct_bps / 10000, max_advance_abs, max_credit)`.
 5. **Fee compute**: `fee_owed = price(amount, utilization_after, duration, risk)` — `pricing.ts` math, ported.
 6. **Settle math**: `Pool.deployed_amount += principal`. Init `Advance` PDA. Transfer `principal` USDC from `pool_usdc_vault` to `agent_usdc_ata`.
+6b. **Settlement delegate (DECISIONS Q9)**: CPI `token::approve` with `delegate = pool_pda`, `authority = agent`, amount = `principal + fee_owed + (MAX_LATE_DAYS × late_penalty_per_day)`. This grants the pool PDA SPL transfer authority over `agent_usdc_ata` bounded by the worst-case settlement amount, enabling permissionless `claim_and_settle` (Mode B).
 7. Emit `AdvanceIssued` event.
 
-#### `claim_and_settle(payment_proof)` — permissionless after `expires_at - 7 days`
+#### `claim_and_settle(payment_proof)` — permissionless after `expires_at - 7 days` (DECISIONS Q9)
 
 Accounts:
-- `cranker` (signer, fee payer)
+- `cranker` (signer, fee payer; **any signer** — Mode A self-crank if `cranker == advance.agent`, else Mode B permissionless via SPL `Approve` delegate granted in `request_advance`)
 - `advance_pda` (mut, close = agent on full settlement)
 - `consumed_pda` (mut) — **NOT** closed (audit P0-5; permanent for replay defense)
+- `agent` (mut, `address = advance.agent`) — rent recipient via `close = agent`; MEV-neutralizes cranker
 - `pool` (mut)
 - `pool_usdc_vault` (mut)
-- `agent_usdc_ata` (mut) — receives net
-- `protocol_treasury_ata` (mut) — receives 15%
-- `payer_usdc_ata` (mut) — source of repayment, includes signer iff agent-cranked
-- `usdc_mint`, `token_program`
+- `agent_usdc_ata` (mut) — receives net (or stays put when payer == agent_ata)
+- `protocol_treasury_ata` (mut, `address = pool.treasury_ata`) — receives 15%
+- `payer_usdc_ata` (mut, `token::authority = advance.agent`) — source of repayment. In Mode B the handler additionally requires `payer_usdc_ata == agent_usdc_ata`.
+- `usdc_mint`, `instructions_sysvar`, `token_program`
 
 Logic:
 1. **Memo nonce check** (instruction-introspection): payment instruction earlier in tx must include the memo with `consumed_pda.nonce`.
@@ -196,10 +198,13 @@ Logic:
 3. **Three CPI'd `transfer_checked`** in this exact order, all in this single instruction:
    1. `protocol_cut` to `protocol_treasury_ata`
    2. `lp_cut` to `pool_usdc_vault`
-   3. `agent_net` to `agent_usdc_ata`
+   3. `agent_net` to `agent_usdc_ata` (skipped when `payer_usdc_ata == agent_usdc_ata` — typical case)
+
+   **Authority dispatch:** Mode A signs all three with `cranker` as authority via `CpiContext::new(...)`. Mode B signs all three with the pool PDA as authority via `CpiContext::new_with_signer(seeds=[POOL_SEED, asset_mint, bump])`; the pool PDA is the SPL `delegate` on `agent_usdc_ata` per the `Approve` CPI in `request_advance`. The SPL Token program decrements `delegated_amount` by each transfer; once it reaches zero, the delegation auto-clears.
+
 4. **Pool update**: `deployed_amount -= principal`, `total_assets += (lp_cut - principal)` (the fee portion).
-5. **Close** `advance_pda`, send rent to `agent` (NOT cranker — neutralizes MEV cranking). `consumed_pda` is left open (audit P0-5).
-6. Emit `AdvanceSettled` event.
+5. **Close** `advance_pda`, send rent to `agent` (NOT cranker — neutralizes MEV cranking, including in Mode B with a third-party relayer). `consumed_pda` is left open (audit P0-5).
+6. Emit `AdvanceSettled` event with `cranker: Pubkey` for indexer observability.
 
 #### `liquidate(advance_id)` — anyone after `expires_at + 14 days`
 
@@ -401,7 +406,7 @@ The single `Pool` PDA write-locks every advance issuance, settle, and liquidate.
 - Per-instruction-type timelock granularity (Squads multisig has global timelock — accept for v1)
 - Token-2022 USDC migration handling (Circle hasn't moved; revisit when they do)
 - Embedded-wallet (Phantom Portal) auth — SIWS detached signing isn't supported (per audit integration review).
-- Permissionless `claim_and_settle` cranking — v1 requires `cranker == advance.agent` (audit P0-3/P0-4). Permissionless settle requires a future payer-pre-authorized signing pattern.
+- ~~Permissionless `claim_and_settle` cranking — v1 requires `cranker == advance.agent` (audit P0-3/P0-4).~~ **Landed in v1 via DECISIONS Q9** — SPL `Approve` delegate granted in `request_advance` is the payer-pre-authorized signing pattern. The original P0-3/P0-4 ATA-substitution surface is closed by tightening `payer_usdc_ata.token::authority` from `cranker` to `advance.agent`. See `research/CONTRARIAN-permissionless-settle.md`.
 
 ## 10. Threat model and key topology (audit Q7)
 
