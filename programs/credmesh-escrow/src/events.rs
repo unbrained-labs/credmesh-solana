@@ -32,13 +32,11 @@ pub struct AdvanceIssued {
     pub principal: u64,
     pub fee_owed: u64,
     pub expires_at: i64,
-    pub source_kind: u8,
+    /// The bridge signer whose ed25519 attestation underwrote this advance.
+    /// Off-chain bridge tails this event to correlate to EVM state.
+    pub attestor: Pubkey,
 }
 
-/// Emitted at end of `claim_and_settle`. `cranker == agent` indicates Mode A
-/// (self-crank); `cranker != agent` indicates Mode B (permissionless relayer
-/// via SPL `Approve` delegate). Indexers use this to bucket without reading
-/// account state.
 #[event]
 pub struct AdvanceSettled {
     pub pool: Pubkey,
@@ -49,16 +47,6 @@ pub struct AdvanceSettled {
     pub protocol_cut: u64,
     pub agent_net: u64,
     pub late_days: u32,
-    pub cranker: Pubkey,
-}
-
-#[event]
-pub struct SettlementDelegateApproved {
-    pub pool: Pubkey,
-    pub agent: Pubkey,
-    pub advance: Pubkey,
-    pub agent_usdc_ata: Pubkey,
-    pub approved_amount: u64,
 }
 
 #[event]

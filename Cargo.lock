@@ -766,30 +766,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "credmesh-attestor-registry"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "credmesh-shared",
+]
+
+[[package]]
 name = "credmesh-escrow"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "credmesh-receivable-oracle",
- "credmesh-reputation",
- "credmesh-shared",
-]
-
-[[package]]
-name = "credmesh-receivable-oracle"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "credmesh-shared",
-]
-
-[[package]]
-name = "credmesh-reputation"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "credmesh-receivable-oracle",
+ "credmesh-attestor-registry",
  "credmesh-shared",
 ]
 

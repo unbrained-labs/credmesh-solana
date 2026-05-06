@@ -3,8 +3,7 @@ resolver = "2"
 members = [
     "crates/credmesh-shared",
     "programs/credmesh-escrow",
-    "programs/credmesh-reputation",
-    "programs/credmesh-receivable-oracle",
+    "programs/credmesh-attestor-registry",
 ]
 
 # MSRV is set to match the rustc bundled with `solana 1.18.x` platform-tools.

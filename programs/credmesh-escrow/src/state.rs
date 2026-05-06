@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-pub use credmesh_shared::seeds::{ADVANCE_SEED, CONSUMED_SEED, POOL_SEED, TREASURY_SEED};
+pub use credmesh_shared::seeds::{ADVANCE_SEED, CONSUMED_SEED, POOL_SEED};
 
 pub const PROTOCOL_FEE_BPS: u16 = 1500;
 pub const BPS_DENOMINATOR: u64 = 10_000;
@@ -112,8 +112,10 @@ pub struct Advance {
     pub late_penalty_per_day: u64,
     pub issued_at: i64,
     pub expires_at: i64,
-    pub source_kind: u8,
-    pub source_signer: Option<Pubkey>,
+    /// The bridge signer whose ed25519 credit attestation underwrote
+    /// this advance. Stored for audit trail and for the off-chain bridge
+    /// service to correlate Solana settle/liquidate events back to EVM.
+    pub attestor: Pubkey,
     pub state: AdvanceState,
 }
 

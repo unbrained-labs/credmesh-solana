@@ -37,10 +37,9 @@ pub mod credmesh_escrow {
         ctx: Context<RequestAdvance>,
         receivable_id: [u8; 32],
         amount: u64,
-        source_kind: u8,
         nonce: [u8; 16],
     ) -> Result<()> {
-        instructions::request_advance::handler(ctx, receivable_id, amount, source_kind, nonce)
+        instructions::request_advance::handler(ctx, receivable_id, amount, nonce)
     }
 
     pub fn claim_and_settle(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> {

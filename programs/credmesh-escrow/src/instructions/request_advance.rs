@@ -1,67 +1,44 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::sysvar::instructions as sysvar_instructions;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{self, Approve, Mint, Token, TokenAccount, TransferChecked};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 
 use crate::errors::CredmeshError;
-use crate::events::{AdvanceIssued, SettlementDelegateApproved};
-use crate::pricing::{
-    compute_fee_amount, compute_late_penalty_per_day, compute_utilization_bps,
-};
+use crate::events::AdvanceIssued;
+use crate::pricing::{compute_fee_amount, compute_late_penalty_per_day, compute_utilization_bps};
 use crate::state::{
-    Advance, AdvanceState, ConsumedPayment, Pool, ADVANCE_SEED, BPS_DENOMINATOR, CONSUMED_SEED,
-    MAX_LATE_DAYS, MIN_ADVANCE_ATOMS, POOL_SEED,
+    Advance, AdvanceState, ConsumedPayment, Pool, ADVANCE_SEED, CONSUMED_SEED, MIN_ADVANCE_ATOMS,
+    POOL_SEED,
 };
 
 #[derive(Accounts)]
-#[instruction(receivable_id: [u8; 32], _amount: u64, source_kind: u8)]
+#[instruction(receivable_id: [u8; 32])]
 pub struct RequestAdvance<'info> {
+    /// Agent's primary signing key. Sole identity surface on Solana —
+    /// agent identity + reputation live on EVM, attested by the bridge.
     #[account(mut)]
     pub agent: Signer<'info>,
-    /// CHECK: OPTIONAL MPL Core asset for agents who opted in to ERC-8004-style
-    /// identity attestation. When `Some`, the handler runs `verify_agent_signer`
-    /// (asset.owner OR registered DelegateExecutionV1 delegate). When `None`,
-    /// the agent's keypair is sole authority. Per the EVM-parity port,
-    /// MPL Core is **opt-in**, not required (DECISIONS Q1 amended).
-    pub agent_asset: Option<UncheckedAccount<'info>>,
-    /// CHECK: Optional AgentIdentityV2 PDA. Pair with `agent_asset`.
-    pub agent_identity: Option<UncheckedAccount<'info>>,
-    /// AgentReputation PDA owned by credmesh-reputation, seeded by the
-    /// agent's primary signing key (not by an MPL asset). The handler
-    /// underwrites against `credit_limit_atoms - outstanding_balance_atoms`
-    /// (EVM-parity port of `availableCredit` from credit.ts:44).
+
+    /// AllowedSigner PDA owned by credmesh-attestor-registry. The signer
+    /// pubkey stored here is the bridge's ed25519 public key. Anchor's
+    /// typed Account + seeds::program runs the four-step verify (owner,
+    /// address, discriminator, deserialize). The handler additionally
+    /// confirms (a) the prior ed25519 ix's signed-by pubkey equals
+    /// `allowed_signer.signer`, (b) `allowed_signer.kind ==
+    /// AttestorKind::CreditBridge`.
     #[account(
-        seeds = [credmesh_shared::seeds::REPUTATION_SEED, agent.key().as_ref()],
-        seeds::program = credmesh_reputation::ID,
-        bump,
+        seeds = [credmesh_shared::seeds::ALLOWED_SIGNER_SEED, allowed_signer.signer.as_ref()],
+        seeds::program = credmesh_attestor_registry::ID,
+        bump = allowed_signer.bump,
     )]
-    pub agent_reputation_pda: Account<'info, credmesh_reputation::AgentReputation>,
-    /// Receivable PDA owned by credmesh-receivable-oracle, required iff
-    /// `source_kind = Worker`. For Ed25519 / X402 paths the handler verifies
-    /// via instruction-introspection instead of reading this account, so the
-    /// caller passes `None` (encoded as a missing account); a typed `Account`
-    /// without `Option` would fail the discriminator check there. Anchor
-    /// runs the four-step verify on `Some` only (issue #4).
-    /// Receivable PDA owned by credmesh-receivable-oracle, required for
-    /// Worker (kind=0) and Marketplace (kind=3) source kinds. For Ed25519
-    /// (1) and X402 (2) the receivable data comes from ix introspection;
-    /// caller passes `None` here.
-    /// Audit-MED #3 fix: source_kind byte is part of the seed so each kind
-    /// has its own address namespace (a Worker receivable can't collide
-    /// with a Marketplace one or an ed25519 one).
-    #[account(
-        seeds = [credmesh_shared::seeds::RECEIVABLE_SEED, &[source_kind], agent.key().as_ref(), receivable_id.as_ref()],
-        seeds::program = credmesh_receivable_oracle::ID,
-        bump,
-    )]
-    pub receivable_pda: Option<Account<'info, credmesh_receivable_oracle::Receivable>>,
-    /// CHECK: Optional ExecutiveProfileV1 PDA (MPL Agent Tools) for delegate path.
-    /// Pass `None` (Anchor encodes as missing) when agent.key() is the asset's owner.
-    pub executive_profile: Option<UncheckedAccount<'info>>,
-    /// CHECK: Optional ExecutionDelegateRecordV1 PDA. Pair with executive_profile.
-    pub execution_delegate_record: Option<UncheckedAccount<'info>>,
+    pub allowed_signer: Account<'info, credmesh_attestor_registry::AllowedSigner>,
+
     #[account(mut, seeds = [POOL_SEED, pool.asset_mint.as_ref()], bump = pool.bump)]
     pub pool: Account<'info, Pool>,
+
+    /// Per-advance PDA. `init` failure on the seed `(pool, agent,
+    /// receivable_id)` is the replay defense: a second tx with the same
+    /// receivable_id collides on the address and fails to init.
     #[account(
         init,
         payer = agent,
@@ -70,10 +47,10 @@ pub struct RequestAdvance<'info> {
         bump
     )]
     pub advance: Account<'info, Advance>,
-    /// AUDIT P0-5: ConsumedPayment is permanent. Never closed.
-    /// `init` failure is the replay-protection mechanism.
-    /// Issue #8: agent.key() in seeds so cross-agent receivable_id reuse
-    /// doesn't collide on a shared PDA address.
+
+    /// AUDIT P0-5: ConsumedPayment is permanent — never closed. The
+    /// `init` failure on a second request_advance with the same
+    /// receivable_id is the replay-protection mechanism.
     #[account(
         init,
         payer = agent,
@@ -82,8 +59,10 @@ pub struct RequestAdvance<'info> {
         bump
     )]
     pub consumed: Account<'info, ConsumedPayment>,
+
     #[account(mut, address = pool.usdc_vault)]
     pub pool_usdc_vault: Account<'info, TokenAccount>,
+
     #[account(
         init_if_needed,
         payer = agent,
@@ -91,13 +70,16 @@ pub struct RequestAdvance<'info> {
         associated_token::authority = agent
     )]
     pub agent_usdc_ata: Account<'info, TokenAccount>,
+
     #[account(address = pool.asset_mint)]
     pub usdc_mint: Account<'info, Mint>,
-    /// CHECK: AUDIT P1-2 — pinned to the canonical sysvar instructions account.
-    /// Handler uses `sysvar_instructions::load_instruction_at_checked` for
-    /// ed25519/memo introspection.
+
+    /// CHECK: AUDIT P1-2 — pinned to the canonical sysvar instructions
+    /// account. Handler reads the prior ed25519 ix to extract the bridge's
+    /// signed credit attestation.
     #[account(address = sysvar_instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,
+
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -107,170 +89,106 @@ pub fn handler(
     ctx: Context<RequestAdvance>,
     receivable_id: [u8; 32],
     amount: u64,
-    source_kind: u8,
     nonce: [u8; 16],
 ) -> Result<()> {
     require!(amount >= MIN_ADVANCE_ATOMS, CredmeshError::AdvanceExceedsCap);
-    let kind = credmesh_shared::SourceKind::from_u8(source_kind)
-        .ok_or(CredmeshError::ReceivableStale)?;
 
     let clock = Clock::get()?;
     let now = clock.unix_timestamp;
-    let slot = clock.slot;
 
-    // (1) Optional MPL Core identity verification. EVM-parity: ERC-8004
-    // attestation is opt-in; raw-keypair agents are first-class. When
-    // `agent_asset` is None, the agent's signature is sole authority.
-    if let (Some(asset), Some(identity)) = (
-        ctx.accounts.agent_asset.as_ref(),
-        ctx.accounts.agent_identity.as_ref(),
-    ) {
-        let exec_profile = ctx.accounts.executive_profile.as_ref().map(|a| a.as_ref());
-        let exec_record = ctx.accounts.execution_delegate_record.as_ref().map(|a| a.as_ref());
-        credmesh_shared::mpl_identity::verify_agent_signer(
-            &ctx.accounts.agent.key(),
-            &asset.to_account_info(),
-            &identity.to_account_info(),
-            exec_profile,
-            exec_record,
+    // (1) Verify the bridge's ed25519 credit attestation. The bridge reads
+    // EVM ReputationRegistry + ReputationCreditOracle, computes the agent's
+    // current credit_limit + outstanding, signs a 128-byte canonical
+    // message. We extract + verify here.
+    let (signed_pubkey, signed_msg) =
+        credmesh_shared::ix_introspection::verify_prev_ed25519(
+            &ctx.accounts.instructions_sysvar.to_account_info(),
         )
         .map_err(|e| match e {
-            credmesh_shared::mpl_identity::IdentityError::NotACoreAsset
-            | credmesh_shared::mpl_identity::IdentityError::AgentNotRegistered => {
-                error!(CredmeshError::InvalidAgentAsset)
+            credmesh_shared::ix_introspection::IxIntrospectionError::Ed25519OffsetMismatch => {
+                error!(CredmeshError::Ed25519MessageMismatch)
             }
-            _ => error!(CredmeshError::AgentBindingMismatch),
+            _ => error!(CredmeshError::Ed25519Missing),
         })?;
-    }
 
-    // (2) Read AgentReputation cross-program. Issue #4: typed `Account` with
-    // `seeds::program` runs Anchor's owner+address+discriminator+deserialize
-    // verify automatically — no handler-side manual read.
-    let reputation = &ctx.accounts.agent_reputation_pda;
+    require!(
+        signed_msg.len() == credmesh_shared::ed25519_credit_message::TOTAL_LEN,
+        CredmeshError::Ed25519MessageMismatch
+    );
+    require_keys_eq!(
+        signed_pubkey,
+        ctx.accounts.allowed_signer.signer,
+        CredmeshError::Ed25519SignerUnknown
+    );
+    require!(
+        ctx.accounts.allowed_signer.kind
+            == credmesh_shared::AttestorKind::CreditBridge.as_u8(),
+        CredmeshError::Ed25519SignerUnknown
+    );
 
-    // (3) Read Receivable cross-program (Worker path) OR verify ed25519
-    // signed receivable (Ed25519/X402 paths). Issue #4: same Anchor-typed
-    // pattern; the Worker path resolves the `Option<Account>` to `Some`.
-    let (receivable_amount, receivable_expires_at, source_signer) = match kind {
-        credmesh_shared::SourceKind::Worker | credmesh_shared::SourceKind::Marketplace => {
-            // Both Worker- and Marketplace-attested receivables resolve to a
-            // typed Receivable PDA (Anchor's seeds::program runs the
-            // four-step verify). Marketplace path is permissionless to post.
-            let receivable = ctx
-                .accounts
-                .receivable_pda
-                .as_ref()
-                .ok_or(error!(CredmeshError::ReceivablePdaMismatch))?;
+    // (2) Decode the canonical 128-byte attestation against the layout in
+    // credmesh_shared::ed25519_credit_message.
+    use credmesh_shared::ed25519_credit_message as M;
 
-            let staleness = slot.saturating_sub(receivable.last_updated_slot);
-            require!(
-                staleness <= credmesh_receivable_oracle::MAX_STALENESS_SLOTS,
-                CredmeshError::ReceivableStale
-            );
-            (receivable.amount, receivable.expires_at, None)
-        }
-        credmesh_shared::SourceKind::Ed25519 | credmesh_shared::SourceKind::X402 => {
-            let (signed_pubkey, signed_msg) =
-                credmesh_shared::ix_introspection::verify_prev_ed25519(
-                    &ctx.accounts.instructions_sysvar.to_account_info(),
-                )
-                .map_err(|e| match e {
-                    credmesh_shared::ix_introspection::IxIntrospectionError::Ed25519OffsetMismatch => {
-                        error!(CredmeshError::Ed25519MessageMismatch)
-                    }
-                    _ => error!(CredmeshError::Ed25519Missing),
-                })?;
+    let msg_agent = pubkey_at(&signed_msg, M::AGENT_OFFSET);
+    require_keys_eq!(
+        msg_agent,
+        ctx.accounts.agent.key(),
+        CredmeshError::Ed25519MessageMismatch
+    );
 
-            require!(
-                signed_msg.len() == credmesh_shared::ed25519_message::TOTAL_LEN,
-                CredmeshError::Ed25519MessageMismatch
-            );
+    let msg_pool = pubkey_at(&signed_msg, M::POOL_OFFSET);
+    require_keys_eq!(
+        msg_pool,
+        ctx.accounts.pool.key(),
+        CredmeshError::Ed25519MessageMismatch
+    );
 
-            use credmesh_shared::ed25519_message as M;
-            let msg_recv_id = &signed_msg[M::RECEIVABLE_ID_OFFSET
-                ..M::RECEIVABLE_ID_OFFSET + M::RECEIVABLE_ID_LEN];
-            let msg_agent =
-                &signed_msg[M::AGENT_OFFSET..M::AGENT_OFFSET + M::AGENT_LEN];
-            let mut amount_buf = [0u8; 8];
-            amount_buf.copy_from_slice(
-                &signed_msg[M::AMOUNT_OFFSET..M::AMOUNT_OFFSET + M::AMOUNT_LEN],
-            );
-            let msg_amount = u64::from_le_bytes(amount_buf);
-            let mut expires_buf = [0u8; 8];
-            expires_buf.copy_from_slice(
-                &signed_msg[M::EXPIRES_AT_OFFSET..M::EXPIRES_AT_OFFSET + M::EXPIRES_AT_LEN],
-            );
-            let msg_expires_at = i64::from_le_bytes(expires_buf);
-            let msg_nonce = &signed_msg[M::NONCE_OFFSET..M::NONCE_OFFSET + M::NONCE_LEN];
+    let attested_credit_limit = u64_le(&signed_msg, M::CREDIT_LIMIT_OFFSET);
+    let attested_outstanding = u64_le(&signed_msg, M::OUTSTANDING_OFFSET);
+    let expires_at = i64_le(&signed_msg, M::EXPIRES_AT_OFFSET);
+    let attested_at = i64_le(&signed_msg, M::ATTESTED_AT_OFFSET);
+    let msg_nonce = &signed_msg[M::NONCE_OFFSET..M::NONCE_OFFSET + M::NONCE_LEN];
+    let version = u64_le(&signed_msg, M::VERSION_OFFSET);
 
-            require!(
-                msg_recv_id == receivable_id.as_ref(),
-                CredmeshError::Ed25519MessageMismatch
-            );
-            // EVM-parity port: ed25519 messages are bound to the agent's
-            // signing key (not to an MPL asset). Raw-keypair agents work.
-            require!(
-                msg_agent == ctx.accounts.agent.key().as_ref(),
-                CredmeshError::Ed25519MessageMismatch
-            );
-            require!(msg_nonce == nonce.as_ref(), CredmeshError::Ed25519MessageMismatch);
+    require!(
+        version == M::VERSION,
+        CredmeshError::Ed25519MessageMismatch
+    );
+    require!(msg_nonce == nonce.as_ref(), CredmeshError::Ed25519MessageMismatch);
 
-            (msg_amount, msg_expires_at, Some(signed_pubkey))
-        }
-    };
+    // (3) Freshness checks — short-TTL bounds the blast radius of a
+    // compromised bridge signer key.
+    require!(
+        attested_at <= now
+            && (now - attested_at) <= M::MAX_ATTESTATION_AGE_SECONDS,
+        CredmeshError::ReceivableStale
+    );
+    require!(expires_at > now, CredmeshError::ReceivableExpired);
 
-    require!(receivable_expires_at > now, CredmeshError::ReceivableExpired);
-
-    // (4) Cap checks: amount <= min(claim_ratio_cap, pool_pct_cap, abs_cap,
-    // available_credit). claim_ratio_cap mirrors EVM `getClaimCap` — each
-    // claim type has a hardcoded ratio (Worker/Marketplace = 10%, Ed25519/
-    // X402 = 20%). Pool's max_advance_pct_bps is a governance-tunable
-    // additional ceiling.
+    // (4) Underwrite. The attested credit_limit is the EVM-derived cap;
+    // attested_outstanding is the EVM-tracked sum across all chains. Pool
+    // governance also caps via max_advance_abs.
     let pool = &ctx.accounts.pool;
-    let claim_ratio_bps = kind.claim_ratio_bps() as u128;
-    let claim_cap = (receivable_amount as u128)
-        .checked_mul(claim_ratio_bps)
-        .ok_or(CredmeshError::MathOverflow)?
-        .checked_div(BPS_DENOMINATOR as u128)
-        .ok_or(CredmeshError::MathOverflow)?;
-    let claim_cap = u64::try_from(claim_cap).map_err(|_| error!(CredmeshError::MathOverflow))?;
-    require!(amount <= claim_cap, CredmeshError::AdvanceExceedsCap);
-
-    let pct_cap = (receivable_amount as u128)
-        .checked_mul(pool.max_advance_pct_bps as u128)
-        .ok_or(CredmeshError::MathOverflow)?
-        .checked_div(BPS_DENOMINATOR as u128)
-        .ok_or(CredmeshError::MathOverflow)?;
-    let pct_cap = u64::try_from(pct_cap).map_err(|_| error!(CredmeshError::MathOverflow))?;
-    require!(amount <= pct_cap, CredmeshError::AdvanceExceedsCap);
+    let available_credit = attested_credit_limit.saturating_sub(attested_outstanding);
+    require!(amount <= available_credit, CredmeshError::AdvanceExceedsCredit);
     require!(amount <= pool.max_advance_abs, CredmeshError::AdvanceExceedsCap);
 
-    // EVM-parity: enforce against the agent's STANDING credit line minus
-    // their rolling outstanding exposure. credit_limit_atoms and
-    // outstanding_balance_atoms are maintained by credmesh-reputation
-    // (register_agent + record_advance_issued + record_settlement_outcome
-    // + record_default). Score / limit formulas mirror credit.ts:24-56.
-    let available_credit = reputation
-        .credit_limit_atoms
-        .saturating_sub(reputation.outstanding_balance_atoms);
-    require!(amount <= available_credit, CredmeshError::AdvanceExceedsCredit);
-
-    // (5) Compute fee from the on-chain curve. The off-chain server's
-    // pricing.ts must produce the same number; tests assert the equality.
-    let duration_seconds = receivable_expires_at.saturating_sub(now).max(0) as u64;
+    // (5) Fee computation against the pool's curve. duration_seconds
+    // = (expires_at - now), used as the loan tenor for fee math.
+    let duration_seconds = expires_at.saturating_sub(now).max(0) as u64;
     let utilization = compute_utilization_bps(pool)?;
-    // Approximate default count by total defaults; the EVM lane's
-    // computeFeeAmount uses the same proxy.
-    let default_count = reputation.defaulted_advances;
     let fee_owed = compute_fee_amount(
         amount,
         duration_seconds,
         utilization,
-        default_count,
+        0, // default_count: per-agent default history is on EVM; the
+           // bridge could fold a defaults proxy into trust_score later.
         &pool.fee_curve,
     )?;
+    let late_penalty_per_day = compute_late_penalty_per_day(amount, &pool.fee_curve)?;
 
-    // (6) Transfer USDC vault → agent. PDA-signed.
+    // (6) Disburse: vault → agent's USDC ATA, PDA-signed.
     let bump_arr = [pool.bump];
     let pool_seeds = pool.signer_seeds(&bump_arr);
     let signer_seeds: &[&[&[u8]]] = &[&pool_seeds];
@@ -290,36 +208,7 @@ pub fn handler(
         ctx.accounts.usdc_mint.decimals,
     )?;
 
-    // (6b) Grant pool PDA delegate authority on agent's USDC ATA so Mode B
-    // crankers can settle without the agent's key. Approval cap covers
-    // worst-case settlement (principal + fee + max-late). Bundling into
-    // request_advance avoids a UX race where the agent issues but forgets
-    // to approve, leaving the advance unsettleable until liquidation.
-    // Lingering residual after settlement is bounded by the late-penalty
-    // curve and revocable by the agent. See DECISIONS Q9.
-    let late_penalty_per_day = compute_late_penalty_per_day(amount, &pool.fee_curve)?;
-    let max_late_penalty = (MAX_LATE_DAYS as u64)
-        .checked_mul(late_penalty_per_day)
-        .ok_or(CredmeshError::MathOverflow)?;
-    let settle_delegate_amount = amount
-        .checked_add(fee_owed)
-        .ok_or(CredmeshError::MathOverflow)?
-        .checked_add(max_late_penalty)
-        .ok_or(CredmeshError::MathOverflow)?;
-
-    token::approve(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Approve {
-                to: ctx.accounts.agent_usdc_ata.to_account_info(),
-                delegate: ctx.accounts.pool.to_account_info(),
-                authority: ctx.accounts.agent.to_account_info(),
-            },
-        ),
-        settle_delegate_amount,
-    )?;
-
-    // (7) Init Advance + ConsumedPayment (Anchor handled via `init`).
+    // (7) Init the Advance + ConsumedPayment PDAs.
     let advance = &mut ctx.accounts.advance;
     advance.bump = ctx.bumps.advance;
     advance.agent = ctx.accounts.agent.key();
@@ -328,9 +217,8 @@ pub fn handler(
     advance.fee_owed = fee_owed;
     advance.late_penalty_per_day = late_penalty_per_day;
     advance.issued_at = now;
-    advance.expires_at = receivable_expires_at;
-    advance.source_kind = source_kind;
-    advance.source_signer = source_signer;
+    advance.expires_at = expires_at;
+    advance.attestor = signed_pubkey;
     advance.state = AdvanceState::Issued;
     let advance_key = advance.key();
 
@@ -340,36 +228,44 @@ pub fn handler(
     consumed.agent = ctx.accounts.agent.key();
     consumed.created_at = now;
 
-    // (8) Update Pool deployed_amount.
+    // (8) Update pool exposure.
     let pool = &mut ctx.accounts.pool;
     pool.deployed_amount = pool
         .deployed_amount
         .checked_add(amount)
         .ok_or(CredmeshError::MathOverflow)?;
-
-    // Post-state invariant: deployed never exceeds total_assets.
     require!(
         pool.deployed_amount <= pool.total_assets,
         CredmeshError::InsufficientIdleLiquidity
     );
 
-    let pool_key = pool.key();
     emit!(AdvanceIssued {
-        pool: pool_key,
+        pool: pool.key(),
         agent: ctx.accounts.agent.key(),
         advance: advance_key,
         principal: amount,
         fee_owed,
-        expires_at: receivable_expires_at,
-        source_kind,
-    });
-    emit!(SettlementDelegateApproved {
-        pool: pool_key,
-        agent: ctx.accounts.agent.key(),
-        advance: advance_key,
-        agent_usdc_ata: ctx.accounts.agent_usdc_ata.key(),
-        approved_amount: settle_delegate_amount,
+        expires_at,
+        attestor: signed_pubkey,
     });
 
     Ok(())
+}
+
+fn pubkey_at(msg: &[u8], offset: usize) -> Pubkey {
+    let mut buf = [0u8; 32];
+    buf.copy_from_slice(&msg[offset..offset + 32]);
+    Pubkey::new_from_array(buf)
+}
+
+fn u64_le(msg: &[u8], offset: usize) -> u64 {
+    let mut buf = [0u8; 8];
+    buf.copy_from_slice(&msg[offset..offset + 8]);
+    u64::from_le_bytes(buf)
+}
+
+fn i64_le(msg: &[u8], offset: usize) -> i64 {
+    let mut buf = [0u8; 8];
+    buf.copy_from_slice(&msg[offset..offset + 8]);
+    i64::from_le_bytes(buf)
 }
