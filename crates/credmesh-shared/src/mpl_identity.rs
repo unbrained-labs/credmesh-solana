@@ -133,6 +133,40 @@ pub fn verify_agent_signer(
     Ok(())
 }
 
+/// Slim variant of `verify_agent_signer` for callers that only need to
+/// confirm "this MPL Core asset's stored owner equals the given pubkey"
+/// — no agent-identity registry lookup, no delegate path. Used by
+/// credmesh-reputation::register_agent for the optional MPL identity
+/// proof attached at registration. Includes the same defense-in-depth
+/// checks: account-owner program, length, AND the
+/// `KEY_VALUE_ASSET_V1` discriminator byte. Without the discriminator
+/// check, a non-asset MPL Core account whose bytes 1..33 happened to
+/// equal the agent's pubkey would falsely pass.
+pub fn verify_asset_owner_match(
+    agent_asset: &AccountInfo<'_>,
+    expected_owner: &Pubkey,
+) -> std::result::Result<bool, IdentityError> {
+    if agent_asset.owner != &MPL_CORE {
+        return Err(IdentityError::NotACoreAsset);
+    }
+    let asset_data = agent_asset
+        .try_borrow_data()
+        .map_err(|_| IdentityError::NotACoreAsset)?;
+    require_min_len(
+        &asset_data,
+        mpl_core_asset::OWNER_OFFSET + mpl_core_asset::OWNER_LEN,
+        IdentityError::NotACoreAsset,
+    )?;
+    require_eq(
+        asset_data[mpl_core_asset::KEY_OFFSET],
+        mpl_core_asset::KEY_VALUE_ASSET_V1,
+        IdentityError::NotACoreAsset,
+    )?;
+    let asset_owner = read_pubkey_at(&asset_data, mpl_core_asset::OWNER_OFFSET)
+        .ok_or(IdentityError::NotACoreAsset)?;
+    Ok(asset_owner == *expected_owner)
+}
+
 fn read_pubkey_at(data: &[u8], offset: usize) -> Option<Pubkey> {
     if data.len() < offset + 32 {
         return None;

@@ -11,23 +11,11 @@
  */
 
 import { expect } from "chai";
-
-const BPS_DENOMINATOR = 10_000;
-
-// EVM CLAIM_RATIOS from packages/protocol-spec/index.js:23-27
-const EVM_CLAIM_RATIOS = {
-  worker_attested: 0.1,
-  signed_receivable: 0.2,
-  venue_state: 0.3,
-};
-
-// Solana SourceKind → claim_ratio_bps (in crates/credmesh-shared)
-const SOLANA_CLAIM_RATIO_BPS = {
-  Worker: 1000,        // 10% — EVM worker_attested
-  Marketplace: 1000,   // 10% — EVM worker_attested (permissionless variant)
-  Ed25519: 2000,       // 20% — EVM signed_receivable
-  X402: 2000,          // 20% — EVM signed_receivable
-};
+import {
+  BPS_DENOMINATOR,
+  CLAIM_RATIO_BPS as SOLANA_CLAIM_RATIO_BPS,
+  EVM_CLAIM_RATIOS,
+} from "../../../ts/shared/src/index.js";
 
 describe("credmesh-receivable-oracle / register_job — permissionless marketplace primitive", () => {
   describe("claim ratios match EVM protocol-spec exactly", () => {

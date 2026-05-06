@@ -53,26 +53,20 @@ app.get("/health", (c) => c.json({ ok: true }));
  * Missing OUTREACH_VAULT_ADDRESS or OUTREACH_CHAIN_ID -> the outreach
  * block is omitted; the outreach agent will treat us as not-ready.
  */
-app.get("/.well-known/agent.json", (c) => {
-  const chainId = process.env.OUTREACH_CHAIN_ID;
-  const vaultAddress = process.env.OUTREACH_VAULT_ADDRESS;
-  const explorerBase =
-    process.env.OUTREACH_EXPLORER_BASE ?? "https://solscan.io";
-  const mcpPackage =
-    process.env.OUTREACH_MCP_PACKAGE ?? "@credmesh/mcp-solana";
-  const sourceRepo =
-    process.env.OUTREACH_SOURCE_REPO ??
-    "https://github.com/unbrained-labs/credmesh-solana";
-  const apiBase = process.env.PUBLIC_API_BASE ?? "https://credmesh.xyz";
+/**
+ * Agent card. Built ONCE at module load from env (env is fixed at
+ * startup) — saves the per-request object allocation + ~5-10µs latency.
+ */
+const AGENT_CARD = buildAgentCard();
+app.get("/.well-known/agent.json", (c) => c.json(AGENT_CARD));
 
+function buildAgentCard(): Record<string, unknown> {
+  const apiBase = process.env.PUBLIC_API_BASE ?? "https://credmesh.xyz";
   const card: Record<string, unknown> = {
     name: "CredMesh Solana",
     description:
       "Revenue-backed working capital for autonomous agents on Solana. Standing credit line, automatic repayment from job revenue, permissionless settlement.",
-    a2a: {
-      endpoint: `${apiBase}/agents`,
-      version: "0.1",
-    },
+    a2a: { endpoint: `${apiBase}/agents`, version: "0.1" },
     capabilities: [
       "agent-onboarding",
       "credit-quote",
@@ -81,39 +75,44 @@ app.get("/.well-known/agent.json", (c) => {
       "permissionless-settlement",
     ],
   };
+  const outreach = buildOutreachBlock(apiBase);
+  if (outreach) card.outreach = outreach;
+  return card;
+}
 
-  if (chainId && vaultAddress) {
-    card.outreach = {
-      chain: chainId,
-      vaultAddress,
-      explorerBase,
-      explorerUrl: `${explorerBase}/account/${vaultAddress}`,
-      apiBase,
-      mcpPackage,
-      sourceRepo,
-      pitch: {
-        headline:
-          "Stop earning passive yield on idle USDC. Underwrite autonomous agents.",
-        body: [
-          "CredMesh-Solana underwrites short-duration advances against",
-          "marketplace job receivables. Your USDC sits in a Pool PDA;",
-          "agents draw against it within their on-chain credit limit;",
-          "the protocol clips a 15% fee on every settlement and routes",
-          "principal + 85% of fees back to LPs. Permissionless settlement",
-          "via SPL Approve delegate (DECISIONS Q9). Three-key topology",
-          "(fee-payer / oracle worker / reputation writer) and Squads-",
-          "governed FeeCurve updates with timelock.",
-        ].join(" "),
-        targetMetrics: {
-          minTvlUsd: 50_000,
-          maxApr: 0.06,
-        },
-      },
-    };
-  }
+function buildOutreachBlock(apiBase: string): Record<string, unknown> | null {
+  const chainId = process.env.OUTREACH_CHAIN_ID;
+  const vaultAddress = process.env.OUTREACH_VAULT_ADDRESS;
+  if (!chainId || !vaultAddress) return null;
 
-  return c.json(card);
-});
+  const explorerBase = process.env.OUTREACH_EXPLORER_BASE ?? "https://solscan.io";
+  return {
+    chain: chainId,
+    vaultAddress,
+    explorerBase,
+    explorerUrl: `${explorerBase}/account/${vaultAddress}`,
+    apiBase,
+    mcpPackage: process.env.OUTREACH_MCP_PACKAGE ?? "@credmesh/mcp-solana",
+    sourceRepo:
+      process.env.OUTREACH_SOURCE_REPO ??
+      "https://github.com/unbrained-labs/credmesh-solana",
+    pitch: {
+      headline:
+        "Stop earning passive yield on idle USDC. Underwrite autonomous agents.",
+      body: [
+        "CredMesh-Solana underwrites short-duration advances against",
+        "marketplace job receivables. Your USDC sits in a Pool PDA;",
+        "agents draw against it within their on-chain credit limit;",
+        "the protocol clips a 15% fee on every settlement and routes",
+        "principal + 85% of fees back to LPs. Permissionless settlement",
+        "via SPL Approve delegate (DECISIONS Q9). Three-key topology",
+        "(fee-payer / oracle worker / reputation writer) and Squads-",
+        "governed FeeCurve updates with timelock.",
+      ].join(" "),
+      targetMetrics: { minTvlUsd: 50_000, maxApr: 0.06 },
+    },
+  };
+}
 
 app.post("/auth/nonce", async (c) => {
   const body = await c.req.json().catch(() => ({}));

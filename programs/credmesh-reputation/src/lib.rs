@@ -17,27 +17,13 @@ declare_id!("JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G");
 pub mod credmesh_reputation {
     use super::*;
 
-    /// Onboards a new agent. Self-service — agent signs, no writer needed.
-    /// All attestation fields (trust_score, attestation_count,
-    /// cooperation_success_count, successful_jobs, failed_jobs,
-    /// average_completed_payout) are forced to zero. The writer authority
-    /// (configured at deploy time on credmesh-receivable-oracle's
-    /// OracleConfig.reputation_writer_authority — see DECISIONS Q4) boosts
-    /// these via `update_agent_attestations` based on off-chain validation
-    /// (ERC-8004 lookup, SAS attestation, marketplace history check, etc.).
-    /// `record_settlement_outcome` and `record_default` increment the
-    /// repaid/defaulted/successful/failed counters as advances close.
-    ///
-    /// `identity_registered` is set to true only if the caller passes a
-    /// valid MPL Core asset whose stored owner field equals the agent's
-    /// signing key. This is the on-chain proof of identity attestation
-    /// (the Solana equivalent of EVM's `identityRegistered` bool, which
-    /// EVM derives from an ERC-8004 registry read).
-    ///
-    /// The fresh-agent default credit limit (no history, no identity) is
-    /// $40 atoms (= 0 score * 8 + 0 repay rate * 120 + 0.5 completion
-    /// default * 80 = 40 dollars). With identity attached: ~$120. Real
-    /// limit growth comes from successful settlements + writer attestations.
+    /// Self-service onboarding: agent signs, no writer needed. All
+    /// attestation fields are forced to zero — only the writer
+    /// (oracle_config.reputation_writer_authority) can boost them via
+    /// update_agent_attestations from off-chain validation.
+    /// `identity_registered` is true only when the optional MPL Core
+    /// asset proves agent owns it. Fresh-agent baseline limits (no
+    /// history) are computed in scoring.rs.
     pub fn register_agent(ctx: Context<RegisterAgent>) -> Result<()> {
         let reputation = &mut ctx.accounts.reputation;
         reputation.bump = ctx.bumps.reputation;
@@ -55,36 +41,17 @@ pub mod credmesh_reputation {
         reputation.repaid_advances = 0;
         reputation.defaulted_advances = 0;
 
-        // identity_registered: only true if a valid MPL Core asset is
-        // attached AND its stored `owner` field (byte offset 1..33 of the
-        // BaseAssetV1 struct) equals the agent's signing pubkey. This is
-        // the same identity-binding helper used by escrow's request_advance
-        // for the optional MPL flow (DECISIONS Q1, post-amendment).
+        // Identity is set only via the shared MPL helper, which enforces
+        // (a) account-owner is MPL_CORE, (b) BaseAssetV1 discriminator
+        // byte, (c) stored owner field matches agent. All three checks
+        // matter — skipping (b) would let a non-asset MPL Core account
+        // with bytes 1..33 happening to equal the agent's pubkey pass.
         reputation.identity_registered = match ctx.accounts.agent_asset.as_ref() {
-            Some(asset) => {
-                // Verify owner-program is MPL_CORE (no spoofing).
-                require_keys_eq!(
-                    *asset.owner,
-                    credmesh_shared::program_ids::MPL_CORE,
-                    ReputationError::IdentityProofInvalid
-                );
-                // Read the asset's stored owner field at the canonical offset.
-                let data = asset.try_borrow_data()
-                    .map_err(|_| ReputationError::IdentityProofInvalid)?;
-                require!(
-                    data.len() >= credmesh_shared::mpl_core_asset::OWNER_OFFSET
-                        + credmesh_shared::mpl_core_asset::OWNER_LEN,
-                    ReputationError::IdentityProofInvalid
-                );
-                let mut owner_bytes = [0u8; 32];
-                owner_bytes.copy_from_slice(
-                    &data[credmesh_shared::mpl_core_asset::OWNER_OFFSET
-                        ..credmesh_shared::mpl_core_asset::OWNER_OFFSET
-                            + credmesh_shared::mpl_core_asset::OWNER_LEN],
-                );
-                let asset_owner = Pubkey::new_from_array(owner_bytes);
-                asset_owner == ctx.accounts.agent.key()
-            }
+            Some(asset) => credmesh_shared::mpl_identity::verify_asset_owner_match(
+                &asset.to_account_info(),
+                &ctx.accounts.agent.key(),
+            )
+            .map_err(|_| error!(ReputationError::IdentityProofInvalid))?,
             None => false,
         };
 

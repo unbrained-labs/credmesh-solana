@@ -15,6 +15,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import {
+  AccountRole,
   address,
   appendTransactionMessageInstruction,
   createKeyPairSignerFromBytes,
@@ -32,6 +33,24 @@ import {
   type Address,
 } from "@solana/kit";
 
+// Anchor account discriminator helpers — one source of truth in
+// `../shared/src/index.ts`. We inline the helpers locally to keep the
+// keeper a self-contained npm package (no workspace setup required).
+async function anchorAccountDiscriminator(name: string): Promise<Uint8Array> {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`account:${name}`),
+  );
+  return new Uint8Array(buf).slice(0, 8);
+}
+async function anchorIxDiscriminator(name: string): Promise<Uint8Array> {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`global:${name}`),
+  );
+  return new Uint8Array(buf).slice(0, 8);
+}
+
 // ── Config ──────────────────────────────────────────────────────────────────
 
 const RPC_URL = requireEnv("RPC_URL");
@@ -47,27 +66,9 @@ const ESCROW_PROGRAM_ID = address(ESCROW_PROGRAM_ID_STR);
 const POOL_ASSET_MINT = address(POOL_ASSET_MINT_STR);
 const POOL_SEED = new TextEncoder().encode("pool");
 
-// Anchor account discriminator for `Advance` = first 8 bytes of
-// sha256("account:Advance"). Computed at startup so we can filter
-// getProgramAccounts efficiently.
-async function computeAdvanceDiscriminator(): Promise<Uint8Array> {
-  const data = new TextEncoder().encode("account:Advance");
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return new Uint8Array(buf).slice(0, 8);
-}
-
 // AdvanceState enum: 0=Issued, 1=Settled, 2=Liquidated. We only crank
 // `state == Issued` (settled and liquidated are terminal).
 const ADVANCE_STATE_ISSUED = 0;
-
-// `instruction:liquidate` discriminator = first 8 bytes of
-// sha256("global:liquidate"). The Anchor 0.30 dispatch namespace is
-// "global" for #[program] ixs.
-async function computeLiquidateIxDiscriminator(): Promise<Uint8Array> {
-  const data = new TextEncoder().encode("global:liquidate");
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return new Uint8Array(buf).slice(0, 8);
-}
 
 // ── Advance account decoding ────────────────────────────────────────────────
 
@@ -82,7 +83,14 @@ interface DecodedAdvance {
 
 /**
  * Decode the fields we care about from an Advance account's data buffer.
- * Field order matches programs/credmesh-escrow/src/state.rs Advance:
+ *
+ * MIRROR programs/credmesh-escrow/src/state.rs::Advance — field order
+ * is load-bearing. Drift here = silent miscount (worst case: keeper
+ * liquidates the wrong advance, or skips one that should liquidate).
+ * Replace with a Codama-generated client once issue #15 unblocks IDL
+ * extraction; until then, keep this comment + the field offsets in
+ * sync with the Rust struct by hand.
+ *
  *   discriminator (8) + bump (1) + agent (32) + receivable_id (32)
  *   + principal (8) + fee_owed (8) + late_penalty_per_day (8)
  *   + issued_at (8) + expires_at (8) + source_kind (1)
@@ -126,10 +134,10 @@ async function buildLiquidateIx(
   return {
     programAddress: programId,
     accounts: [
-      { address: accounts.cranker, role: 3 /* WritableSigner */ },
-      { address: accounts.advance, role: 1 /* Writable */ },
-      { address: accounts.consumed, role: 0 /* Readonly */ },
-      { address: accounts.pool, role: 1 /* Writable */ },
+      { address: accounts.cranker, role: AccountRole.WRITABLE_SIGNER },
+      { address: accounts.advance, role: AccountRole.WRITABLE },
+      { address: accounts.consumed, role: AccountRole.READONLY },
+      { address: accounts.pool, role: AccountRole.WRITABLE },
     ],
     data: liquidateDiscriminator,
   };
@@ -241,29 +249,40 @@ async function tick(deps: {
     `[${new Date().toISOString()}] found ${liquidatable.length} liquidatable advance(s)`,
   );
 
-  for (const adv of liquidatable) {
-    try {
+  // Fetch blockhash ONCE per tick — valid for ~150 slots (≈60s), more than
+  // enough time to fan out across the batch. Saves N-1 RPC round-trips on
+  // multi-liquidation ticks.
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+  // Liquidate concurrently. RPCs tolerate 25-50 in-flight tx submissions;
+  // we cap at the batch size since liquidation events are rare per-tick.
+  const results = await Promise.allSettled(
+    liquidatable.map(async (adv) => {
       const consumedPda = await deriveConsumedPda(pool, adv.agent, adv.receivableId);
       const ix = await buildLiquidateIx(
         ESCROW_PROGRAM_ID,
         { cranker: signer.address, advance: adv.pubkey, consumed: consumedPda, pool },
         liquidateDiscriminator,
       );
-
-      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
       const tx = pipe(
         createTransactionMessage({ version: 0 }),
         (m) => setTransactionMessageFeePayerSigner(signer, m),
         (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
         (m) => appendTransactionMessageInstruction(ix as any, m),
       );
-
       const signed = await signTransactionMessageWithSigners(tx);
       await sendAndConfirm(signed, { commitment: "confirmed" });
-      const sig = getSignatureFromTransaction(signed);
-      console.log(`  ↳ liquidated ${adv.pubkey} (sig ${sig})`);
-    } catch (err) {
-      console.error(`  ↳ liquidate FAILED for ${adv.pubkey}:`, err);
+      return { advance: adv.pubkey, sig: getSignatureFromTransaction(signed) };
+    }),
+  );
+
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    const adv = liquidatable[i];
+    if (r.status === "fulfilled") {
+      console.log(`  ↳ liquidated ${r.value.advance} (sig ${r.value.sig})`);
+    } else {
+      console.error(`  ↳ liquidate FAILED for ${adv.pubkey}:`, r.reason);
     }
   }
 }
@@ -273,8 +292,8 @@ async function main() {
   const sendAndConfirm = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions: undefined as any });
   const signer = await loadKeeperSigner();
   const pool = await derivePoolPda();
-  const advanceDiscriminator = await computeAdvanceDiscriminator();
-  const liquidateDiscriminator = await computeLiquidateIxDiscriminator();
+  const advanceDiscriminator = await anchorAccountDiscriminator("Advance");
+  const liquidateDiscriminator = await anchorIxDiscriminator("liquidate");
 
   console.log(`credmesh-solana-keeper v0.0.1`);
   console.log(`  RPC:            ${RPC_URL}`);
