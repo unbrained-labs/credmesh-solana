@@ -21,6 +21,10 @@ pub struct InitPoolParams {
     /// Cluster id for cross-chain ed25519 attestation replay defense.
     /// Must equal `CHAIN_ID_MAINNET (1)` or `CHAIN_ID_DEVNET (2)`.
     pub chain_id: u64,
+    /// Per-agent rolling-window cap (USDC atoms) over `AGENT_WINDOW_SECONDS`.
+    /// `0` disables the on-chain cap (devnet bring-up convenience). Mainnet
+    /// MUST be set > 0.
+    pub agent_window_cap: u64,
 }
 
 #[derive(Accounts)]
@@ -85,6 +89,7 @@ pub fn handler(ctx: Context<InitPool>, params: InitPoolParams) -> Result<()> {
     pool.max_advance_abs = params.max_advance_abs;
     pool.timelock_seconds = params.timelock_seconds;
     pool.chain_id = params.chain_id;
+    pool.agent_window_cap = params.agent_window_cap;
     pool.pending_params = None;
 
     emit!(PoolInitialized {

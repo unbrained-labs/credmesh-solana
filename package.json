@@ -6,9 +6,12 @@
   "scripts": {
     "build": "anchor build",
     "check": "cargo check --workspace --locked",
+    "test": "cargo test --workspace --lib",
     "typecheck": "npm --prefix ts/shared run typecheck && npm --prefix ts/server run typecheck && npm --prefix ts/bridge run typecheck && npm --prefix ts/keeper run typecheck",
     "deploy": "ts-node scripts/deploy.ts",
-    "init:pool": "ts-node scripts/init_pool.ts"
+    "init:pool": "ts-node scripts/init_pool.ts",
+    "init:registry": "ts-node scripts/init_registry.ts",
+    "registry:add-signer": "ts-node scripts/add_allowed_signer.ts"
   },
   "devDependencies": {
     "@types/node": "^22.7.0",

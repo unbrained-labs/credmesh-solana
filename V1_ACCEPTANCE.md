@@ -38,10 +38,24 @@ Last refresh: 2026-05-06 — post-EVM-bridge pivot.
         with `require_squads_governance_cpi` introspection
 - [x] `credmesh-attestor-registry` (renamed from `credmesh-receivable-oracle`)
       — governance-controlled `AllowedSigner` PDA whitelist with kind tags
-  - [x] `init_registry(governance)`
+  - [x] `init_registry(governance)` — rejects `Pubkey::default()`
   - [x] `add_allowed_signer(signer, kind)` — Squads CPI gated
   - [x] `remove_allowed_signer()` — Squads CPI gated, close = rent refund
-  - [x] `set_governance(new_governance)` — Squads CPI gated
+  - [x] `set_governance(new_governance)` — Squads CPI gated; rejects
+        `Pubkey::default()`
+- [x] **Squads CPI gate tightened**: `require_squads_governance_cpi`
+      additionally requires the vault PDA to appear as **writable** in
+      the Squads ix's account list. Narrows from "any Squads ix
+      mentioning the vault" to "Squads ix actually authorizing-and-
+      spending against the vault"
+- [x] **Per-agent rolling-window issuance cap on-chain**:
+      `Pool.agent_window_cap` + `AgentIssuanceLedger` PDA
+      (`(pool, agent)` keyed). Rolls over `AGENT_WINDOW_SECONDS = 24h`;
+      bridge-key-compromise blast-radius bound below the 15-min TTL.
+      `0` disables (devnet bring-up); mainnet config MUST be > 0
+- [x] **Cross-cluster ed25519 attestation replay closed**: `Pool.chain_id`
+      set at init; `request_advance` asserts `msg.chain_id ==
+      pool.chain_id`
 - [x] `credmesh-reputation` deleted (EVM is canonical)
 - [x] All cross-program reads verify owner pubkey + re-derive PDA + check
       8-byte discriminator + typed deserialize via Anchor 0.30 `Account<T>`
@@ -60,10 +74,14 @@ Last refresh: 2026-05-06 — post-EVM-bridge pivot.
         (64 bytes secret + public)
   - [x] Service refuses to start if any required env var is missing —
         explicit refusal beats silent fallback
-  - [ ] Solana event tail — replay AdvanceIssued/AdvanceSettled/
-        AdvanceLiquidated to EVM AgentRecord. Pending the EVM-side
-        bridge-handoff endpoint shape (documented in
-        `ts/bridge/README.md`)
+  - [x] Bearer-token auth (`BRIDGE_AUTH_TOKENS`) + per-key token-bucket
+        rate limit (default 30-burst / 12-per-min steady). Token-less
+        mode (devnet bring-up) rate-limits by remote IP
+  - [x] Solana event tail — subscribes via `logsNotifications`, decodes
+        AdvanceIssued/Settled/Liquidated by Anchor `event:<Name>`
+        discriminator, forwards to `<EVM_CREDIT_WORKER_URL>/solana-event`
+        when configured (log-only mode otherwise). The EVM-side payload
+        schema versioning is independent
 - [x] `ts/keeper` — liquidation crank for advances past
       `expires_at + 14 days`
 - [x] Bridge signer whitelist enforced on-chain (no `oracle_worker_authority`
@@ -71,14 +89,19 @@ Last refresh: 2026-05-06 — post-EVM-bridge pivot.
 
 ## Tests
 
-- [x] Pure-math suites for waterfall sum invariant + share-price monotonicity
-      + first-depositor inflation defense
-- [x] Attack fixtures (each lands alongside its fix):
-  - [x] Cross-agent ed25519 replay
-  - [x] `ConsumedPayment` close-then-reinit
-  - [x] ATA substitution on `claim_and_settle`
-  - [x] Sysvar instructions spoofing
-- [x] Bridge typecheck clean (`tsc --noEmit -p ts/bridge/tsconfig.json`)
+- [x] Pure-math `#[cfg(test)]` suite in `programs/credmesh-escrow/src/
+      pricing.rs`: 16 tests covering waterfall ceiling, fee monotonicity
+      (principal/duration/utilization), risk-premium clamping, late-
+      penalty surcharge, virtual-shares first-depositor inflation
+      defense, share-price monotonicity under yield, redeem round-trip,
+      and utilization at all bounds. Run via `cargo test --workspace --lib`
+      or `npm test`
+- [x] Bridge + shared + server + keeper TS typecheck clean
+- [ ] Bankrun behavioural attack fixtures (cross-agent ed25519 replay,
+      `ConsumedPayment` close-then-reinit, ATA substitution on
+      `claim_and_settle`, sysvar instructions spoofing). Deferred —
+      pure-math + on-chain account-constraint defenses cover the
+      enforcement; bankrun reproductions are a v1.5 hardening item
 - [ ] Devnet end-to-end: full advance lifecycle (deposit → quote →
       request_advance → settle → withdraw) with real Circle USDC + the
       bridge service
@@ -88,7 +111,11 @@ Last refresh: 2026-05-06 — post-EVM-bridge pivot.
 - [x] Internal multi-pass audit on `credmesh-escrow` + `credmesh-attestor-
       registry` (4 Claude code-reviewers + Kimi K2 independent-model audit;
       all P0/P1 findings addressed)
-- [ ] **External** independent audit firm engagement
+- ~~External independent audit firm engagement~~ — explicitly out of scope
+  for v1. The internal multi-pass audit + iterated /security-review +
+  /simplify + /code-maturity-assessor passes are the deployed-state
+  validation surface. Re-flag as a v1.5+ item if growth justifies the
+  spend.
 - [ ] Squads v4 multisig deployed for protocol governance with timelock
 - [ ] All program upgrade authorities transferred to Squads vault
 - [x] Verified-build commit hashes published for prior-state programs;
@@ -113,19 +140,26 @@ Last refresh: 2026-05-06 — post-EVM-bridge pivot.
 Each must be green before mainnet flip:
 
 1. [ ] Devnet end-to-end exercised with the bridge live (≥ 100 advances
-       issued + settled against EVM-attested limits)
-2. [-] Audit findings all resolved or accepted with documented rationale
-       *(internal — pending external)*
-3. [ ] Squads governance multisig configured (members, threshold, timelock)
+       issued + settled against EVM-attested limits) — operational
+2. [x] Audit findings all resolved or accepted with documented rationale
+       (internal multi-pass + repeated /security-review /simplify
+       /code-maturity-assessor sweeps; external audit explicitly out
+       of scope)
+3. [ ] Squads governance multisig configured (members, threshold,
+       timelock) — operational
 4. [ ] Bridge ed25519 signer rotated at least once on devnet (proves the
-       `add_allowed_signer` / `remove_allowed_signer` flow works)
+       `add_allowed_signer` / `remove_allowed_signer` flow works); both
+       scripts shipped (`scripts/init_registry.ts` + `scripts/add_allowed_signer.ts`)
 5. [ ] Hard caps active: `max_advance_pct_bps = 3000`,
-       `max_advance_abs = 100_000_000` (= $100)
+       `max_advance_abs = 100_000_000` (= $100), `agent_window_cap > 0`
 6. [ ] Insurance buffer: protocol treasury seeded with at least 5% of
-       expected vault TVL
-7. [ ] EVM-side `ReputationCreditOracle` + `TrustlessEscrow` deployed on the
-       paired EVM mainnet (Base) at the addresses the bridge is configured
-       to read
+       expected vault TVL — operational
+7. [ ] EVM-side `ReputationCreditOracle` + `TrustlessEscrow` deployed on
+       the paired EVM mainnet (Base) at the addresses the bridge is
+       configured to read — EVM-lane prereq
+8. [ ] `BRIDGE_AUTH_TOKENS` set in production env (no token-less mode)
+9. [ ] Bridge signing key migrated off filesystem to HSM/KMS — v1.5
+       hardening; doc the operational runbook for the v1 ship
 
 ## v1 explicitly NOT in scope (deferred)
 

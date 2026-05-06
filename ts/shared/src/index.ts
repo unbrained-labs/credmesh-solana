@@ -73,3 +73,15 @@ export async function anchorIxDiscriminator(
   const buf = await crypto.subtle.digest("SHA-256", data);
   return new Uint8Array(buf).slice(0, 8);
 }
+
+/// Anchor `emit!` event discriminator: first 8 bytes of
+/// sha256(`event:<EventName>`). The bridge event tail uses this to
+/// recognise AdvanceIssued / AdvanceSettled / AdvanceLiquidated
+/// records inside the "Program data: <base64>" log lines.
+export async function anchorEventDiscriminator(
+  eventName: string,
+): Promise<Uint8Array> {
+  const data = new TextEncoder().encode(`event:${eventName}`);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(buf).slice(0, 8);
+}

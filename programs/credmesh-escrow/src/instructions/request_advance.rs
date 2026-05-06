@@ -7,8 +7,8 @@ use crate::errors::CredmeshError;
 use crate::events::AdvanceIssued;
 use crate::pricing::{compute_fee_amount, compute_late_penalty_per_day, compute_utilization_bps};
 use crate::state::{
-    Advance, AdvanceState, ConsumedPayment, Pool, ADVANCE_SEED, CONSUMED_SEED, MIN_ADVANCE_ATOMS,
-    POOL_SEED,
+    Advance, AdvanceState, AgentIssuanceLedger, ConsumedPayment, Pool, ADVANCE_SEED,
+    AGENT_WINDOW_SECONDS, CONSUMED_SEED, ISSUANCE_LEDGER_SEED, MIN_ADVANCE_ATOMS, POOL_SEED,
 };
 
 #[derive(Accounts)]
@@ -59,6 +59,20 @@ pub struct RequestAdvance<'info> {
         bump
     )]
     pub consumed: Account<'info, ConsumedPayment>,
+
+    /// Per-agent rolling-window issuance ledger. `init_if_needed` is
+    /// safe here — this is NOT a replay-protection PDA (replay protection
+    /// is `consumed` above; AUDIT P0-5 only forbids init_if_needed for
+    /// replay PDAs). Initialized once per (pool, agent) pair, then
+    /// updated in-place by every subsequent `request_advance`.
+    #[account(
+        init_if_needed,
+        payer = agent,
+        space = 8 + AgentIssuanceLedger::INIT_SPACE,
+        seeds = [ISSUANCE_LEDGER_SEED, pool.key().as_ref(), agent.key().as_ref()],
+        bump
+    )]
+    pub issuance_ledger: Account<'info, AgentIssuanceLedger>,
 
     #[account(mut, address = pool.usdc_vault)]
     pub pool_usdc_vault: Account<'info, TokenAccount>,
@@ -181,6 +195,35 @@ pub fn handler(
     let available_credit = attested_credit_limit.saturating_sub(attested_outstanding);
     require!(amount <= available_credit, CredmeshError::AdvanceExceedsCredit);
     require!(amount <= pool.max_advance_abs, CredmeshError::AdvanceExceedsCap);
+
+    // (4b) Roll the per-agent issuance ledger forward and enforce the
+    // window cap. Bounds the principal a single agent can pull in
+    // `AGENT_WINDOW_SECONDS` — bridge-key-compromise blast-radius bound.
+    let ledger = &mut ctx.accounts.issuance_ledger;
+    if ledger.bump == 0 {
+        // Freshly init'd by Anchor — fields are zero-initialized. Pin the
+        // PDA's relational fields once.
+        ledger.bump = ctx.bumps.issuance_ledger;
+        ledger.agent = ctx.accounts.agent.key();
+        ledger.pool = pool.key();
+        ledger.window_start = now;
+        ledger.issued_in_window = 0;
+    }
+    if now.saturating_sub(ledger.window_start) >= AGENT_WINDOW_SECONDS {
+        ledger.window_start = now;
+        ledger.issued_in_window = 0;
+    }
+    let new_issued = ledger
+        .issued_in_window
+        .checked_add(amount)
+        .ok_or(CredmeshError::MathOverflow)?;
+    if pool.agent_window_cap > 0 {
+        require!(
+            new_issued <= pool.agent_window_cap,
+            CredmeshError::AgentWindowCapExceeded
+        );
+    }
+    ledger.issued_in_window = new_issued;
 
     // (5) Fee computation against the pool's curve. duration_seconds
     // = (expires_at - now), used as the loan tenor for fee math.

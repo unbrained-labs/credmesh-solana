@@ -66,6 +66,9 @@ pub struct ParamsProposed {
 #[event]
 pub struct ParamsExecuted {
     pub pool: Pubkey,
+    pub max_advance_pct_bps: u16,
+    pub max_advance_abs: u64,
+    pub agent_window_cap: u64,
 }
 
 #[event]

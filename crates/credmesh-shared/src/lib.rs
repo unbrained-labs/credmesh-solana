@@ -15,6 +15,7 @@ pub mod seeds {
     pub const CONSUMED_SEED: &[u8] = b"consumed";
     pub const ALLOWED_SIGNER_SEED: &[u8] = b"allowed_signer";
     pub const ATTESTOR_CONFIG_SEED: &[u8] = b"attestor_config";
+    pub const ISSUANCE_LEDGER_SEED: &[u8] = b"issuance_ledger";
 }
 
 pub mod program_ids {

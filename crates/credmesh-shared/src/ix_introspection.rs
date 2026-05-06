@@ -155,23 +155,30 @@ pub fn require_memo_nonce(
     Err(IxIntrospectionError::MemoNotFound)
 }
 
-/// Verify the current tx contains a Squads v4 instruction that references
-/// the expected governance vault PDA among its accounts. This is the
-/// defensive check that gates governance instructions on credmesh-escrow
-/// (propose_params, skim_protocol_fees) — Squads vault PDAs cannot be
-/// `Signer`s in Anchor, so the equivalent of "must be signed by Squads"
-/// is "must be in a tx that contains a Squads ix touching this vault."
+/// Verify the current tx contains a Squads v4 instruction that
+/// authorizes-and-spends against the expected governance vault PDA.
+/// This is the defensive check that gates governance instructions on
+/// credmesh-escrow (propose_params, skim_protocol_fees) and on
+/// credmesh-attestor-registry (add/remove_allowed_signer,
+/// set_governance) — Squads vault PDAs cannot be `Signer`s in Anchor,
+/// so the equivalent of "must be signed by Squads" is "must be in a
+/// tx that contains a Squads ix authorizing this vault to spend."
 ///
-/// Threat model: an attacker tx that includes BOTH (a) a Squads ix
-/// touching the right vault for some unrelated purpose AND (b) the
-/// gated CredMesh ix would pass this check. Mitigation: such an attack
-/// requires authorization from the Squads multisig members anyway, so
-/// the practical surface is "Squads multisig is compromised" — same as
-/// any direct-Signer authorization.
+/// Tightening (v1): we additionally require the vault PDA to appear
+/// as **writable** in the Squads ix's account list. This narrows the
+/// surface from "any Squads ix mentioning the vault" to "Squads ix
+/// where the vault is the subject of an authorize-and-execute call"
+/// (vault_transaction_execute and equivalents pass the vault as
+/// writable; informational/config Squads ixs that merely reference
+/// the vault as a read-only audit target pass it as non-writable).
 ///
-/// For tighter binding (verifying the inner ix matches THIS handler
-/// call), we'd need to parse Squads `vault_transaction_execute` data.
-/// That's a v1.5 hardening; v1 accepts the same-tx heuristic.
+/// Residual surface (v1.5 hardening): an attacker tx that bundles BOTH
+/// (a) a legitimate Squads vault_transaction_execute against the vault
+/// for some unrelated CPI AND (b) the gated CredMesh ix would still
+/// pass. Defeating that requires parsing the Squads ix's inner-ix
+/// payload to confirm it's specifically targeting THIS handler call.
+/// Tracked as v1.5; the practical exploit requires Squads multisig
+/// authorization in the same window, which is the same trust root.
 pub fn require_squads_governance_cpi(
     sysvar_instructions_ai: &AccountInfo<'_>,
     expected_vault: &Pubkey,
@@ -182,7 +189,10 @@ pub fn require_squads_governance_cpi(
                 if ix.program_id != SQUADS_V4 {
                     continue;
                 }
-                if ix.accounts.iter().any(|a| a.pubkey == *expected_vault) {
+                let writable_match = ix.accounts.iter().any(|a| {
+                    a.pubkey == *expected_vault && a.is_writable
+                });
+                if writable_match {
                     return Ok(());
                 }
             }

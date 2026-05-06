@@ -20,7 +20,8 @@
 //     --max-advance-pct-bps 3000 \
 //     --max-advance-abs 100000000 \
 //     --timelock-seconds 86400 \
-//     --chain-id 2
+//     --chain-id 2 \
+//     --agent-window-cap 500000000        # $500/24h per agent (0 = disabled)
 
 import { createHash } from "node:crypto";
 import {
@@ -90,19 +91,21 @@ interface InitPoolParams {
   governance: PublicKey;
   treasuryAta: PublicKey;
   chainId: bigint; // u64 — must equal CHAIN_ID_MAINNET (1) or CHAIN_ID_DEVNET (2)
+  agentWindowCap: bigint; // u64 — 0 disables the on-chain per-agent cap
 }
 
 // Borsh encoding of InitPoolParams. Field order MUST match the Rust struct
 // (programs/credmesh-escrow/src/instructions/init_pool.rs).
 function encodeInitPoolParams(p: InitPoolParams): Buffer {
   const fc = encodeFeeCurve(p.feeCurve);
-  const buf = Buffer.alloc(2 + 8 + 8 + 32 + 32 + 8);
+  const buf = Buffer.alloc(2 + 8 + 8 + 32 + 32 + 8 + 8);
   buf.writeUInt16LE(p.maxAdvancePctBps, 0);
   buf.writeBigUInt64LE(p.maxAdvanceAbs, 2);
   buf.writeBigInt64LE(p.timelockSeconds, 10);
   p.governance.toBuffer().copy(buf, 18);
   p.treasuryAta.toBuffer().copy(buf, 50);
   buf.writeBigUInt64LE(p.chainId, 82);
+  buf.writeBigUInt64LE(p.agentWindowCap, 90);
   return Buffer.concat([fc, buf]);
 }
 
@@ -118,6 +121,7 @@ async function main(): Promise<void> {
       "max-advance-abs",
       "timelock-seconds",
       "chain-id",
+      "agent-window-cap",
     ] as const,
     ["wallet"],
   );
@@ -172,6 +176,7 @@ async function main(): Promise<void> {
     governance,
     treasuryAta,
     chainId,
+    agentWindowCap: BigInt(args["agent-window-cap"]),
   };
   if (params.maxAdvancePctBps > 10_000) {
     throw new Error("--max-advance-pct-bps cannot exceed 10000 (100%)");

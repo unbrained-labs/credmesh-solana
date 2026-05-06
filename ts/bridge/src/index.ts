@@ -36,10 +36,12 @@ import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { address as solAddr, getAddressEncoder } from "@solana/kit";
 import { encodeAttestation, signAttestation } from "./attestation.js";
+import { startEventTail } from "./event_tail.js";
 import { EvmReader, type EvmConfig } from "./evm.js";
 
 const REQUIRED_ENV = [
   "SOLANA_RPC_URL",
+  "SOLANA_WS_URL",
   "EVM_RPC_URL",
   "EVM_REPUTATION_CREDIT_ORACLE_ADDRESS",
   "EVM_TRUSTLESS_ESCROW_ADDRESS",
@@ -69,7 +71,14 @@ function loadConfig() {
   }
   const signingKey = loadSigningKey(process.env.BRIDGE_SIGNING_KEY_PATH!);
   const agentBindings = loadAgentBindings(process.env.BRIDGE_AGENT_BINDINGS_PATH!);
-  return { evm, solanaChainId, signingKey, agentBindings };
+  const authTokens = loadAuthTokens(process.env.BRIDGE_AUTH_TOKENS);
+  // Token-bucket: 30-quote burst, 12 quotes/min steady (one every 5s).
+  // Tunable via env for cluster-specific load.
+  const rateLimit = new RateLimiter(
+    Number(process.env.BRIDGE_RATE_LIMIT_BURST ?? 30),
+    Number(process.env.BRIDGE_RATE_LIMIT_REFILL_PER_SEC ?? 12 / 60),
+  );
+  return { evm, solanaChainId, signingKey, agentBindings, authTokens, rateLimit };
 }
 
 /**
@@ -102,6 +111,52 @@ function loadAgentBindings(path: string): Map<string, `0x${string}`> {
     );
   }
   return map;
+}
+
+/**
+ * Per-process rate limiter: token-bucket per (key) where `key` is the
+ * caller's auth token if present, else the connection's remote address.
+ * Defends against the M-3 finding (compromised bridge key or hostile
+ * caller spamming /quote within the 15-min TTL window).
+ *
+ * Default: 12 quotes/min/key (one every 5s) with a 30-quote burst. Can
+ * be tuned via env. The on-chain per-agent rolling-window cap is the
+ * load-bearing defense; this is a cheap belt-and-suspenders.
+ */
+class RateLimiter {
+  private buckets = new Map<string, { tokens: number; last: number }>();
+  constructor(
+    private capacity: number,
+    private refillPerSecond: number,
+  ) {}
+  consume(key: string, cost = 1): boolean {
+    const now = Date.now() / 1000;
+    let b = this.buckets.get(key);
+    if (!b) {
+      b = { tokens: this.capacity, last: now };
+      this.buckets.set(key, b);
+    }
+    const elapsed = now - b.last;
+    b.tokens = Math.min(this.capacity, b.tokens + elapsed * this.refillPerSecond);
+    b.last = now;
+    if (b.tokens < cost) return false;
+    b.tokens -= cost;
+    return true;
+  }
+}
+
+function loadAuthTokens(envValue: string | undefined): Set<string> | null {
+  if (!envValue) return null;
+  const tokens = envValue
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+  if (tokens.length === 0) {
+    throw new Error(
+      "BRIDGE_AUTH_TOKENS is set but contains no non-empty tokens; either provide tokens or unset",
+    );
+  }
+  return new Set(tokens);
 }
 
 function loadSigningKey(path: string): Uint8Array {
@@ -237,6 +292,29 @@ async function main() {
     }
     if (req.method === "POST" && req.url === "/quote") {
       try {
+        // Auth: if BRIDGE_AUTH_TOKENS is configured, require a matching
+        // bearer token. We refuse-by-default rather than allowing anon
+        // access — the bridge is not a public service.
+        let rateKey: string;
+        if (cfg.authTokens) {
+          const auth = req.headers.authorization;
+          const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+          if (!token || !cfg.authTokens.has(token)) {
+            res.writeHead(401, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "unauthorized" }));
+            return;
+          }
+          rateKey = `tok:${token}`;
+        } else {
+          // Token-less mode (devnet bring-up): rate limit by remote
+          // address. Production deployments MUST set BRIDGE_AUTH_TOKENS.
+          rateKey = `ip:${req.socket.remoteAddress ?? "unknown"}`;
+        }
+        if (!cfg.rateLimit.consume(rateKey)) {
+          res.writeHead(429, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "rate limit exceeded" }));
+          return;
+        }
         const chunks: Buffer[] = [];
         for await (const chunk of req) chunks.push(chunk as Buffer);
         const body = JSON.parse(Buffer.concat(chunks).toString()) as QuoteRequest;
@@ -259,7 +337,22 @@ async function main() {
     console.log(`  EVM:               ${cfg.evm.rpcUrl}`);
     console.log(`  Solana chain id:   ${cfg.solanaChainId}`);
     console.log(`  Agents registered: ${cfg.agentBindings.size}`);
+    console.log(`  Auth:              ${cfg.authTokens ? `${cfg.authTokens.size} bearer token(s)` : "DISABLED (token-less; rate-limit by IP only)"}`);
     console.log(`  Signer pubkey:     ${bytesToBase58(cfg.signingKey.slice(32))}`);
+  });
+
+  // Event tail runs alongside the HTTP server. Failures restart the
+  // subscription rather than crashing the process — quote endpoint
+  // stays live even if the WS connection is flaky.
+  startEventTail({
+    solanaWsUrl: process.env.SOLANA_WS_URL!,
+    escrowProgramId: solAddr(process.env.SOLANA_ESCROW_PROGRAM_ID!),
+    evmCreditWorkerUrl: process.env.EVM_CREDIT_WORKER_URL ?? null,
+  }).catch((err) => {
+    console.error("[event-tail] fatal:", err);
+    // Exit so the supervisor restarts us — the alternative is a silent
+    // event-loss tail.
+    process.exit(2);
   });
 }
 

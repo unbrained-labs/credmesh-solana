@@ -30,8 +30,14 @@ pub fn handler(ctx: Context<ExecuteParams>) -> Result<()> {
     pool.fee_curve = pending.fee_curve;
     pool.max_advance_pct_bps = pending.max_advance_pct_bps;
     pool.max_advance_abs = pending.max_advance_abs;
+    pool.agent_window_cap = pending.agent_window_cap;
     pool.pending_params = None;
 
-    emit!(ParamsExecuted { pool: pool.key() });
+    emit!(ParamsExecuted {
+        pool: pool.key(),
+        max_advance_pct_bps: pool.max_advance_pct_bps,
+        max_advance_abs: pool.max_advance_abs,
+        agent_window_cap: pool.agent_window_cap,
+    });
     Ok(())
 }

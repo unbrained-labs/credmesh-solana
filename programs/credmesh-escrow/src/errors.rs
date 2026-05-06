@@ -50,4 +50,6 @@ pub enum CredmeshError {
     InvalidFeeCurve,
     #[msg("chain_id must be CHAIN_ID_MAINNET (1) or CHAIN_ID_DEVNET (2); attestation chain_id must equal pool.chain_id")]
     InvalidChainId,
+    #[msg("This advance would exceed the per-agent rolling-window issuance cap (AGENT_WINDOW_SECONDS); retry after the window rolls forward")]
+    AgentWindowCapExceeded,
 }
