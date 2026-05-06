@@ -1,96 +1,120 @@
 # credmesh-solana
 
-Anchor workspace porting [CredMesh](https://github.com/unbrained-labs/credmesh) — a programmable credit protocol for autonomous agents — from EVM (Base) to Solana.
+The Solana lane of [CredMesh](https://github.com/unbrained-labs/credmesh)
+— a programmable credit protocol for autonomous agents.
 
-## Status
+The EVM lane (live at https://credmesh.xyz) holds the canonical
+agent identity, multi-attestor reputation, and timelocked governance.
+**This Solana lane is a credit-issuance + settlement venue** that
+consumes EVM-attested credit limits via short-TTL ed25519 signatures
+from a whitelisted bridge, and runs the LP vault + advance + waterfall
+on Solana rails.
 
-**v1 implemented, audited, partial devnet deploy.** All 4 program crates have their v1 handlers landed (escrow, reputation, receivable-oracle, plus the credmesh-shared library). Compile-verified via Docker (see `DEPLOYMENT.md` § Build environment). Two of the three deployable programs are live on devnet:
-
-| Program | Status | Devnet program ID |
-|---|---|---|
-| `credmesh-reputation` | ✅ deployed | `JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G` |
-| `credmesh-receivable-oracle` | ✅ deployed | `ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk` |
-| `credmesh-escrow` | ⏳ keypair reserved, deploy pending wallet top-up | `DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF` |
-
-Both deployed binaries verified byte-for-byte against local builds (SHA256 match). See `DEPLOYMENT.md § Devnet deploy log` for slots, ProgramData addresses, and authority. The EVM protocol is live at https://credmesh.xyz.
-
-## Read order
-
-1. **`docs/ARCHITECTURE.md`** — program structure, PDAs, cross-program edges (Mermaid diagrams).
-2. **`docs/LOGIC_FLOW.md`** — sequence diagrams for every canonical handler + invariant table.
-3. **`DECISIONS.md`** — resolutions for the 5 blocking design questions (MPL vs SATI, Squads onboarding, Sybil mitigation, SAS roadmap, fee-payer).
-4. **`AUDIT.md`** — three independent reviews of DESIGN + scaffold; all P0/P1 findings fixed; post-EPIC postscript covers the 5-pass audit + audit-driven fixes.
-5. **`DESIGN.md`** — the implementer spec.
-6. **`DEPLOYMENT.md`** — Docker build recipe, deploy procedure, key rotation, devnet log.
-7. **`V1_ACCEPTANCE.md`** — the gating checklist.
-8. `research/CONTRARIAN.md` / `research/REVIEW.md` / `research/SYNTHESIS.md` / `research/01–04` — supporting research (some superseded).
-
-## Layout
+## One-line flow
 
 ```
-credmesh-solana/
-├── docs/
-│   ├── ARCHITECTURE.md            program graph + PDAs (Mermaid)
-│   └── LOGIC_FLOW.md              per-handler sequence diagrams
-├── crates/
-│   └── credmesh-shared/           seeds, program_ids, cross_program helpers,
-│                                  ix_introspection, ed25519_message layout
-│                                  (library only — never deployed)
-├── programs/
-│   ├── credmesh-escrow/           vault + advance + claim_and_settle + liquidate
-│   ├── credmesh-reputation/       8004-shape rolling digest, writer-gated EMA
-│   └── credmesh-receivable-oracle/ worker + ed25519 payer-signed receivables
-├── ts/server/                     Hono backend (SIWS auth, tx-builder, webhook ingress)
-├── scripts/                       deploy.ts + init_oracle.ts + init_pool.ts
-├── tests/bankrun/                 pure-math + scaffolded harness suites
-├── target/deploy/                 committed devnet program keypairs
-└── research/                      original research artifacts (some superseded)
+LP deposits USDC → agent gets a 15-min ed25519 attestation of its EVM credit
+ → submits [ed25519_verify(...), request_advance(...)] on Solana
+ → escrow disburses USDC against the attested limit
+ → agent's job pays out → claim_and_settle(payment_amount) runs the
+   3-tranche waterfall (protocol cut, LP cut, agent net)
+ → if 14 days post-expiry the agent never settles, anyone runs liquidate
 ```
 
-## Programs
+## Workspace
 
-| Program | Purpose | Status |
-|---|---|---|
-| `credmesh-shared` (lib) | Seed constants, program IDs, ed25519 message layout, `mpl_identity` + `cross_program` + `ix_introspection` helper modules. Lives in `crates/`, not `programs/` (never deployed). | Implemented + compiled. |
-| `credmesh-escrow` | Pool vault + share-mint, advance issuance, settlement waterfall, liquidate, governance. | All v1 handlers implemented + compiled. Deploy pending. |
-| `credmesh-reputation` | 8004-shape per-agent rolling-digest reputation; writer-gated EMA via `emit_cpi!` for log-truncation defense. | Implemented + compiled + **deployed to devnet**. `append_response` / `revoke_feedback` are v1.5 stubs. |
-| `credmesh-receivable-oracle` | Worker-attested + ed25519 payer-signed receivables, allowed-signer registry, source_kind-namespaced PDAs. | Implemented + compiled + **deployed to devnet**. |
+```
+crates/
+└── credmesh-shared/                Library — seeds, program IDs, ed25519
+                                    message layout, AttestorKind enum,
+                                    cross-program 4-step verify,
+                                    instruction-sysvar introspection.
+                                    NEVER deployed.
+programs/
+├── credmesh-escrow/                Pool vault + share-mint, advance,
+│                                   3-tranche settlement, liquidation,
+│                                   timelocked governance, virtual-shares
+│                                   ERC-4626 math, per-agent rolling-window
+│                                   issuance cap.
+└── credmesh-attestor-registry/     Governance-controlled whitelist of
+                                    bridge ed25519 signers (kind-tagged
+                                    AllowedSigner PDAs).
+ts/
+├── shared/                         @credmesh/solana-shared — TS mirror of
+│                                   Rust constants + Anchor discriminator
+│                                   helpers.
+├── bridge/                         EVM ⇒ Solana attestation bridge:
+│                                   HTTP /quote signs the canonical 128-byte
+│                                   ed25519_credit_message + Solana → EVM
+│                                   event tail keeps EVM AgentRecord in sync.
+├── server/                         Hono backend — agent card + SIWS nonce.
+└── keeper/                         Permissionless liquidation crank.
+scripts/                            Operator scripts (deploy, init_pool,
+                                    init_registry, add_allowed_signer).
+```
 
-External programs CredMesh **uses** but does not deploy: Squads v4 (agent vaults + governance), MPL Agent Registry + Agent Tools + Core (agent identity, executive profile), SPL Token, ed25519 native, Memo program.
+## Programs (devnet)
 
-## Building
+| Program | Devnet program ID |
+|---|---|
+| `credmesh-escrow` | `DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF` |
+| `credmesh-attestor-registry` | `ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk` |
 
-The pinned Anchor 0.30.1 + Solana 1.18.26 toolchain has lockfile-drift issues against modern Cargo registry contents. The verified build recipe is in `DEPLOYMENT.md § Build environment (Docker)`. TL;DR:
+External programs CredMesh **uses** but does not deploy: Squads v4
+(governance multisig), SPL Token classic (USDC vault + share mint),
+the ed25519 native precompile, the Memo program (settlement nonce
+binding).
+
+## Build / test
 
 ```bash
-# Pre-warm cached docker volumes (one-time):
-docker pull backpackapp/build:v0.30.1
-docker volume create credmesh-rustup
-docker volume create credmesh-cargo-registry
-docker volume create credmesh-cargo-git
-docker volume create credmesh-pt-cache
-docker run --rm -v credmesh-rustup:/root/.rustup backpackapp/build:v0.30.1 \
-  rustup toolchain install 1.86.0 --profile minimal --no-self-update
+# Toolchain (see CONTRIBUTING.md for full setup).
+rustup default 1.79.0
+sh -c "$(curl -sSfL https://release.anza.xyz/v1.18.26/install)"
+cargo install --git https://github.com/coral-xyz/anchor avm --force && avm install 0.30.1
 
-# Then `anchor build --no-idl` via the wrapped invocation in DEPLOYMENT.md.
-npm install
-npm test           # ts-mocha + anchor-bankrun (pure-math suites run today; harness suites pending IDL fix)
+npm run check       # cargo check --workspace --locked
+npm test            # cargo test --workspace --lib (16 pure-math + 2 program-id tests)
+npm run typecheck   # ts/{shared,server,bridge,keeper}
+npm run build       # anchor build
 ```
 
-`--no-idl` is a workaround until issue #15 (IDL extraction E0433 on `AssociatedToken`) lands. The deployable artifact is the `.so`, which `--no-idl` produces correctly.
+## Deploy (devnet)
 
-## Tests
+```bash
+anchor build
+npm run deploy -- --cluster devnet --wallet ~/.config/solana/id.json --program all
+npm run init:registry -- --cluster devnet --governance <SQUADS_VAULT_PUBKEY>
+npm run init:pool     -- --cluster devnet \
+  --asset-mint 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU \
+  --governance <SQUADS_VAULT_PUBKEY> \
+  --treasury-ata <TREASURY_USDC_ATA> \
+  --max-advance-pct-bps 3000 --max-advance-abs 100000000 \
+  --timelock-seconds 86400 --chain-id 2 --agent-window-cap 500000000
+npm run registry:add-signer -- --cluster devnet \
+  --signer <BRIDGE_ED25519_PUBKEY> --kind 0
+# Take the printed payload to the Squads UI; multisig approves; executor fires it.
+```
 
-`tests/bankrun/` ships two layers:
+## Run off-chain
 
-- **Pure-math suites** that run today (waterfall sum invariant, share-price monotonicity, first-depositor inflation defense; ~2100 fuzz cases). 11/11 pass on current main.
-- **Harness scaffolds** for behavioral tests (init_pool, deposit/withdraw, request_advance Worker + ed25519, claim_and_settle, liquidate, attack fixtures). Activate once the IDL gap closes.
+```bash
+# Bridge — see ts/bridge/README.md for the full env table.
+cd ts/bridge && npm install && npm run dev
 
-## Deployment
+# Keeper.
+cd ts/keeper && npm install && npm run dev
 
-`devnet` deploy is partial (see Status table above). `mainnet-beta` rollout requires:
-1. Rotate program keypairs (devnet keys committed to repo are NOT for mainnet).
-2. Transfer upgrade authority to a Squads vault per `DESIGN §10`.
-3. Stage with hard caps ($10–$100 advances) per `DEPLOYMENT.md`.
+# Server (agent card + SIWS).
+cd ts/server && npm install && npm run dev
+```
 
-See `DEPLOYMENT.md` for the full procedure.
+## Documentation
+
+- [`CLAUDE.md`](./CLAUDE.md) — repo conventions for contributors.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — toolchain + workflow.
+- [`ts/bridge/README.md`](./ts/bridge/README.md) — bridge env, trust model.
+
+## License
+
+(Pre-release; license TBD.)

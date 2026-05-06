@@ -37,7 +37,7 @@ jobs:
   #
   # Rationale: `cargo install --git anchor avm` on Rust 1.79 fails because
   # Anchor's `cli/cli-macros` crate now requires `edition2024` (cargo 1.86+).
-  # The local build uses the canonical Docker recipe in DEPLOYMENT.md
+  # The local build uses the canonical Docker recipe
   # (backpackapp/build:v0.30.1 + cargo-build-sbf --tools-version v1.50).
   #
   # `cargo check` below catches the same regressions for ~95% of changes;

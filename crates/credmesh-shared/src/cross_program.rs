@@ -1,15 +1,19 @@
 /// Cross-program account-read helpers.
 ///
-/// CredMesh's escrow reads `AgentReputation` (owned by `credmesh-reputation`)
-/// and `Receivable` (owned by `credmesh-receivable-oracle`). The only safe way
-/// to do this is the four-step manual verification:
+/// credmesh-escrow reads `AllowedSigner` (owned by
+/// credmesh-attestor-registry) when verifying ed25519 credit
+/// attestations. The only safe way to do a cross-program account read
+/// is the four-step manual verification:
 ///   1. Owner pubkey matches the expected program ID.
 ///   2. Account address matches the expected PDA derivation.
 ///   3. The 8-byte Anchor account discriminator matches the type.
 ///   4. Bytes after the discriminator deserialize cleanly into the typed struct.
 ///
 /// Forgetting any one of these is the Wormhole / Cashio / similar-class bug.
-/// All four are wrapped together below.
+/// All four are wrapped together below. (Anchor 0.30 typed `Account<T>`
+/// + `seeds::program` declarative constraints do this automatically;
+/// this helper is the manual escape hatch when the constraints don't
+/// fit.)
 use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
 

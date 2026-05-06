@@ -46,10 +46,9 @@ function anchorDiscriminator(method: string): Buffer {
     .subarray(0, 8);
 }
 
-// Default fee curve for v1 devnet bring-up. Concrete numbers come from
-// research/HANDLER_PATTERNS.md and DESIGN.md §3 — kept here so the deploy
-// script is self-contained, but governance can mutate via `propose_params`
-// + `execute_params` afterwards. All values are basis points (10_000 = 100%).
+// Default fee curve for v1 devnet bring-up. Governance can mutate via
+// `propose_params` + `execute_params` afterwards. All values are basis
+// points (10_000 = 100%).
 interface FeeCurve {
   utilizationKinkBps: number; // u16
   baseRateBps: number;

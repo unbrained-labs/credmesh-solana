@@ -105,7 +105,7 @@ async function deployOne(
   // length and the upgrade authority; we can't pull program-data hash
   // through web3.js without parsing the loader account ourselves, so the
   // size match + the deploy command's exit-0 are the verifiable signals.
-  // Mainnet path SHOULD layer `anchor verify` on top — see DEPLOYMENT.md.
+  // Mainnet path SHOULD layer `anchor verify` on top.
   const conn = new Connection(url, "confirmed");
   const info = await conn.getAccountInfo(spec.programId);
   if (info === null) {

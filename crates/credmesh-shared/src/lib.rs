@@ -26,7 +26,7 @@ pub mod program_ids {
     // `target/deploy/credmesh_<program>-keypair.json`; kept in sync with each
     // program's own `declare_id!` and `Anchor.toml [programs.devnet]` via
     // `anchor keys sync`. Mainnet IDs will be regenerated at mainnet-launch
-    // time; do not reuse devnet keypairs in mainnet (DEPLOYMENT.md §"Phase 0").
+    // time; do not reuse devnet keypairs in mainnet.
     pub const ESCROW: Pubkey = pubkey!("DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF");
     pub const ATTESTOR_REGISTRY: Pubkey = pubkey!("ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk");
 

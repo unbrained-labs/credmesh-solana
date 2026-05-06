@@ -13,26 +13,20 @@ bridge signer, then handles advance issuance + settlement on Solana rails.
 
 This split was the result of an architectural pivot on `evm-parity` (2026-05-06)
 after recognizing that duplicating reputation + governance on Solana was both
-expensive and a divergence-risk against the EVM lane. See
-`BRUTAL-TRUTH-EVM-PARITY-DRIFT.md` § "Pivot to EVM-as-source-of-truth" for the
-full reasoning.
+expensive and a divergence-risk against the EVM lane.
 
 ## Read order (before touching code)
 
-1. **`BRUTAL-TRUTH-EVM-PARITY-DRIFT.md`** — historical drift analysis + the
-   EVM-as-source-of-truth pivot that landed.
-2. **`DECISIONS.md`** — design questions answered with rationale. Q3 + Q4
-   amended for the EVM-bridge model.
-3. **`AUDIT.md`** — three independent reviews + final-review pass; all P0/P1
-   fixes applied with cross-references in code as `// AUDIT P0-X` comments.
-4. **`DESIGN.md`** — implementer spec (programs, PDAs, instructions, invariants,
-   threat model). Reputation/identity sections deprecated by the pivot.
-5. **`research/HANDLER_PATTERNS.md`** — canonical Solana lending patterns
-   (MarginFi/Solend/Kamino/Drift/Squads) lifted byte-for-byte at pinned commit
-   hashes. **The handler-implementation reference manual.**
-6. **`V1_ACCEPTANCE.md`** — what "v1 ready to ship" means.
-7. **`DEPLOYMENT.md`** — devnet/mainnet deploy procedure + key rotation.
-8. **`research/CONTRARIAN.md`** — why we redesigned where we did.
+1. **`README.md`** — flow + workspace + commands.
+2. The handler files themselves (`programs/credmesh-escrow/src/instructions/*.rs`,
+   `programs/credmesh-attestor-registry/src/lib.rs`) — they cross-reference
+   AUDIT findings inline as `// AUDIT P0-X` comments and document each
+   invariant at the top of the relevant function.
+
+> Maintainers: the audit / decisions / design / deployment / handoff
+> internals live under `internal/` (gitignored). Ask a maintainer for
+> access if you need historical rationale or the v1.5 hardening
+> roadmap.
 
 ## Commands
 

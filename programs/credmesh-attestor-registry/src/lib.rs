@@ -9,7 +9,7 @@ pub use errors::AttestorRegistryError;
 pub use events::*;
 pub use state::*;
 
-// Devnet program ID — keypair reserved per DEPLOYMENT.md.
+// Devnet program ID.
 declare_id!("ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk");
 
 /// Whitelist of bridge signers that produce ed25519 credit attestations

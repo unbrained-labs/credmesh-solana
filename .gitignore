@@ -31,11 +31,12 @@ ORCHESTRATOR_LOG.md
 # Local-only key reference (NEVER commit; document of where keys live on this dev machine)
 KEYS.md
 
-# Internal handoff brief — NEVER commit. Detailed cold-pickup architecture
-# doc with the v1.5 hardening roadmap + operational gap list. Send privately
-# to whoever needs it; the public-facing equivalents are CLAUDE.md +
-# BRUTAL-TRUTH-EVM-PARITY-DRIFT.md + V1_ACCEPTANCE.md.
-HANDOFF.md
+# Internal docs — NEVER commit. Architecture / audit / design /
+# deployment / handoff / decisions / postmortems / research notes /
+# session orchestrator artifacts all live under internal/ and are
+# only shared privately. The public-facing equivalents at the repo
+# root are README.md + CONTRIBUTING.md + CLAUDE.md + docs/.
+internal/
 
 # Branding work — local WIP, not merge-ready. Excluded until it's finalized.
 branding/
