@@ -1,27 +1,22 @@
 /**
  * Canonical 128-byte ed25519 credit attestation builder + signer.
  *
- * Layout MUST match crates/credmesh-shared/src/lib.rs::ed25519_credit_message
- * exactly. Drift = on-chain rejection.
+ * Wire format defined by crates/credmesh-shared/src/lib.rs::
+ * ed25519_credit_message (Rust-side source of truth). The TS mirror in
+ * @credmesh/solana-shared is the single TS-side mirror of those
+ * offsets — we re-export through it rather than holding a second copy
+ * here.
  */
 
 import nacl from "tweetnacl";
+import {
+  ED25519_CREDIT_MSG_LEN,
+  ED25519_CREDIT_MSG_OFFSETS as OFFSET,
+  ED25519_CREDIT_MSG_VERSION,
+} from "@credmesh/solana-shared";
 
-export const ED25519_CREDIT_MSG_LEN = 128;
-export const ED25519_CREDIT_MSG_VERSION = 1n;
-export const MAX_ATTESTATION_AGE_SECONDS = 15 * 60;
-
-const OFFSET = {
-  agent: 0,
-  pool: 32,
-  creditLimit: 64,
-  outstanding: 72,
-  expiresAt: 80,
-  attestedAt: 88,
-  nonce: 96,
-  chainId: 112,
-  version: 120,
-} as const;
+export { ED25519_CREDIT_MSG_LEN, ED25519_CREDIT_MSG_VERSION };
+export { MAX_ATTESTATION_AGE_SECONDS } from "@credmesh/solana-shared";
 
 export interface CreditAttestationInput {
   agentPubkey: Uint8Array;       // 32 bytes

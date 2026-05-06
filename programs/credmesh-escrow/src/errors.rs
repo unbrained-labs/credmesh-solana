@@ -10,23 +10,15 @@ pub enum CredmeshError {
     ReceivableStale,
     #[msg("Advance amount exceeds receivable cap (max_advance_pct_bps or max_advance_abs)")]
     AdvanceExceedsCap,
-    #[msg("Advance amount exceeds reputation-derived credit limit")]
+    #[msg("Advance amount exceeds attested credit limit (limit - outstanding)")]
     AdvanceExceedsCredit,
-    #[msg("Provided reputation PDA does not match expected derivation")]
-    ReputationPdaMismatch,
-    #[msg("Provided receivable PDA does not match expected derivation")]
-    ReceivablePdaMismatch,
-    #[msg("Agent asset is not owned by the recognized agent registry program")]
-    InvalidAgentAsset,
-    #[msg("Signer is not the owner or delegate of agent_asset")]
-    AgentBindingMismatch,
     #[msg("ed25519 verification missing or wrong format in tx")]
     Ed25519Missing,
     #[msg("ed25519 verified signer is not in CredMesh allowlist")]
     Ed25519SignerUnknown,
     #[msg("ed25519 offsets reference a different instruction than the verify ix")]
     Ed25519OffsetMismatch,
-    #[msg("ed25519 message bytes do not match expected (receivable_id || agent || amount || expires_at || nonce)")]
+    #[msg("ed25519 message does not match the canonical 128-byte ed25519_credit_message layout (agent, pool, credit_limit, outstanding, expires_at, attested_at, nonce, chain_id, version)")]
     Ed25519MessageMismatch,
     #[msg("Memo nonce in payment tx does not match consumed PDA nonce")]
     MemoNonceMismatch,
@@ -50,20 +42,12 @@ pub enum CredmeshError {
     ReplayDetected,
     #[msg("Advance already settled or liquidated")]
     InvalidAdvanceState,
-    #[msg("Source signer caps exceeded for ed25519 path")]
-    SignerCapsExceeded,
     #[msg("Waterfall sum mismatch — rounding drift detected")]
     WaterfallSumMismatch,
     #[msg("Late days exceed maximum cap")]
     LateDaysExceeded,
     #[msg("FeeCurve violates ordering or BPS-bound invariants — see FeeCurve::validate")]
     InvalidFeeCurve,
-    #[msg("Pool PDA is not the approved delegate on agent's USDC ATA — re-issue the advance to refresh the approval")]
-    DelegateNotApproved,
-    #[msg("Delegated amount on agent's USDC ATA is less than total_owed — re-approve before settlement")]
-    DelegateAmountInsufficient,
-    #[msg("In permissionless settlement (Mode B), payer_usdc_ata must equal agent_usdc_ata")]
-    PayerMustBeAgentInPermissionless,
-    #[msg("payer_usdc_ata owner must be either advance.agent (Mode A/B) or cranker (Mode 3)")]
-    PayerOwnerInvalid,
+    #[msg("chain_id must be CHAIN_ID_MAINNET (1) or CHAIN_ID_DEVNET (2); attestation chain_id must equal pool.chain_id")]
+    InvalidChainId,
 }

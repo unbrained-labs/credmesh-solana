@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
+use credmesh_shared::ed25519_credit_message as msg;
+
 use crate::errors::CredmeshError;
 use crate::events::PoolInitialized;
 use crate::state::{FeeCurve, Pool, BPS_DENOMINATOR, POOL_SEED};
@@ -16,6 +18,9 @@ pub struct InitPoolParams {
     /// governance instructions must verify a Squads-CPI signed by this address.
     pub governance: Pubkey,
     pub treasury_ata: Pubkey,
+    /// Cluster id for cross-chain ed25519 attestation replay defense.
+    /// Must equal `CHAIN_ID_MAINNET (1)` or `CHAIN_ID_DEVNET (2)`.
+    pub chain_id: u64,
 }
 
 #[derive(Accounts)]
@@ -57,6 +62,10 @@ pub fn handler(ctx: Context<InitPool>, params: InitPoolParams) -> Result<()> {
         CredmeshError::AdvanceExceedsCap
     );
     require!(params.timelock_seconds >= 0, CredmeshError::MathOverflow);
+    require!(
+        params.chain_id == msg::CHAIN_ID_MAINNET || params.chain_id == msg::CHAIN_ID_DEVNET,
+        CredmeshError::InvalidChainId
+    );
     // Audit-MED #5: reject malformed fee curves at construction.
     params.fee_curve.validate()?;
 
@@ -75,6 +84,7 @@ pub fn handler(ctx: Context<InitPool>, params: InitPoolParams) -> Result<()> {
     pool.max_advance_pct_bps = params.max_advance_pct_bps;
     pool.max_advance_abs = params.max_advance_abs;
     pool.timelock_seconds = params.timelock_seconds;
+    pool.chain_id = params.chain_id;
     pool.pending_params = None;
 
     emit!(PoolInitialized {

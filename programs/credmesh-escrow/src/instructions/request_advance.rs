@@ -149,6 +149,7 @@ pub fn handler(
     let expires_at = i64_le(&signed_msg, M::EXPIRES_AT_OFFSET);
     let attested_at = i64_le(&signed_msg, M::ATTESTED_AT_OFFSET);
     let msg_nonce = &signed_msg[M::NONCE_OFFSET..M::NONCE_OFFSET + M::NONCE_LEN];
+    let msg_chain_id = u64_le(&signed_msg, M::CHAIN_ID_OFFSET);
     let version = u64_le(&signed_msg, M::VERSION_OFFSET);
 
     require!(
@@ -156,6 +157,13 @@ pub fn handler(
         CredmeshError::Ed25519MessageMismatch
     );
     require!(msg_nonce == nonce.as_ref(), CredmeshError::Ed25519MessageMismatch);
+    // Cross-cluster replay defense: a devnet attestation MUST NOT verify
+    // against a mainnet pool, and vice versa, even when the same bridge
+    // signer is whitelisted on both. pool.chain_id is set at init_pool.
+    require!(
+        msg_chain_id == ctx.accounts.pool.chain_id,
+        CredmeshError::InvalidChainId
+    );
 
     // (3) Freshness checks — short-TTL bounds the blast radius of a
     // compromised bridge signer key.

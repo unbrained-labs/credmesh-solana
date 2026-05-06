@@ -36,18 +36,17 @@ EVM-attested credit limits to underwrite advances).
 
 | Var | Required | Notes |
 |---|---|---|
-| `SOLANA_RPC_URL` | yes | Solana RPC for event tailing |
-| `EVM_RPC_URL` | yes | EVM RPC for ReputationRegistry reads |
-| `EVM_CHAIN_ID` | yes | e.g. 84532 (base-sepolia) |
-| `EVM_REPUTATION_REGISTRY_ADDRESS` | yes | EVM contract |
+| `SOLANA_RPC_URL` | yes | Solana RPC (used for event tailing once that's wired) |
+| `EVM_RPC_URL` | yes | EVM RPC for ReputationCreditOracle + TrustlessEscrow reads |
 | `EVM_REPUTATION_CREDIT_ORACLE_ADDRESS` | yes | EVM contract |
-| `EVM_TRUSTLESS_ESCROW_ADDRESS` | yes | EVM contract for cross-chain `exposure(agent)` reads |
-| `BRIDGE_SIGNING_KEY_PATH` | yes | Filesystem path to the ed25519 keypair (32-byte secret). HSM/KMS support is the v1.5 path |
+| `EVM_TRUSTLESS_ESCROW_ADDRESS` | yes | EVM contract for `exposure(agent)` reads |
+| `BRIDGE_SIGNING_KEY_PATH` | yes | Filesystem path to a Solana-keypair-format JSON (64-byte secret+public). HSM/KMS is the v1.5 path |
+| `BRIDGE_AGENT_BINDINGS_PATH` | yes | JSON file mapping `{ "<solana_pubkey_b58>": "0x<evm_address>" }`. The bridge NEVER trusts a caller-supplied EVM address; this map is the authoritative Solana → EVM identity table |
 | `SOLANA_ESCROW_PROGRAM_ID` | yes | devnet `DLy82HRr…` |
 | `SOLANA_ATTESTOR_REGISTRY_PROGRAM_ID` | yes | devnet `ALVf6iyB…` |
-| `SOLANA_CHAIN_ID` | yes | `1` mainnet / `2` devnet (matches `ed25519_credit_message::CHAIN_ID_*`) |
+| `SOLANA_CHAIN_ID` | yes | `1` mainnet / `2` devnet (matches `ed25519_credit_message::CHAIN_ID_*`); also written into every signed attestation and verified on-chain against `pool.chain_id` |
 | `BRIDGE_PORT` | no | default `4001` |
-| `EVM_CREDIT_WORKER_URL` | no | default `https://credmesh.xyz` — used to replay Solana settle/liquidate events back to the EVM AgentRecord |
+| `EVM_CREDIT_WORKER_URL` | no | default `https://credmesh.xyz` — used by the (pending) Solana event tail to replay settle/liquidate deltas back to the EVM AgentRecord |
 
 ## Run
 

@@ -49,6 +49,17 @@ pub mod program_ids {
 /// introspection during `request_advance` — there is no on-chain
 /// reputation registry on Solana; EVM is the single source of truth.
 ///
+/// **THIS MODULE IS THE SOURCE OF TRUTH for the wire format.**
+/// The TS mirror in `ts/shared/src/index.ts` (re-exported by the
+/// `ts/bridge` package) MUST stay in lockstep — every offset and
+/// length here has a one-line peer in the TS table, and the bridge's
+/// `attestation.ts` encoder/`request_advance.rs` decoder both index by
+/// these constants. A drifted offset is a silent rejection: the
+/// signature verifies cryptographically but the on-chain `require!`
+/// asserts trip and `request_advance` returns `Ed25519MessageMismatch`.
+/// Bump `VERSION` and the TS mirror in the same commit if you change
+/// any field.
+///
 /// Layout (128 bytes):
 ///   [0..32)   agent_pubkey:               agent's primary signing key
 ///   [32..64)  pool_pubkey:                pool PDA the attestation is for

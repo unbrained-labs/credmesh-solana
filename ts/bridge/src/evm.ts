@@ -28,7 +28,6 @@ const TRUSTLESS_ESCROW_ABI = parseAbi([
 
 export interface EvmConfig {
   rpcUrl: string;
-  chainId: number;
   reputationCreditOracle: Address;
   trustlessEscrow: Address;
 }
@@ -71,8 +70,8 @@ export class EvmReader {
     ]);
 
     return {
-      creditLimitAtoms: BigInt(maxExposure as bigint),
-      outstandingAtoms: BigInt(currentExposure as bigint),
+      creditLimitAtoms: maxExposure,
+      outstandingAtoms: currentExposure,
     };
   }
 }

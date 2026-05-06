@@ -85,6 +85,17 @@ pub fn verify_prev_ed25519(
         return Err(IxIntrospectionError::Ed25519NotFound);
     }
 
+    // Reject multi-signature ed25519 ixs. The verify ix layout supports
+    // num_signatures > 1, where each entry has its own offset table; if we
+    // accepted a multi-entry ix and only parsed slot 0, an attacker could
+    // pad slot 0 with a dummy 128-byte message that happens to decode
+    // benignly while slot 1 carries the real attacker-favorable signature.
+    // We expect exactly one signature per attestation tx — strict equality
+    // closes that ambiguity at zero cost.
+    if prev_ix.data.is_empty() || prev_ix.data[0] != 1 {
+        return Err(IxIntrospectionError::Ed25519MalformedData);
+    }
+
     let offsets = parse_offsets(&prev_ix.data).ok_or(IxIntrospectionError::Ed25519MalformedData)?;
 
     // Asymmetric.re fix: every offset's instruction-index must point at the

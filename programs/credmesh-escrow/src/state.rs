@@ -34,6 +34,12 @@ pub struct Pool {
     pub max_advance_pct_bps: u16,
     pub max_advance_abs: u64,
     pub timelock_seconds: i64,
+    /// Cluster identifier for cross-chain replay defense on ed25519 credit
+    /// attestations. Matches `credmesh_shared::ed25519_credit_message::
+    /// CHAIN_ID_*`. Set at `init_pool` and never mutated. Devnet attestations
+    /// MUST NOT verify against a mainnet pool and vice versa, even when the
+    /// same bridge signer is whitelisted on both clusters.
+    pub chain_id: u64,
     pub pending_params: Option<PendingParams>,
 }
 

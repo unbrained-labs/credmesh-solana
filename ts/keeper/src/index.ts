@@ -93,11 +93,13 @@ interface DecodedAdvance {
  *
  *   discriminator (8) + bump (1) + agent (32) + receivable_id (32)
  *   + principal (8) + fee_owed (8) + late_penalty_per_day (8)
- *   + issued_at (8) + expires_at (8) + source_kind (1)
- *   + source_signer Option<Pubkey> (1 + 32 if Some) + state (1)
+ *   + issued_at (8) + expires_at (8) + attestor (32) + state (1)
+ *   = 152 bytes total (fixed-size; no Option after the EVM-bridge pivot)
  */
+const ADVANCE_BYTES = 8 + 1 + 32 + 32 + 8 * 5 + 32 + 1;
+
 function decodeAdvance(pubkey: Address, data: Uint8Array): DecodedAdvance | null {
-  if (data.length < 8 + 1 + 32 + 32 + 8 * 5 + 1 + 1 + 1) return null;
+  if (data.length < ADVANCE_BYTES) return null;
   const buf = Buffer.from(data);
   let off = 8;
   const bump = buf.readUInt8(off); off += 1;
@@ -108,9 +110,7 @@ function decodeAdvance(pubkey: Address, data: Uint8Array): DecodedAdvance | null
   off += 8; // late_penalty_per_day
   off += 8; // issued_at
   const expiresAt = buf.readBigInt64LE(off); off += 8;
-  off += 1; // source_kind
-  const sourceSignerTag = buf.readUInt8(off); off += 1;
-  if (sourceSignerTag === 1) off += 32; // source_signer present
+  off += 32; // attestor
   const state = buf.readUInt8(off);
 
   return { pubkey, agent, receivableId, expiresAt, state, bump };
@@ -209,8 +209,9 @@ async function tick(deps: {
   const { rpc, pool, signer, advanceDiscriminator, liquidateDiscriminator, sendAndConfirm } = deps;
 
   // Filter program accounts whose first 8 bytes match the Advance
-  // discriminator. We don't filter on `state` here because the offset
-  // is variable (source_signer Option). Filter in-process.
+  // discriminator. The struct is fixed-size post-pivot so a state-byte
+  // memcmp filter would also work, but this keeps the keeper insulated
+  // from layout shifts; in-process filter is cheap at expected scale.
   const result = await rpc
     .getProgramAccounts(ESCROW_PROGRAM_ID, {
       encoding: "base64",

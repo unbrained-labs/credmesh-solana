@@ -2,30 +2,34 @@
  * credmesh-solana-bridge entrypoint.
  *
  * HTTP service that signs ed25519 credit attestations for Solana
- * request_advance, plus a Solana event tail that replays settlement
- * deltas back to EVM. Single binary, two concerns.
+ * request_advance. EVM is the canonical reputation/identity ledger;
+ * the bridge reads it and signs a short-TTL attestation Solana
+ * consumes.
  *
  * Quote flow:
  *   1. Agent (or its operator) POST /quote
- *      { agent_pubkey, pool_pubkey, nonce_hex }
+ *      { agent_pubkey_b58, pool_pubkey_b58, nonce_hex }
  *   2. Bridge:
- *      a. converts agent_pubkey to the EVM address (the same key
- *         interpreted as a 20-byte EVM address — agents in the GTM
- *         lane map 1:1 cross-chain via their primary signing key)
- *      b. reads (creditLimit, outstanding) from EVM
- *      c. encodes a 128-byte ed25519_credit_message
- *      d. signs with the bridge's ed25519 secret key
- *      e. returns { message_b64, signature_b64, signer_pubkey_b58 }
+ *      a. resolves agent_pubkey_b58 → its registered EVM agent
+ *         address via the bridge-operator-curated agent-binding map
+ *         (loaded from BRIDGE_AGENT_BINDINGS_PATH at startup). Solana
+ *         ed25519 keys and EVM secp256k1 addresses do NOT share a key;
+ *         the binding is explicit, not derived. An unknown Solana
+ *         pubkey is REFUSED — the bridge never signs an attestation
+ *         for an agent it can't authoritatively pin to an EVM record.
+ *      b. reads (creditLimit, outstanding) from EVM for that
+ *         resolved address.
+ *      c. encodes a 128-byte ed25519_credit_message.
+ *      d. signs with the bridge's ed25519 secret key.
+ *      e. returns { message_b64, signature_b64, signer_pubkey_b58, ... }.
  *   3. Agent submits a Solana tx:
  *      [ed25519_verify(...), request_advance(receivable_id, amount, nonce)]
  *      where the ed25519_verify ix references the bridge's signed message.
  *
- * Event tail flow (separate goroutine-equivalent):
- *   - subscribe to Solana logs for the escrow program
- *   - parse AdvanceIssued / AdvanceSettled / AdvanceLiquidated
- *   - POST to the EVM credit-worker (`EVM_CREDIT_WORKER_URL`) which
- *     updates AgentRecord state. The EVM side is the canonical store
- *     of (settled, defaulted, outstanding) counts.
+ * Event tail flow (pending the EVM-side handoff endpoint; not yet
+ * wired — see README "Pending the EVM-side handoff endpoint"):
+ *   subscribes to Solana escrow logs and replays AdvanceIssued /
+ *   AdvanceSettled / AdvanceLiquidated to EVM AgentRecord state.
  */
 
 import { readFileSync } from "node:fs";
@@ -37,10 +41,10 @@ import { EvmReader, type EvmConfig } from "./evm.js";
 const REQUIRED_ENV = [
   "SOLANA_RPC_URL",
   "EVM_RPC_URL",
-  "EVM_CHAIN_ID",
   "EVM_REPUTATION_CREDIT_ORACLE_ADDRESS",
   "EVM_TRUSTLESS_ESCROW_ADDRESS",
   "BRIDGE_SIGNING_KEY_PATH",
+  "BRIDGE_AGENT_BINDINGS_PATH",
   "SOLANA_ESCROW_PROGRAM_ID",
   "SOLANA_ATTESTOR_REGISTRY_PROGRAM_ID",
   "SOLANA_CHAIN_ID",
@@ -55,7 +59,6 @@ function loadConfig() {
   }
   const evm: EvmConfig = {
     rpcUrl: process.env.EVM_RPC_URL!,
-    chainId: Number(process.env.EVM_CHAIN_ID!),
     reputationCreditOracle: process.env.EVM_REPUTATION_CREDIT_ORACLE_ADDRESS! as `0x${string}`,
     trustlessEscrow: process.env.EVM_TRUSTLESS_ESCROW_ADDRESS! as `0x${string}`,
   };
@@ -65,7 +68,40 @@ function loadConfig() {
     process.exit(1);
   }
   const signingKey = loadSigningKey(process.env.BRIDGE_SIGNING_KEY_PATH!);
-  return { evm, solanaChainId, signingKey };
+  const agentBindings = loadAgentBindings(process.env.BRIDGE_AGENT_BINDINGS_PATH!);
+  return { evm, solanaChainId, signingKey, agentBindings };
+}
+
+/**
+ * The agent-binding map is the bridge's authoritative Solana → EVM
+ * identity table. Each entry pins a Solana ed25519 pubkey to the EVM
+ * account whose reputation/credit values may be signed into an
+ * attestation for it. The binding is set by the bridge operator (out
+ * of band — typically when the agent registers on EVM and declares its
+ * Solana key); the bridge NEVER trusts a caller-supplied EVM address.
+ *
+ * File format: JSON object `{ "<solana_pubkey_b58>": "0x<evm_address>", ... }`
+ * — one entry per registered agent. Reloads require a process restart;
+ * hot-reload is a v1.5 nice-to-have.
+ */
+function loadAgentBindings(path: string): Map<string, `0x${string}`> {
+  const raw = readFileSync(path, "utf-8");
+  const parsed = JSON.parse(raw) as Record<string, string>;
+  const map = new Map<string, `0x${string}`>();
+  for (const [solana, evm] of Object.entries(parsed)) {
+    if (!/^0x[0-9a-fA-F]{40}$/.test(evm)) {
+      throw new Error(
+        `agent binding ${solana} → ${evm} is not a 20-byte EVM address`,
+      );
+    }
+    map.set(solana, evm.toLowerCase() as `0x${string}`);
+  }
+  if (map.size === 0) {
+    throw new Error(
+      `agent bindings file at ${path} is empty — refusing to start, the bridge would have no agents to attest for`,
+    );
+  }
+  return map;
 }
 
 function loadSigningKey(path: string): Uint8Array {
@@ -83,7 +119,6 @@ interface QuoteRequest {
   agent_pubkey_b58: string;
   pool_pubkey_b58: string;
   nonce_hex: string;
-  evm_agent_address: `0x${string}`;
   ttl_seconds?: number;
 }
 
@@ -116,8 +151,19 @@ async function handleQuote(
     nonceHex.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)),
   );
 
+  // Resolve the EVM address authoritatively from the bridge-operator-
+  // curated binding map. The bridge NEVER trusts a caller-supplied EVM
+  // address — that would let any caller request a signed attestation
+  // binding their Solana key to an unrelated EVM whale's credit limit.
+  const evmAddress = cfg.agentBindings.get(body.agent_pubkey_b58);
+  if (!evmAddress) {
+    throw new Error(
+      `agent ${body.agent_pubkey_b58} is not registered in the bridge agent-binding map`,
+    );
+  }
+
   const evm = new EvmReader(cfg.evm);
-  const snap = await evm.fetchAgent(body.evm_agent_address);
+  const snap = await evm.fetchAgent(evmAddress);
   if (snap.creditLimitAtoms === 0n) {
     throw new Error(
       "agent has zero credit limit on EVM (either MIN_CREDIT_SCORE not met, agent not registered, or quarantined)",
@@ -210,8 +256,9 @@ async function main() {
 
   server.listen(port, () => {
     console.log(`credmesh-solana-bridge listening on :${port}`);
-    console.log(`  EVM:               ${cfg.evm.rpcUrl} (chain ${cfg.evm.chainId})`);
+    console.log(`  EVM:               ${cfg.evm.rpcUrl}`);
     console.log(`  Solana chain id:   ${cfg.solanaChainId}`);
+    console.log(`  Agents registered: ${cfg.agentBindings.size}`);
     console.log(`  Signer pubkey:     ${bytesToBase58(cfg.signingKey.slice(32))}`);
   });
 }

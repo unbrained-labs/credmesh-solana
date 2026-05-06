@@ -19,7 +19,8 @@
 //     --treasury-ata <TREASURY_USDC_ATA> \
 //     --max-advance-pct-bps 3000 \
 //     --max-advance-abs 100000000 \
-//     --timelock-seconds 86400
+//     --timelock-seconds 86400 \
+//     --chain-id 2
 
 import { createHash } from "node:crypto";
 import {
@@ -88,18 +89,20 @@ interface InitPoolParams {
   timelockSeconds: bigint; // i64
   governance: PublicKey;
   treasuryAta: PublicKey;
+  chainId: bigint; // u64 — must equal CHAIN_ID_MAINNET (1) or CHAIN_ID_DEVNET (2)
 }
 
 // Borsh encoding of InitPoolParams. Field order MUST match the Rust struct
-// (programs/credmesh-escrow/src/lib.rs).
+// (programs/credmesh-escrow/src/instructions/init_pool.rs).
 function encodeInitPoolParams(p: InitPoolParams): Buffer {
   const fc = encodeFeeCurve(p.feeCurve);
-  const buf = Buffer.alloc(2 + 8 + 8 + 32 + 32);
+  const buf = Buffer.alloc(2 + 8 + 8 + 32 + 32 + 8);
   buf.writeUInt16LE(p.maxAdvancePctBps, 0);
   buf.writeBigUInt64LE(p.maxAdvanceAbs, 2);
   buf.writeBigInt64LE(p.timelockSeconds, 10);
   p.governance.toBuffer().copy(buf, 18);
   p.treasuryAta.toBuffer().copy(buf, 50);
+  buf.writeBigUInt64LE(p.chainId, 82);
   return Buffer.concat([fc, buf]);
 }
 
@@ -114,6 +117,7 @@ async function main(): Promise<void> {
       "max-advance-pct-bps",
       "max-advance-abs",
       "timelock-seconds",
+      "chain-id",
     ] as const,
     ["wallet"],
   );
@@ -154,6 +158,12 @@ async function main(): Promise<void> {
   console.log(`share_mint: ${shareMint.publicKey.toBase58()} (fresh)`);
   console.log(`usdc_vault: ${usdcVault.publicKey.toBase58()} (fresh)`);
 
+  const chainId = BigInt(args["chain-id"]);
+  if (chainId !== 1n && chainId !== 2n) {
+    throw new Error(
+      "--chain-id must equal 1 (mainnet) or 2 (devnet) — see crates/credmesh-shared::ed25519_credit_message::CHAIN_ID_*",
+    );
+  }
   const params: InitPoolParams = {
     feeCurve: DEFAULT_FEE_CURVE,
     maxAdvancePctBps: parseInt(args["max-advance-pct-bps"], 10),
@@ -161,6 +171,7 @@ async function main(): Promise<void> {
     timelockSeconds: BigInt(args["timelock-seconds"]),
     governance,
     treasuryAta,
+    chainId,
   };
   if (params.maxAdvancePctBps > 10_000) {
     throw new Error("--max-advance-pct-bps cannot exceed 10000 (100%)");

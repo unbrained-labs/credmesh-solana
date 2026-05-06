@@ -30,6 +30,14 @@ pub mod credmesh_attestor_registry {
     use super::*;
 
     pub fn init_registry(ctx: Context<InitRegistry>, governance: Pubkey) -> Result<()> {
+        // Governance MUST be a real Squads vault PDA — the Pubkey::default()
+        // (all-zero) value would render the registry permanently
+        // ungovernable AND would be trivially impersonatable by any tx that
+        // happens to list the zero pubkey among its accounts.
+        require!(
+            governance != Pubkey::default(),
+            AttestorRegistryError::GovernanceRequired
+        );
         let config = &mut ctx.accounts.config;
         config.bump = ctx.bumps.config;
         config.governance = governance;
@@ -42,14 +50,16 @@ pub mod credmesh_attestor_registry {
         signer: Pubkey,
         kind: u8,
     ) -> Result<()> {
-        require!(
-            credmesh_shared::AttestorKind::from_u8(kind).is_some(),
-            AttestorRegistryError::InvalidKind
-        );
+        // Governance gate first (consistent ordering with the other three
+        // handlers in this module — auth before payload validation).
         require_governance_cpi(
             &ctx.accounts.instructions_sysvar,
             &ctx.accounts.config.governance,
         )?;
+        require!(
+            credmesh_shared::AttestorKind::from_u8(kind).is_some(),
+            AttestorRegistryError::InvalidKind
+        );
 
         let allowed = &mut ctx.accounts.allowed_signer;
         allowed.bump = ctx.bumps.allowed_signer;
@@ -76,6 +86,10 @@ pub mod credmesh_attestor_registry {
             &ctx.accounts.instructions_sysvar,
             &ctx.accounts.config.governance,
         )?;
+        require!(
+            new_governance != Pubkey::default(),
+            AttestorRegistryError::GovernanceRequired
+        );
         let old_governance = ctx.accounts.config.governance;
         ctx.accounts.config.governance = new_governance;
         emit!(GovernanceUpdated {
