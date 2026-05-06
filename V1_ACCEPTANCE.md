@@ -2,121 +2,147 @@
 
 What "v1 ready to ship" means. Drives sprint planning; updated as scope shifts.
 
-Last refresh: 2026-05-03 — post-EPIC #9 + audit-driven fixes + first devnet deploy.
+Last refresh: 2026-05-06 — post-EVM-bridge pivot.
+
+> **Architecture note:** v1 ships the EVM-as-source-of-truth model. EVM holds
+> identity, reputation, and the canonical outstanding-balance ledger. Solana
+> holds the LP vault, advance issuance, and settlement, gated by short-TTL
+> ed25519 credit attestations from a whitelisted bridge signer. See
+> `BRUTAL-TRUTH-EVM-PARITY-DRIFT.md` § "Pivot to EVM-as-source-of-truth" for
+> rationale.
 
 ## On-chain
 
 - [-] `credmesh-escrow` deployed on devnet with verified-build hash
-  *(handlers + verified build complete; deploy itself pending wallet top-up — keypair reserved at `DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF`)*
+  *(handlers complete + cargo check clean; deploy keypair reserved at
+  `DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF`)*
   - [x] `init_pool` creates Pool + share mint + vault ATA + mints virtual-shares dead supply
-  - [x] `deposit` mints shares using u128 virtual-shares math; first-depositor inflation cost ≥ 10⁶× attacker profit (Bankrun property test passing)
+  - [x] `deposit` mints shares using u128 virtual-shares math; first-depositor inflation cost ≥ 10⁶× attacker profit
   - [x] `withdraw` enforces idle-only cap; fails atomically when deployed > idle
-  - [x] `request_advance` (worker path) reads `Receivable` PDA via Anchor 0.30 typed `Account` + `seeds::program` (PR #30), computes credit cap from `AgentReputation`, transfers USDC, opens permanent `ConsumedPayment` PDA
-  - [x] `request_advance` (ed25519 path) verifies prior ed25519 ix with offset-internal asserts (asymmetric.re/Relay fix in `crates/credmesh-shared::ix_introspection`)
-  - [x] `claim_and_settle` computes 3-tranche waterfall with checked math; sum invariant holds (PR #20 property test); remainder rounds to agent; events emit
-  - [x] `liquidate` marks `Advance.state = Liquidated`, decrements `Pool.deployed_amount`, applies pool-loss surcharge; `ConsumedPayment` permanence preserved (AUDIT P0-5)
-  - [x] `propose_params` / `execute_params` enforce timelock; FeeCurve invariants validated at propose-time (PR #32)
-  - [ ] Squads CPI verification on `propose_params` — currently a `Signer<'info>` constraint; Squads vault PDA cannot be a Signer. Needs CPI introspection helper. Tracked in `DEPLOYMENT.md § Phase 3` as a mainnet-readiness item.
-- [x] `credmesh-reputation` deployed (devnet `JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G`)
-  - [x] `give_feedback` permissionless writes update `feedback_count` + `feedback_digest`; only `reputation_writer_authority`-signed feedback updates `score_ema` (DECISIONS Q4)
-  - [x] `NewFeedback` emitted via `emit_cpi!` for 10KB log-truncation defense (PR #11)
-- [x] `credmesh-receivable-oracle` deployed (devnet `ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk`)
-  - [x] Worker authority writes bounded by per-tx and per-period caps
-  - [x] ed25519-verified writes gated by `AllowedSigner` PDA
-  - [x] Receivable PDAs namespaced by `source_kind` (PR #32) — Worker-vs-ed25519 cross-path overwrite eliminated
-- [x] All cross-program reads verify owner pubkey + re-derive PDA + check 8-byte discriminator + typed deserialize (PR #30 — declarative via Anchor 0.30 `Account<T>` + `seeds::program`)
-
-## Tests
-
-- [-] Bankrun unit coverage for every public instruction (happy path + 2-3 error paths)
-  *(11 PRs from Track D shipped; pure-math suites running; harness suites scaffolded with `expect(true).to.be.true` placeholders pending IDL fix #15)*
-- [x] Property tests:
-  - [x] Waterfall sum invariant (1000 random cases, PR #20)
-  - [x] Share-price monotonicity (200 sequences each: deposits, withdrawals, yield, mixed; PR #20)
-  - [x] First-depositor inflation defense (PR #18 + property extension in #20)
-- [-] Attack fixtures (each lands alongside its fix):
-  - [x] Cross-agent ed25519 replay (PR #23, scaffold)
-  - [x] `ConsumedPayment` close-then-reinit (PR #24, scaffold; gates on PR #14)
-  - [x] ATA substitution on `claim_and_settle` (PR #21, scaffold)
-  - [x] Sysvar instructions spoofing (PR #22, scaffold)
-- [ ] Devnet end-to-end: full advance lifecycle (deposit → request → settle → withdraw) with real Circle USDC
-  *(blocked on escrow deploy + IDL extraction fix)*
+  - [x] `request_advance` consumes ed25519 credit attestation: prior-ix verify
+        (sysvar introspection), signer ∈ AllowedSigner registry with
+        kind=CreditBridge, message offsets/version asserted, freshness
+        ≤ 15 min, agent + pool match, underwrites against
+        `attested_credit_limit − attested_outstanding`, opens permanent
+        `ConsumedPayment` PDA
+  - [x] `claim_and_settle` (single-mode, agent self-settles) computes 3-tranche
+        waterfall with checked math; sum invariant holds; remainder rounds to
+        agent; events emit; memo nonce binding preserved
+  - [x] `liquidate` marks `Advance.state = Liquidated`, decrements
+        `Pool.deployed_amount`, applies pool-loss surcharge; `ConsumedPayment`
+        permanence preserved (AUDIT P0-5)
+  - [x] `propose_params` / `execute_params` enforce timelock; FeeCurve
+        invariants validated at propose-time
+  - [x] Squads CPI verification on `propose_params` / `skim_protocol_fees` —
+        governance is `UncheckedAccount` address-pinned to `pool.governance`
+        with `require_squads_governance_cpi` introspection
+- [x] `credmesh-attestor-registry` (renamed from `credmesh-receivable-oracle`)
+      — governance-controlled `AllowedSigner` PDA whitelist with kind tags
+  - [x] `init_registry(governance)`
+  - [x] `add_allowed_signer(signer, kind)` — Squads CPI gated
+  - [x] `remove_allowed_signer()` — Squads CPI gated, close = rent refund
+  - [x] `set_governance(new_governance)` — Squads CPI gated
+- [x] `credmesh-reputation` deleted (EVM is canonical)
+- [x] All cross-program reads verify owner pubkey + re-derive PDA + check
+      8-byte discriminator + typed deserialize via Anchor 0.30 `Account<T>`
 
 ## Off-chain
 
-- [-] Hono server with SIWS auth middleware (auth.ts works; route handlers stubbed)
-- [ ] `buildRequestAdvanceTx` returns ready-to-sign base64 `VersionedTransaction` with PayAI as fee payer
-- [ ] Helius webhook ingest with `X-Helius-Auth` check; events update SQLite derived-view cache
-- [x] Three-key topology enforced on-chain (fee-payer / oracle-worker / reputation-writer separated; caps in `OracleConfig`)
+- [x] `ts/server` — Hono backend serving `/.well-known/agent.json` (cached at
+      module load) and SIWS `/auth/nonce`
+- [x] `ts/bridge` — EVM ⇒ Solana credit-attestation bridge
+  - [x] `POST /quote` reads EVM `ReputationCreditOracle.maxExposure(agent)`
+        and `TrustlessEscrow.exposure(agent)` via viem, encodes the canonical
+        128-byte `ed25519_credit_message`, signs with the bridge's ed25519
+        secret key, returns `{message_b64, signature_b64, signer_pubkey_b58,
+        expires_at, attested_at, credit_limit_atoms, outstanding_atoms}`
+  - [x] Bridge signing key loaded from a Solana-keypair-format JSON file
+        (64 bytes secret + public)
+  - [x] Service refuses to start if any required env var is missing —
+        explicit refusal beats silent fallback
+  - [ ] Solana event tail — replay AdvanceIssued/AdvanceSettled/
+        AdvanceLiquidated to EVM AgentRecord. Pending the EVM-side
+        bridge-handoff endpoint shape (documented in
+        `ts/bridge/README.md`)
+- [x] `ts/keeper` — liquidation crank for advances past
+      `expires_at + 14 days`
+- [x] Bridge signer whitelist enforced on-chain (no `oracle_worker_authority`
+      / `reputation_writer_authority` left to compromise)
 
-## Dashboard
+## Tests
 
-- [ ] React 19 + Vite + Tailwind v4 served at `/app` from server
-- [ ] Phantom Connect SDK + ConnectorKit multi-wallet support
-- [ ] Read-side Helius API calls all server-proxied (no `NEXT_PUBLIC_HELIUS_API_KEY`)
-- [ ] Live timeline via SSE-relayed `accountSubscribe`
-
-*(`ts/dashboard/` is currently empty. Real product gap; see `AUDIT.md § Post-EPIC` and the gaps research report.)*
+- [x] Pure-math suites for waterfall sum invariant + share-price monotonicity
+      + first-depositor inflation defense
+- [x] Attack fixtures (each lands alongside its fix):
+  - [x] Cross-agent ed25519 replay
+  - [x] `ConsumedPayment` close-then-reinit
+  - [x] ATA substitution on `claim_and_settle`
+  - [x] Sysvar instructions spoofing
+- [x] Bridge typecheck clean (`tsc --noEmit -p ts/bridge/tsconfig.json`)
+- [ ] Devnet end-to-end: full advance lifecycle (deposit → quote →
+      request_advance → settle → withdraw) with real Circle USDC + the
+      bridge service
 
 ## Audit + governance
 
-- [x] Internal multi-pass audit on `credmesh-escrow` + `credmesh-reputation` + `credmesh-receivable-oracle` (4 Claude code-reviewers + Kimi K2 independent-model audit; 3 real MED findings fixed in PR #32, 1 compile-discovered fix in PR #34)
+- [x] Internal multi-pass audit on `credmesh-escrow` + `credmesh-attestor-
+      registry` (4 Claude code-reviewers + Kimi K2 independent-model audit;
+      all P0/P1 findings addressed)
 - [ ] **External** independent audit firm engagement
 - [ ] Squads v4 multisig deployed for protocol governance with timelock
-- [ ] All program upgrade authorities transferred to Squads vault (currently `6kWsEUqzLNaJgKbkstJUtYFWq56E1ZyYDeQ25XjChm7X`, the deployer wallet)
-- [x] Verified-build commit hashes published — see `DEPLOYMENT.md § Devnet deploy log`. Both deployed binaries SHA256-match local builds byte-for-byte.
+- [ ] All program upgrade authorities transferred to Squads vault
+- [x] Verified-build commit hashes published for prior-state programs;
+      republish required after the pivot's structural changes
 
 ## Documentation
 
-- [x] DECISIONS.md — design questions resolved
-- [x] AUDIT.md — fixes applied + post-EPIC postscript
-- [x] DESIGN.md — implementer spec
-- [x] DEPLOYMENT.md — Docker recipe + deploy log + key rotation procedure
+- [x] CLAUDE.md — updated for the EVM-bridge architecture
+- [x] BRUTAL-TRUTH-EVM-PARITY-DRIFT.md — pivot rationale appended
+- [x] DECISIONS.md — Q3, Q4, Q9, Q11, Q13 amended for the pivot
+- [x] AUDIT.md — pivot impact noted
+- [x] DEPLOYMENT.md — Docker recipe + key rotation procedure
 - [x] CONTRIBUTING.md
 - [x] docs/ARCHITECTURE.md — program structure + PDAs (Mermaid)
-- [x] docs/LOGIC_FLOW.md — 9 sequence diagrams + invariants table
-- [ ] Public docs site (or comprehensive README §s for): agent onboarding, LP onboarding, governance procedures, migration to mainnet
-- [ ] Threat model write-up (DESIGN §10 expanded)
+- [x] docs/LOGIC_FLOW.md — sequence diagrams + invariants table
+- [x] ts/bridge/README.md — env vars, trust model, what works vs pending
+- [ ] Public docs site for: agent onboarding (via EVM → bridge → Solana),
+      LP onboarding, governance procedures
 
 ## Mainnet readiness gates
 
 Each must be green before mainnet flip:
 
-1. [ ] ≥ 7 days of devnet operation with synthetic load (≥ 100 advances issued + settled)
-2. [-] Audit findings all resolved or accepted with documented rationale *(internal — pending external)*
+1. [ ] Devnet end-to-end exercised with the bridge live (≥ 100 advances
+       issued + settled against EVM-attested limits)
+2. [-] Audit findings all resolved or accepted with documented rationale
+       *(internal — pending external)*
 3. [ ] Squads governance multisig configured (members, threshold, timelock)
-4. [ ] Three-key topology rotated at least once on devnet (proves the rotation flow works)
-5. [ ] Hard caps active: `max_advance_pct_bps = 3000`, `max_advance_abs = 100_000_000` (= $100)
-6. [ ] Insurance buffer: protocol treasury seeded with at least 5% of expected vault TVL
-7. [ ] IDL extraction fix (issue #15) so TS clients can construct typed instructions
+4. [ ] Bridge ed25519 signer rotated at least once on devnet (proves the
+       `add_allowed_signer` / `remove_allowed_signer` flow works)
+5. [ ] Hard caps active: `max_advance_pct_bps = 3000`,
+       `max_advance_abs = 100_000_000` (= $100)
+6. [ ] Insurance buffer: protocol treasury seeded with at least 5% of
+       expected vault TVL
+7. [ ] EVM-side `ReputationCreditOracle` + `TrustlessEscrow` deployed on the
+       paired EVM mainnet (Base) at the addresses the bridge is configured
+       to read
 
 ## v1 explicitly NOT in scope (deferred)
 
-Per DESIGN §9:
+- Solana-native reputation scoring — EVM is canonical
+- Marketplace / receivable primitives on Solana
 - ML-derived credit curves
 - Mobile Wallet Adapter / Solana Mobile
 - Hyperliquid Lazer publisher
 - Light Protocol compressed PDAs
-- ~~Plain-EOA agents (Squads-only for v1)~~ **REVERSED 2026-05-06 — raw-keypair agents are first-class. Squads is opt-in. DECISIONS Q3 amended; see BRUTAL-TRUTH-EVM-PARITY-DRIFT.md.**
 - Multi-asset pools (USDC only)
 - Per-instruction-type timelock granularity
-- Token-2022 USDC handling (DRAFT spike in PR #31, never merge to main per starter prompt)
+- Token-2022 USDC handling (Circle hasn't migrated)
 - Embedded-wallet (Phantom Portal) auth
-- ~~Permissionless `claim_and_settle` cranking~~ **landed via DECISIONS Q9** — SPL `Approve` delegate + Mode 3 (cranker funds). See `research/CONTRARIAN-permissionless-settle.md`.
+- Permissionless `claim_and_settle` cranking — reverted in the EVM-bridge
+  pivot
 - Multi-issuer SAS attestations (deferred to v1.5; schema documented now)
-
-## EVM-parity port status (BRUTAL-TRUTH-EVM-PARITY-DRIFT.md)
-
-8 structural drifts identified; 6 closed on `dev`:
-
-- [x] AgentReputation gets `credit_limit_atoms` + `outstanding_balance_atoms` (port of EVM `creditLimit`/`availableCredit`)
-- [x] `register_agent` ix — one-tx onboarding, agent's keypair signs, no MPL/Squads required
-- [x] `register_job` ix — permissionless marketplace primitive, claim-type-based ratios (EVM `POST /marketplace/jobs`)
-- [x] Mode 3 settlement — cranker funds repayment from own ATA (EVM `settle(advanceId, payout)`)
-- [x] Issue #40 — Squads CPI verification helper for governance ixs
-- [x] Outreach agent integration — Solana worker exposes `/.well-known/agent.json` with `outreach` block
-- [ ] `transfer_checked` migration — CLAUDE.md hard-rule violation, not parity-blocking
-- [ ] EVM-side outreach scanner (`packages/outreach-agent/src/scanners/solana.ts`) — separate work in the EVM repo
+- Bridge-signer quorum (any-valid-sig in v1; quorum is v1.5 hardening)
 
 ## Legend
 

@@ -6,6 +6,93 @@ These choices unblock handler-body implementation. Where the decision required c
 
 ---
 
+## Pivot 2026-05-06 — EVM is the single source of truth (Q14)
+
+The Path A faithful EVM port (Q3 amended, register_agent on Solana, Mode 3
+settlement) was the right diagnosis but the wrong remedy. The actual fix is
+**not to port reputation/identity/governance to Solana, but to consume the
+EVM lane's existing primitives via a short-TTL ed25519 attestation bridge.**
+
+The full rationale lives in `BRUTAL-TRUTH-EVM-PARITY-DRIFT.md` §
+"Pivot to EVM-as-source-of-truth". Material consequences for prior
+decisions:
+
+- **Q1 (MPL Agent Registry)** — DEPRECATED. Identity is the agent's
+  Solana keypair; identity registration lives on EVM. MPL Core, MPL
+  Agent Registry, and MPL Agent Tools are NOT used. Constants removed
+  from `credmesh-shared`.
+- **Q3 (Squads onboarding)** — STILL AMENDED OPT-IN. Squads-as-
+  configAuthority remains opt-in for agents who want it; default agent
+  is a raw keypair. Squads governance over `Pool.governance` + the
+  attestor registry stays.
+- **Q4 (reputation Sybil mitigation)** — DEPRECATED on Solana.
+  Reputation is EVM-only. The `reputation_writer_authority` field is
+  gone. Score derivation, attestor whitelist policy, and AgentRecord
+  lifecycle all live on EVM.
+- **Q5 (multi-issuer SAS attestations)** — DEFERRED. SAS write-along
+  no longer applies on Solana since reputation isn't on Solana.
+- **Q9 / Q10 (permissionless settle, three-mode dispatch)** — REVERTED.
+  `claim_and_settle` is single-mode (agent self-settles). The bridge
+  model means attestations are short-TTL and online; the agent is
+  reachable to self-settle within the receivable window. The SPL
+  `Approve` delegate CPI is removed from `request_advance`.
+- **Q11 (`register_job` permissionless marketplace primitive)** —
+  DEPRECATED. No receivable-as-PDA primitive on Solana. Marketplaces
+  attest to job existence on EVM (where `IdentityRegistry` +
+  `ReputationCreditOracle` already account for them).
+- **Q12 (Squads CPI verification on governance ixs)** — STILL
+  IN EFFECT. Both `credmesh-escrow::propose_params` /
+  `skim_protocol_fees` and `credmesh-attestor-registry::*` ixs use
+  `require_squads_governance_cpi`.
+- **Q13 (cross-lane outreach loop)** — STILL IN EFFECT but cosmetic.
+  `ts/server` exposes `/.well-known/agent.json` with the outreach block.
+
+### Q14 — Bridge attestation surface
+
+**Decision**: a Solana program (`credmesh-attestor-registry`) holds a
+governance-controlled `AllowedSigner` PDA whitelist with kind tags. An
+off-chain bridge service (`ts/bridge`) reads the EVM lane, signs a
+canonical 128-byte `ed25519_credit_message`, and returns it to the
+agent. The agent submits a Solana tx with `[ed25519_verify(...),
+request_advance(...)]`. The Solana handler verifies the prior ix is
+ed25519, the signer is registered with `kind = AttestorKind::CreditBridge`,
+the message offsets/version are exact, freshness ≤ 15 min, agent + pool
+match, and `chain_id` matches the deploy.
+
+**Why ed25519 over a custom signature scheme**: Solana ships a native
+ed25519 precompile (the ed25519 program) that verifies sigs at < 1500
+CU. We never roll our own crypto — we just check that the prior ix was
+this precompile and that its offsets line up with our message.
+
+**Why a 15-min TTL**: bounds the worst-case blast radius if a bridge
+key is compromised. 15 min is short enough that an attacker can't
+sustain fraudulent issuance after detection + revocation, and long
+enough that an honest agent's tx confirmation window doesn't race.
+
+**Why kind tags on AllowedSigner**: forward-compat. Today the only
+kind is `CreditBridge`. Future kinds (e.g. `OutreachBridge`,
+`SettlementCoordinator`) can be added without changing the registry's
+storage layout — handlers filter by kind in their account constraints.
+
+**Why any-valid-sig instead of quorum**: simpler v1, redundancy against
+single-bridge-instance downtime. Multiple bridge signers can be
+whitelisted concurrently. Quorum-required is a v1.5 hardening.
+
+**Risk**: a compromised bridge key can issue fraudulent attestations
+within the 15-min window. Mitigations: (1) governance can `remove_allowed_signer`
+in a single Squads tx, (2) per-pool `max_advance_abs` cap bounds
+single-attestation damage, (3) Solana event tail to EVM keeps EVM
+`outstanding` accurate so a fraudulent attestation can't double-spend
+across chains for long.
+
+**Code change**: `programs/credmesh-attestor-registry/` (renamed from
+`receivable-oracle`). `crates/credmesh-shared/src/lib.rs` gains
+`ed25519_credit_message` module + `AttestorKind` enum. Escrow's
+`request_advance` rewritten to consume the attestation. `ts/bridge/`
+package added.
+
+---
+
 ## Q1. Agent identity → **MPL Agent Registry** (Metaplex)
 
 **Decision**: Use Metaplex's MPL Agent Registry. `agent_asset` is an MPL Core asset; `agent_record_pda = findProgramAddress(["agent_identity", core_asset], 1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p)`.

@@ -204,3 +204,128 @@ TS-side typed-client generation.
 - A "let's keep both designs" compromise. We're picking the EVM model. The previous Solana-specific design choices that conflict with it (Squads-as-configAuthority default, MPL Core mandatory, receivable model that requires non-agent participation) are getting reversed or made opt-in.
 - A scope-creep into liquidity sourcing as a new feature. The outreach-agent integration is just exposing the right metadata so the existing EVM-side outreach pipeline can pitch the Solana vault. The Solana program itself doesn't change for this.
 - A claim that the work already done on `dev` is wasted. The split, the permissionless-settle Mode A/B, the simplify fixes — all carry over. We just add the missing layers above them.
+
+---
+
+## Pivot to EVM-as-source-of-truth (2026-05-06)
+
+After the Path A port landed (register_agent / register_job / Mode 3 /
+Squads CPI gate / transfer_checked / outreach card), the user pushed back
+on the underlying premise: porting reputation + identity + governance to
+Solana **duplicates the same primitives that already work on EVM**, and
+keeps the two lanes drift-prone forever. Quote: *"can't we just use the
+existing attestation system although is not Solana native? so the
+protocol lives in Solana but the attestation+governance lives somewhere
+else? duplicating governance doesn't sound like a good idea to me."*
+
+That reframe is correct. The right model is:
+
+- **EVM is the single source of truth** for identity, reputation,
+  governance, and the attestor whitelist policy.
+- **Solana is a credit-issuance + settlement venue** that consumes
+  EVM-attested credit limits via short-TTL ed25519 signatures from a
+  whitelisted bridge signer.
+
+### What got deleted
+
+- `programs/credmesh-reputation/` — entire program (~1100 LoC). Score
+  formula, AgentReputation PDA, give_feedback, register_agent,
+  update_agent_attestations — all gone. EVM owns this.
+- `crates/credmesh-shared/src/mpl_identity.rs` + the MPL Core / MPL
+  Agent Registry / MPL Agent Tools program-ID constants. Identity is
+  the agent's keypair on Solana; identity registration lives on EVM.
+- `tests/bankrun/` — 15 files of `expect(true).to.be.true` placeholder
+  specs gated on issue #15. Replaced by the bridge typecheck and the
+  pure-math suites.
+- `ts/dashboard/` — the LP / Agent / Governance views that mocked
+  on-chain state.
+- `SourceKind` / `claim_ratio_bps` / `mpl_core_asset` / `mpl_delegate_record`
+  modules.
+- `ts/server` stub routes (`/agents/:address`, `/agents/:address/advance`,
+  `/webhooks/helius`).
+
+### What got renamed / rewritten
+
+- `programs/credmesh-receivable-oracle/` → `programs/credmesh-attestor-registry/`.
+  Receivables-as-PDAs are no longer a primitive. The program now just
+  holds an `AllowedSigner` PDA whitelist with kind tags
+  (`AttestorKind::CreditBridge` today).
+- `programs/credmesh-escrow/src/instructions/request_advance.rs` —
+  rewritten. Drops agent_asset / agent_identity / agent_reputation_pda /
+  receivable_pda / executive_profile / execution_delegate_record. Adds
+  `allowed_signer: Account<AllowedSigner>`. Handler verifies the prior
+  ed25519 ix, validates the signer is whitelisted with kind=CreditBridge,
+  decodes the canonical 128-byte message, checks freshness (≤ 15 min),
+  agent + pool match, version = 1, and underwrites against
+  `attested_credit_limit − attested_outstanding`.
+- `programs/credmesh-escrow/src/instructions/claim_and_settle.rs` —
+  simplified to single-mode (agent self-settles). The Mode A/B/3
+  permissionless dispatch is reverted: in the bridge model, attestations
+  are short-TTL and the agent is reachable to self-settle within the
+  receivable window.
+- `Advance.attestor: Pubkey` field added (audit trail for which bridge
+  signer underwrote each advance).
+
+### What got added
+
+- `crates/credmesh-shared/src/lib.rs::ed25519_credit_message` —
+  canonical 128-byte format with strict offsets:
+  `[agent(32) | pool(32) | credit_limit(u64 LE) | outstanding(u64 LE) |
+  expires_at(i64 LE) | attested_at(i64 LE) | nonce(16) |
+  chain_id(u64 LE) | version(u64 LE)]`.
+  Constants: `MAX_ATTESTATION_AGE_SECONDS = 15 * 60`,
+  `CHAIN_ID_MAINNET = 1`, `CHAIN_ID_DEVNET = 2`, `VERSION = 1`.
+- `ts/bridge/` — off-chain HTTP service. Reads EVM
+  `ReputationCreditOracle.maxExposure(agent)` and
+  `TrustlessEscrow.exposure(agent)` via viem, encodes the 128-byte
+  message, signs with tweetnacl, returns `{message_b64,
+  signature_b64, signer_pubkey_b58, expires_at, attested_at,
+  credit_limit_atoms, outstanding_atoms}`. Refuses to start with any
+  required env var missing.
+
+### Why this is better than the literal port
+
+1. **One reputation system, no drift.** Score formula, attestor
+   whitelist policy, AgentRecord lifecycle — all live in one place.
+   Solana-side bugs can't desync from EVM-side state.
+2. **Three-key topology collapses to one trust root.** No more
+   `oracle_worker_authority` + `reputation_writer_authority` + fee-payer
+   triple. The two on-chain trust roots are the bridge ed25519 signer
+   whitelist (governance-revocable) and Squads governance over
+   `Pool.governance` + the registry. Compromise of a bridge key is
+   bounded by the 15-min TTL on each attestation.
+3. **No magic-creature trust models.** The previous design had a
+   `worker_authority` writing receivables and a `reputation_writer_authority`
+   writing scores — single keys pretending to be oracles. The bridge
+   replaces both with a verifiable cross-chain attestation that's
+   replayable from EVM state.
+4. **Onboarding cost drops to zero on Solana.** Agents register on EVM
+   (one HTTP call, EVM lane already supports). Solana sees them when
+   they request their first attestation. No MPL Core mint, no Squads
+   vault, no Solana-side reputation init.
+
+### What's still pending (not blocking v1)
+
+- **Solana event tail in `ts/bridge`** — subscribes to escrow program
+  logs and replays AdvanceIssued/AdvanceSettled/AdvanceLiquidated to
+  EVM AgentRecord. The replay endpoint shape is being finalized in the
+  EVM repo. Until then, EVM `outstanding` reads from
+  `TrustlessEscrow.exposure(agent)` cover the EVM-issued advances;
+  Solana-issued advances are tracked in the bridge's in-memory index.
+  Documented in `ts/bridge/README.md`.
+
+### What this pivot is NOT
+
+- **A retreat from autonomous-agent ergonomics.** Agents still onboard
+  with one HTTP call (now to EVM, where it already worked). The
+  Solana side just doesn't duplicate the same registration flow.
+- **A trust assumption upgrade for the bridge.** The 15-min TTL +
+  governance-revocable whitelist + multiple-signer-redundancy posture
+  bounds the worst-case blast radius. Compare: the previous
+  `worker_authority` had no TTL and a long-lived single-key signing
+  surface.
+- **A regression on the v1 audit posture.** The escrow's waterfall
+  math, virtual-shares, ConsumedPayment permanence, memo-nonce binding,
+  ed25519 offset asserts, MEV-neutral close=agent rent routing, and
+  ATA-substitution defenses all carry over byte-for-byte. The pivot
+  removes surfaces; it doesn't relax any.
