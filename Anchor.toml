@@ -6,13 +6,11 @@ skip-lint = false
 
 [programs.devnet]
 credmesh_escrow = "DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF"
-credmesh_receivable_oracle = "ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk"
-credmesh_reputation = "JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G"
+credmesh_attestor_registry = "ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk"
 
 [programs.localnet]
 credmesh_escrow = "DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF"
-credmesh_receivable_oracle = "ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk"
-credmesh_reputation = "JDBeDr9WFhepcz4C2JeGSsMN2KLW4C1aQdNLS2jvc79G"
+credmesh_attestor_registry = "ALVf6iyB6P5RFizRtxorJ3pAcc4731VziAn67sW6brvk"
 
 [registry]
 url = "https://api.apr.dev"
@@ -22,7 +20,7 @@ cluster = "Devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "ts-mocha -p ./tsconfig.json -t 1000000 'tests/bankrun/**/*.test.ts'"
+test = "cargo test --workspace --lib"
 
 [test]
 startup_wait = 5000
@@ -35,20 +33,22 @@ url = "https://api.devnet.solana.com"
 ledger = ".anchor/test-ledger"
 rpc_port = 8899
 
+# External programs the workspace's devnet/localnet sessions need cloned
+# from mainnet. MPL Core / MPL Agent Registry / MPL Agent Tools were
+# removed in the EVM-bridge pivot (identity + reputation live on EVM
+# now); only Squads v4 (governance multisig) and the Memo program are
+# load-bearing for the post-pivot programs. Mainnet USDC is cloned for
+# init-pool tests and integration runs.
+
+# Mainnet USDC (Circle).
 [[test.validator.clone]]
 address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 
-[[test.validator.clone]]
-address = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
-
-[[test.validator.clone]]
-address = "1DREGFgysWYxLnRnKQnwrxnJQeSMk2HmGaC6whw2B2p"
-
-[[test.validator.clone]]
-address = "TLREGni9ZEyGC3vnPZtqUh95xQ8oPqJSvNjvB7FGK8S"
-
+# Squads v4 — governance multisig CPI'd by propose_params,
+# skim_protocol_fees, and the credmesh-attestor-registry ixs.
 [[test.validator.clone]]
 address = "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf"
 
+# Memo v2 — settlement-nonce binding in claim_and_settle.
 [[test.validator.clone]]
 address = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"

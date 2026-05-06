@@ -69,7 +69,6 @@ ts/bridge/                           Off-chain EVM ⇒ Solana credit-attestation
 ts/keeper/                           Liquidation crank for expired advances.
 ts/shared/                           Shared TS constants (PDA seeds, ed25519 message
                                      offsets, anchor discriminator helpers).
-docs/                                ARCHITECTURE.md + LOGIC_FLOW.md (Mermaid).
 ```
 
 NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses every
@@ -147,7 +146,7 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
 - **Events are emitted as the LAST step of each handler.** A partial failure
   mid-handler shouldn't emit a misleading event.
 - **No `find_program_address` in hot paths** when the bump is already cached.
-  Per HANDLER_PATTERNS.md Pattern 2 (~1500 CU per call). Use
+  Costs ~1500 CU per call. Use
   `Pubkey::create_program_address(seeds_with_bump, program_id)` instead.
 - **Use `transfer_checked` not bare `transfer`.** All transfer call sites in
   credmesh-escrow have been migrated. anchor-spl 0.30.1 does NOT expose

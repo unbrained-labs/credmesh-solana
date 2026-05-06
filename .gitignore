@@ -11,8 +11,7 @@ target/*
 !target/deploy/
 target/deploy/*
 !target/deploy/credmesh_escrow-keypair.json
-!target/deploy/credmesh_reputation-keypair.json
-!target/deploy/credmesh_receivable_oracle-keypair.json
+!target/deploy/credmesh_attestor_registry-keypair.json
 dist/
 .anchor/
 test-ledger/

@@ -6,10 +6,11 @@
 // is currently blocked behind issue #15 (Anchor 0.30 IDL extraction trips
 // on `AssociatedToken` resolution). Once #15 lands and `target/idl/
 // credmesh_escrow.json` exists, this script can be replaced with the
-// Anchor-typed equivalent (mirrors `init_oracle.ts`).
+// Anchor-typed Codama-generated equivalent.
 //
-// Layout reference: programs/credmesh-escrow/src/lib.rs InitPoolParams +
-// InitPool accounts struct. Borsh field order MUST match the Rust struct.
+// Layout reference: programs/credmesh-escrow/src/instructions/init_pool.rs
+// InitPoolParams + InitPool accounts struct. Borsh field order MUST match
+// the Rust struct.
 //
 // Example:
 //   npx ts-node scripts/init_pool.ts \

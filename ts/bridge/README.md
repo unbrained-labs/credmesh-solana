@@ -7,17 +7,26 @@ EVM-attested credit limits to underwrite advances).
 ## What it does
 
 1. **Quote endpoint (HTTP):** when an agent on Solana wants to borrow,
-   they ask the bridge `POST /quote { agent_pubkey, pool_pubkey, nonce }`.
-   The bridge reads EVM `ReputationCreditOracle` for the agent's current
-   credit limit and outstanding exposure, signs a 128-byte
-   `ed25519_credit_message`, and returns it. The agent then submits a
-   Solana tx `[ed25519_verify(signed_attestation), request_advance(...)]`.
+   they `POST /quote` with
+   `{ agent_pubkey_b58, pool_pubkey_b58, nonce_hex, ttl_seconds? }`.
+   The bridge resolves the agent's EVM address from its
+   operator-curated binding map, reads
+   `ReputationCreditOracle.maxExposure(agent)` and
+   `TrustlessEscrow.exposure(agent)` from the EVM RPC, signs a 128-byte
+   `ed25519_credit_message`, and returns
+   `{ message_b64, signature_b64, signer_pubkey_b58, expires_at,
+   attested_at, credit_limit_atoms, outstanding_atoms }`. The caller
+   then submits a Solana tx
+   `[ed25519_verify(signed_attestation), request_advance(receivable_id, amount, nonce)]`.
 
-2. **Solana event tail:** the bridge listens for Solana `AdvanceIssued` /
-   `AdvanceSettled` / `AdvanceLiquidated` events and replays the deltas
-   back to EVM (writes via the credit-worker's settlement endpoint, or
-   directly to a `MultiChainExposureRegistry` contract — TBD per
-   `../trustvault-credit/` work).
+2. **Solana event tail:** subscribes to credmesh-escrow program logs over
+   `SOLANA_WS_URL`, decodes `AdvanceIssued` / `AdvanceSettled` /
+   `AdvanceLiquidated` events by the Anchor `event:<Name>`
+   discriminator. When `EVM_CREDIT_WORKER_URL` is set, it POSTs each
+   event as `{ version: 1, event, slot, signature, raw_b64 }` to
+   `<url>/solana-event` so the EVM-side worker can keep AgentRecord
+   state in sync. When unset, the tail logs the deltas locally — no
+   silent no-op.
 
 ## Trust model
 
