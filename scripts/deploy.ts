@@ -22,9 +22,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Connection, PublicKey } from "@solana/web3.js";
 import {
+  ATTESTOR_REGISTRY_PROGRAM_ID,
   ESCROW_PROGRAM_ID,
-  RECEIVABLE_ORACLE_PROGRAM_ID,
-  REPUTATION_PROGRAM_ID,
 } from "./lib/program-ids";
 import { parseArgs } from "./lib/cluster";
 
@@ -43,16 +42,10 @@ const PROGRAMS: ProgramSpec[] = [
     keypairPath: "target/deploy/credmesh_escrow-keypair.json",
   },
   {
-    name: "credmesh_reputation",
-    programId: REPUTATION_PROGRAM_ID,
-    soPath: "target/deploy/credmesh_reputation.so",
-    keypairPath: "target/deploy/credmesh_reputation-keypair.json",
-  },
-  {
-    name: "credmesh_receivable_oracle",
-    programId: RECEIVABLE_ORACLE_PROGRAM_ID,
-    soPath: "target/deploy/credmesh_receivable_oracle.so",
-    keypairPath: "target/deploy/credmesh_receivable_oracle-keypair.json",
+    name: "credmesh_attestor_registry",
+    programId: ATTESTOR_REGISTRY_PROGRAM_ID,
+    soPath: "target/deploy/credmesh_attestor_registry.so",
+    keypairPath: "target/deploy/credmesh_attestor_registry-keypair.json",
   },
 ];
 
@@ -112,7 +105,7 @@ async function deployOne(
   // length and the upgrade authority; we can't pull program-data hash
   // through web3.js without parsing the loader account ourselves, so the
   // size match + the deploy command's exit-0 are the verifiable signals.
-  // Mainnet path SHOULD layer `anchor verify` on top — see DEPLOYMENT.md.
+  // Mainnet path SHOULD layer `anchor verify` on top.
   const conn = new Connection(url, "confirmed");
   const info = await conn.getAccountInfo(spec.programId);
   if (info === null) {

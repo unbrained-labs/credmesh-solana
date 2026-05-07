@@ -14,7 +14,7 @@ use anchor_lang::solana_program::sysvar::instructions::{
     load_current_index_checked, load_instruction_at_checked,
 };
 
-use crate::program_ids::{ED25519, MEMO};
+use crate::program_ids::{ED25519, MEMO, SQUADS_V4};
 
 #[derive(Clone, Copy, Debug)]
 pub enum IxIntrospectionError {
@@ -85,6 +85,17 @@ pub fn verify_prev_ed25519(
         return Err(IxIntrospectionError::Ed25519NotFound);
     }
 
+    // Reject multi-signature ed25519 ixs. The verify ix layout supports
+    // num_signatures > 1, where each entry has its own offset table; if we
+    // accepted a multi-entry ix and only parsed slot 0, an attacker could
+    // pad slot 0 with a dummy 128-byte message that happens to decode
+    // benignly while slot 1 carries the real attacker-favorable signature.
+    // We expect exactly one signature per attestation tx — strict equality
+    // closes that ambiguity at zero cost.
+    if prev_ix.data.is_empty() || prev_ix.data[0] != 1 {
+        return Err(IxIntrospectionError::Ed25519MalformedData);
+    }
+
     let offsets = parse_offsets(&prev_ix.data).ok_or(IxIntrospectionError::Ed25519MalformedData)?;
 
     // Asymmetric.re fix: every offset's instruction-index must point at the
@@ -142,4 +153,51 @@ pub fn require_memo_nonce(
         }
     }
     Err(IxIntrospectionError::MemoNotFound)
+}
+
+/// Verify the current tx contains a Squads v4 instruction that
+/// authorizes-and-spends against the expected governance vault PDA.
+/// This is the defensive check that gates governance instructions on
+/// credmesh-escrow (propose_params, skim_protocol_fees) and on
+/// credmesh-attestor-registry (add/remove_allowed_signer,
+/// set_governance) — Squads vault PDAs cannot be `Signer`s in Anchor,
+/// so the equivalent of "must be signed by Squads" is "must be in a
+/// tx that contains a Squads ix authorizing this vault to spend."
+///
+/// Tightening (v1): we additionally require the vault PDA to appear
+/// as **writable** in the Squads ix's account list. This narrows the
+/// surface from "any Squads ix mentioning the vault" to "Squads ix
+/// where the vault is the subject of an authorize-and-execute call"
+/// (vault_transaction_execute and equivalents pass the vault as
+/// writable; informational/config Squads ixs that merely reference
+/// the vault as a read-only audit target pass it as non-writable).
+///
+/// Residual surface (v1.5 hardening): an attacker tx that bundles BOTH
+/// (a) a legitimate Squads vault_transaction_execute against the vault
+/// for some unrelated CPI AND (b) the gated CredMesh ix would still
+/// pass. Defeating that requires parsing the Squads ix's inner-ix
+/// payload to confirm it's specifically targeting THIS handler call.
+/// Tracked as v1.5; the practical exploit requires Squads multisig
+/// authorization in the same window, which is the same trust root.
+pub fn require_squads_governance_cpi(
+    sysvar_instructions_ai: &AccountInfo<'_>,
+    expected_vault: &Pubkey,
+) -> std::result::Result<(), IxIntrospectionError> {
+    for idx in 0..MAX_IX_SCAN {
+        match load_instruction_at_checked(idx, sysvar_instructions_ai) {
+            Ok(ix) => {
+                if ix.program_id != SQUADS_V4 {
+                    continue;
+                }
+                let writable_match = ix.accounts.iter().any(|a| {
+                    a.pubkey == *expected_vault && a.is_writable
+                });
+                if writable_match {
+                    return Ok(());
+                }
+            }
+            Err(_) => break,
+        }
+    }
+    Err(IxIntrospectionError::PrevIxNotFound)
 }

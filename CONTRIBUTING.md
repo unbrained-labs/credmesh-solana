@@ -1,80 +1,93 @@
 # Contributing
 
-Welcome. CredMesh-Solana v1 is implemented, audited, and partially deployed to devnet. See `README.md` for current status.
+The Solana lane of [CredMesh](https://github.com/unbrained-labs/credmesh).
+See [`README.md`](./README.md) for what the protocol does and how the
+on-chain + off-chain pieces fit together; see [`CLAUDE.md`](./CLAUDE.md)
+for the coding conventions and don't-do list this repo enforces.
 
 ## Read first
 
-1. [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) and [`docs/LOGIC_FLOW.md`](./docs/LOGIC_FLOW.md) — Mermaid diagrams of the static structure + handler sequences.
-2. [`DECISIONS.md`](./DECISIONS.md) — the 5 blocking design questions and their resolutions.
-3. [`AUDIT.md`](./AUDIT.md) — security findings, what was fixed (incl. post-EPIC #9 audit-driven fixes), and what's pending.
-4. [`DESIGN.md`](./DESIGN.md) — implementer spec (kept in sync with current code).
-5. [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Docker build recipe + deploy procedure + key rotation.
-6. [`V1_ACCEPTANCE.md`](./V1_ACCEPTANCE.md) — gating checklist for mainnet.
-7. `research/` — original research artifacts (some superseded; see CONTRARIAN.md for what we redesigned).
+1. [`README.md`](./README.md) — flow + workspace + commands.
+2. [`CLAUDE.md`](./CLAUDE.md) — repo conventions (cross-program reads,
+   PDA seeds, fee math, event-emit ordering, transfer_checked, etc.).
+3. The handler sources themselves
+   (`programs/credmesh-escrow/src/instructions/*.rs`,
+   `programs/credmesh-attestor-registry/src/lib.rs`) — every load-bearing
+   invariant is documented inline at the top of the relevant function.
 
-## Setup
-
-The pinned Anchor 0.30.1 + Solana 1.18.26 toolchain has lockfile-drift issues against modern Cargo registry contents. **The canonical build is Docker** — don't try to install the toolchain natively. Full recipe in `DEPLOYMENT.md § Build environment (Docker)`. Quickstart:
+## Toolchain
 
 ```bash
-# Pre-warm cached Docker volumes (one-time):
-docker pull backpackapp/build:v0.30.1
-docker volume create credmesh-rustup
-docker volume create credmesh-cargo-registry
-docker volume create credmesh-cargo-git
-docker volume create credmesh-pt-cache
-docker run --rm -v credmesh-rustup:/root/.rustup backpackapp/build:v0.30.1 \
-  rustup toolchain install 1.86.0 --profile minimal --no-self-update
+rustup default 1.79.0
+sh -c "$(curl -sSfL https://release.anza.xyz/v1.18.26/install)"
+cargo install --git https://github.com/coral-xyz/anchor avm --force && avm install 0.30.1
 
-# Build the workspace (the wrapper script in DEPLOYMENT.md injects
-# --tools-version v1.50 so cargo-build-sbf doesn't re-install platform-tools).
-# Use `--no-idl` until issue #15 lands; the deployable .so still produces correctly.
-
-# TypeScript tests + server (host-side, no Docker needed)
-npm install
-npm test           # ts-mocha + anchor-bankrun (pure-math suites run today)
-cd ts/server && npm run typecheck
+# TS workspaces are independent; install per-package as needed.
+cd ts/shared && npm install
+cd ts/server && npm install
+cd ts/bridge && npm install
+cd ts/keeper && npm install
 ```
 
-If you must install the toolchain natively (NOT recommended), see CONTRIBUTING_NATIVE.md (TODO if anyone asks). Otherwise stick to Docker; everything contributors do works that way.
+## Daily commands
 
-## What to work on
-
-V1 handlers are implemented + compiled + (mostly) deployed. The active gaps are:
-
-1. **Issue #15: IDL extraction (E0433 on `AssociatedToken`)** — biggest unlock; activates the harness-mode bankrun tests + TS-client typed-tx + Codama. One-line fix likely in `programs/credmesh-escrow/src/lib.rs:~1006` (add `use anchor_spl::associated_token::AssociatedToken;`); needs a clean rebuild + IDL regen.
-2. **`credmesh-escrow` deploy** — keypair reserved at `DLy82HRrSnSVZfQTxze8CEZwequnGyBcJNvYZX1L9yuF`; needs ~3.5 SOL on the deployer wallet.
-3. **Squads CPI verification on `propose_params`** — currently a `Signer<'info>` constraint; Squads vault PDAs cannot be Signers. Needs an on-chain ix-introspection helper that verifies the ix is `vault_transaction_execute` from the Squads program. Tracked in `DEPLOYMENT.md § Phase 3`.
-4. **Promote bankrun harness scaffolds to live behavioral tests** — currently `expect(true).to.be.true` placeholders pending the IDL fix. Activate once #15 lands.
-5. **`ts/server` route handlers** — SIWS auth middleware works; `POST /agents/:address/advance`, the Helius webhook ingest, and the Codama-generated client are all stubs.
-6. **`ts/dashboard`** — empty. React 19 + Vite + Tailwind + Phantom Connect; SSE-relayed `accountSubscribe` for live timeline.
-7. **Insurance fund / first-loss tranche** (`InsuranceFund` PDA, 5% TVL) — gating LP recruitment.
-
-If you're picking up new work, run an `anchor build --no-idl` first to confirm your local toolchain matches the Docker recipe; otherwise the build will fail on the same drift Track A spent 4 hours debugging.
+```bash
+npm run check       # cargo check --workspace --locked
+npm test            # cargo test --workspace --lib (16 pure-math + 2 program-id tests)
+npm run typecheck   # tsc --noEmit across all four ts/ packages
+npm run build       # anchor build (produces .so + IDL)
+```
 
 ## Coding standards
 
-- **Anchor 0.30** idioms throughout. `init`, `init_if_needed`, `mut`, `address`, `seeds`, `bump`, `has_one`, `constraint`. Read MarginFi v2 or Drift's source for canonical patterns.
-- **All math is `checked_*`** or wrapped in u128. `cargo.toml` already sets `overflow-checks = true` in release; don't rely on it.
-- **Errors**: every fail path maps to a typed `CredmeshError`/`ReputationError`/`OracleError`. No `unwrap()` in handlers.
-- **No comments that narrate the obvious.** Comments are for invariants, security notes, and AUDIT/DECISIONS cross-references.
-- **Cross-program seed constants come from `credmesh-shared`**. Never re-declare seed bytes in two crates.
-- **Events are emitted as the LAST step of each handler** (so a partial failure doesn't emit a misleading event).
-- **Add or update a Bankrun test for every handler change.** Attacks → fixture in `tests/bankrun/attacks/` proving the fix.
-
-## PR checklist
-
-- [ ] `anchor build` passes
-- [ ] `cargo fmt --all` clean
-- [ ] `cargo clippy --workspace -- -D warnings` clean
-- [ ] Bankrun tests added/updated for changed handlers
-- [ ] AUDIT.md / DECISIONS.md updated if a finding/decision changed
-- [ ] DESIGN.md updated if the spec moved
+- **Anchor 0.30** idioms throughout. `init`, `init_if_needed`, `mut`,
+  `address`, `seeds`, `bump`, `has_one`, `constraint`. Read MarginFi v2
+  or Drift's source for canonical patterns.
+- **All math is `checked_*`** or wrapped in u128. Cargo.toml sets
+  `overflow-checks = true` in release; don't rely on it.
+- **Errors**: every fail path maps to a typed enum
+  (`CredmeshError`, `AttestorRegistryError`). No `unwrap()` in handlers.
+- **Cross-program reads** use the four-step verify (owner → address →
+  discriminator → typed deserialize) via
+  `credmesh_shared::cross_program::read_cross_program_account<T>`.
+- **PDA seeds come from `credmesh-shared::seeds`.** Never re-declare
+  seed bytes in two crates — they will silently drift.
+- **`emit!` is the LAST step of every handler.** A partial failure
+  mid-handler shouldn't emit a misleading event.
+- **Use `transfer_checked`, not bare `transfer`** (Token-2022
+  forward-compat). Bare `mint_to` / `burn` are still in two sites
+  pending anchor-spl 0.30.1 shipping the checked wrappers.
+- **Comments**: only for invariants, security notes, or non-obvious
+  workarounds. Don't narrate what well-named code already says.
 
 ## What NOT to do
 
-- Don't add the `paused` flag back to `Pool`. The "no pause on issuance" invariant is load-bearing — see DESIGN §3.5 / AUDIT P0-6.
-- Don't close `ConsumedPayment`. It must be permanent — closing reopens replay. See AUDIT P0-5.
-- Don't make `claim_and_settle` permissionless in v1. Cranker must equal `advance.agent` until a payer-pre-auth pattern lands. See AUDIT P0-3 / P0-4.
-- Don't introduce `Light Protocol compressed PDAs` or `Token-2022` features in v1. Both are explicitly v2+.
-- Don't add per-record SQL persistence on the off-chain server. State migrates to on-chain PDAs (DESIGN §6); SQLite is a derived-view cache only.
+See [`CLAUDE.md`](./CLAUDE.md) "What NOT to do" section for the
+load-bearing invariants. Highlights:
+
+- Don't add a `paused` field to `Pool`. "No pause on issuance" is
+  load-bearing.
+- Don't close `ConsumedPayment`. Permanent.
+- Don't reintroduce a Solana-side reputation program. EVM is canonical.
+- Don't reintroduce a `Receivable` PDA primitive. Credit limit
+  (EVM-attested) is the only credit primitive on Solana.
+- Don't trust client-supplied credit limits. Every advance underwrites
+  against a fresh ed25519 attestation from a whitelisted bridge signer.
+- Don't use `init_if_needed` for replay-protection PDAs (only `init`).
+
+## PR checklist
+
+- [ ] `npm run check` passes (cargo)
+- [ ] `npm test` passes (Rust unit tests)
+- [ ] `npm run typecheck` passes (TS)
+- [ ] `cargo fmt --all` clean
+- [ ] `cargo clippy --workspace -- -D warnings` clean (warnings = errors
+      for the deployable programs; the anchor-internal cfg-noise warnings
+      are tolerated)
+- [ ] If you touched `programs/credmesh-escrow/src/pricing.rs`, add or
+      update a `#[cfg(test)] mod tests` test mirroring the change
+- [ ] If you changed the on-chain ed25519 message layout in
+      `crates/credmesh-shared/src/lib.rs::ed25519_credit_message`,
+      bump `VERSION` and update the TS mirror in
+      `ts/shared/src/index.ts` AND `ts/bridge/src/attestation.ts` in
+      the same commit

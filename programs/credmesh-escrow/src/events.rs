@@ -32,7 +32,9 @@ pub struct AdvanceIssued {
     pub principal: u64,
     pub fee_owed: u64,
     pub expires_at: i64,
-    pub source_kind: u8,
+    /// The bridge signer whose ed25519 attestation underwrote this advance.
+    /// Off-chain bridge tails this event to correlate to EVM state.
+    pub attestor: Pubkey,
 }
 
 #[event]
@@ -64,6 +66,9 @@ pub struct ParamsProposed {
 #[event]
 pub struct ParamsExecuted {
     pub pool: Pubkey,
+    pub max_advance_pct_bps: u16,
+    pub max_advance_abs: u64,
+    pub agent_window_cap: u64,
 }
 
 #[event]

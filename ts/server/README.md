@@ -1,46 +1,45 @@
 # ts/server
 
-Hono backend for CredMesh Solana. Skeleton in place; handler bodies pending.
+Hono backend for CredMesh Solana. Two responsibilities post-pivot:
+
+1. Serve the public agent card at `GET /.well-known/agent.json` (cached
+   at module load).
+2. Issue SIWS (Sign-In With Solana, CAIP-122) nonces at
+   `POST /auth/nonce`.
+
+Everything credit-related (issuing advances, reading EVM state, signing
+attestations, replaying Solana events to EVM) lives in `ts/bridge/`.
+Everything liquidation-related lives in `ts/keeper/`. The server only
+holds the public-facing agent metadata + auth nonce surface.
 
 ## Run
 
 ```bash
 cd ts/server
 npm install
-npm run dev      # tsx watch on src/server.ts → http://localhost:3000
+npm run dev        # tsx watch on src/server.ts → http://localhost:3000
 npm run typecheck
 ```
 
-## What's here
+## Files
 
-- `src/server.ts` — Hono app, CORS allowlist (matches EVM repo), nonce + auth routes, write-mount auth middleware, webhook ingest.
-- `src/auth.ts` — SIWS auth middleware (Sign-In With Solana, CAIP-122). Verifies ed25519 detached signatures via `tweetnacl`.
-- `src/pricing.ts` — direct port of `packages/credit-worker/src/pricing.ts` from the EVM repo. Identical 4-component fee math; the same parameters live on-chain in `Pool.fee_curve` so the on-chain program enforces them.
+- `src/server.ts` — Hono app, CORS allowlist, agent card, SIWS nonce.
+- `src/auth.ts` — SIWS auth middleware utility (Sign-In With Solana,
+  CAIP-122). Verifies ed25519 detached signatures via `tweetnacl`. Kept
+  as a utility for v1.5 endpoints; not currently mounted on any route.
+- `src/pricing.ts` — off-chain mirror of the Rust fee math in
+  `programs/credmesh-escrow/src/pricing.rs`. **Stays in lockstep** with
+  the on-chain program: change both in the same commit.
 
-## What's missing (pending Anchor handler implementation)
-
-- `buildRequestAdvanceTx` — server endpoint that constructs an unsigned `VersionedTransaction` (with Kora/PayAI fee-payer pre-set, blockhash, ALT, ed25519 verify ix if `source_kind != Worker`) and returns it as base64. Agent signs and submits.
-- Codama-generated escrow/reputation/oracle TS clients. Generate with `anchor build && codama run` once handlers are implemented.
-- Helius SDK wiring for: `getPriorityFeeEstimate`, webhook lifecycle management, DAS asset reads (for MPL Agent Registry assets).
-- SQLite derived-view cache for the dashboard timeline.
-
-## Env vars
+## Env
 
 ```
 PORT=3000
-CREDMESH_DOMAIN=credmesh.xyz                # for SIWS message
-HELIUS_API_KEY=...                          # server-side only — never expose
-HELIUS_WEBHOOK_SECRET=...                   # X-Helius-Auth shared secret
-PAYAI_FACILITATOR_URL=https://facilitator.payai.network
+CREDMESH_DOMAIN=credmesh.xyz                  # SIWS message domain
 SOLANA_MAINNET_RPC_URL=https://...
 SOLANA_DEVNET_RPC_URL=https://...
 SOLANA_MAINNET_USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 SOLANA_DEVNET_USDC_MINT=4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
-SOLANA_MAINNET_ESCROW_PROGRAM=...           # set after first deploy
-SOLANA_MAINNET_REPUTATION_PROGRAM=...
-SOLANA_MAINNET_RECEIVABLE_ORACLE_PROGRAM=...
-ORACLE_WORKER_KEYPAIR=...                   # base58; separate from fee-payer
-REPUTATION_WRITER_KEYPAIR=...               # base58; separate from oracle worker
+SOLANA_MAINNET_ESCROW_PROGRAM=...             # set after first mainnet deploy
+SOLANA_MAINNET_ATTESTOR_REGISTRY_PROGRAM=...  # set after first mainnet deploy
 ```
-
-Three-key topology per DESIGN §10: fee-payer (PayAI hosted), oracle worker authority, reputation writer authority. Never collapse them.

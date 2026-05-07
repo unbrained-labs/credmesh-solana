@@ -9,7 +9,7 @@ rust-version.workspace = true
 # `credmesh-shared` is a library consumed by the three deployable programs;
 # it is never deployed on its own and therefore must not produce a `cdylib`.
 # Keeping `cdylib` made `anchor build` traverse it as a program and try to
-# extract an IDL it does not have. See DEPLOYMENT.md §"Toolchain pins".
+# extract an IDL it does not have.
 crate-type = ["lib"]
 name = "credmesh_shared"
 

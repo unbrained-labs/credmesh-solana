@@ -1,17 +1,22 @@
 /**
  * CredMesh Solana — backend server.
  *
- * Hono on Node (not Cloudflare Workers, despite EVM repo's "credit-worker" name).
- * Mirrors the EVM credmesh credit-worker structure; DESIGN §6 has the diff.
+ * Hono on Node. Three live endpoints:
+ *   GET /                        — service identity
+ *   GET /health                  — health probe
+ *   GET /.well-known/agent.json  — A2A agent card consumed by the
+ *                                  cross-lane outreach agent
+ *   POST /auth/nonce             — SIWS nonce mint
  *
- * Routes mounted under /agents, /credit, /marketplace, /spend, /treasury,
- * /mandates require SIWS auth on POST/PUT/DELETE; GET passes through.
+ * On-chain reads (agent reputation, request_advance tx-builder) live on
+ * EVM and the bridge. Solana programs are called directly by clients
+ * with @solana/kit; no server-side wrappers needed in this service.
  */
 
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { authMiddleware, issueNonce } from "./auth.js";
+import { issueNonce } from "./auth.js";
 
 const app = new Hono();
 
@@ -26,13 +31,76 @@ app.use(
 app.get("/", (c) =>
   c.json({
     name: "CredMesh Solana",
-    version: "0.0.1",
-    status: "pre-implementation",
+    version: "0.1.0",
     docs: "https://github.com/unbrained-labs/credmesh-solana",
   }),
 );
 
 app.get("/health", (c) => c.json({ ok: true }));
+
+/**
+ * A2A agent card. Built once at module load (env is fixed at startup).
+ * Consumed by the cross-lane outreach agent at
+ * `../trustvault-credit/packages/outreach-agent`.
+ *
+ * Required env (omitting OUTREACH_VAULT_ADDRESS or OUTREACH_CHAIN_ID
+ * drops the `outreach` block; outreach agent then treats us as not-ready):
+ *   OUTREACH_CHAIN_ID            "solana-devnet" or "solana-mainnet"
+ *   OUTREACH_VAULT_ADDRESS       Pool PDA
+ *   OUTREACH_EXPLORER_BASE       default https://solscan.io
+ *   OUTREACH_MCP_PACKAGE         default @credmesh/mcp-solana
+ *   OUTREACH_SOURCE_REPO         default the GitHub URL
+ *   PUBLIC_API_BASE              default https://credmesh.xyz
+ */
+const AGENT_CARD = buildAgentCard();
+app.get("/.well-known/agent.json", (c) => c.json(AGENT_CARD));
+
+function buildAgentCard(): Record<string, unknown> {
+  const apiBase = process.env.PUBLIC_API_BASE ?? "https://credmesh.xyz";
+  const card: Record<string, unknown> = {
+    name: "CredMesh Solana",
+    description:
+      "Unsecured credit for autonomous agents on Solana. EVM-attested reputation; agents borrow against their standing credit line and self-settle when paid.",
+    a2a: { endpoint: `${apiBase}/.well-known/agent.json`, version: "0.1" },
+    capabilities: ["lp-deposit", "credit-advance", "agent-self-settle"],
+  };
+  const outreach = buildOutreachBlock(apiBase);
+  if (outreach) card.outreach = outreach;
+  return card;
+}
+
+function buildOutreachBlock(apiBase: string): Record<string, unknown> | null {
+  const chainId = process.env.OUTREACH_CHAIN_ID;
+  const vaultAddress = process.env.OUTREACH_VAULT_ADDRESS;
+  if (!chainId || !vaultAddress) return null;
+
+  const explorerBase = process.env.OUTREACH_EXPLORER_BASE ?? "https://solscan.io";
+  return {
+    chain: chainId,
+    vaultAddress,
+    explorerBase,
+    explorerUrl: `${explorerBase}/account/${vaultAddress}`,
+    apiBase,
+    mcpPackage: process.env.OUTREACH_MCP_PACKAGE ?? "@credmesh/mcp-solana",
+    sourceRepo:
+      process.env.OUTREACH_SOURCE_REPO ??
+      "https://github.com/unbrained-labs/credmesh-solana",
+    pitch: {
+      headline:
+        "Stop earning passive yield on idle USDC. Underwrite autonomous agents.",
+      body: [
+        "CredMesh-Solana lends short-duration credit to autonomous agents",
+        "against their EVM-attested reputation. LPs deposit USDC into the",
+        "Pool PDA. Agents draw against their standing credit line — no",
+        "collateral, no escrow. They settle from their own funds when",
+        "paid. Default → liquidation → LP loss → reputation crash on EVM.",
+        "Protocol takes 15% of fees; 85% to LPs. Squads-governed",
+        "FeeCurve and per-agent rolling-window cap updates with timelock.",
+      ].join(" "),
+      targetMetrics: { minTvlUsd: 50_000, maxApr: 0.06 },
+    },
+  };
+}
 
 app.post("/auth/nonce", async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -41,33 +109,6 @@ app.post("/auth/nonce", async (c) => {
     return c.json({ error: "address required" }, 400);
   }
   return c.json({ nonce: issueNonce(address) });
-});
-
-const writeMounts = ["/agents/*", "/credit/*", "/marketplace/*", "/spend/*", "/treasury/*", "/mandates/*"];
-for (const m of writeMounts) {
-  app.use(m, authMiddleware);
-}
-
-app.get("/agents/:address", (c) => {
-  return c.json({
-    address: c.req.param("address"),
-    note: "TODO: read agent state from on-chain PDAs + derived-view cache",
-  });
-});
-
-app.post("/agents/:address/advance", (c) => {
-  return c.json({
-    status: "TODO",
-    message: "buildRequestAdvanceTx — returns base64 unsigned VersionedTransaction. See DESIGN §6.",
-  });
-});
-
-app.post("/webhooks/helius", async (c) => {
-  const expected = process.env.HELIUS_WEBHOOK_SECRET;
-  if (expected && c.req.header("X-Helius-Auth") !== expected) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
-  return c.json({ ok: true, ingested: 0 });
 });
 
 const port = Number(process.env.PORT) || 3000;

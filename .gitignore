@@ -11,8 +11,7 @@ target/*
 !target/deploy/
 target/deploy/*
 !target/deploy/credmesh_escrow-keypair.json
-!target/deploy/credmesh_reputation-keypair.json
-!target/deploy/credmesh_receivable_oracle-keypair.json
+!target/deploy/credmesh_attestor_registry-keypair.json
 dist/
 .anchor/
 test-ledger/
@@ -30,6 +29,13 @@ ORCHESTRATOR_LOG.md
 
 # Local-only key reference (NEVER commit; document of where keys live on this dev machine)
 KEYS.md
+
+# Internal docs — NEVER commit. Architecture / audit / design /
+# deployment / handoff / decisions / postmortems / research notes /
+# session orchestrator artifacts all live under internal/ and are
+# only shared privately. The public-facing equivalents at the repo
+# root are README.md + CONTRIBUTING.md + CLAUDE.md + docs/.
+internal/
 
 # Branding work — local WIP, not merge-ready. Excluded until it's finalized.
 branding/

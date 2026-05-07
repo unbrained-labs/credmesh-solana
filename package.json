@@ -4,28 +4,17 @@
   "private": true,
   "description": "CredMesh Solana — programmable credit protocol for autonomous agents",
   "scripts": {
-    "test": "ts-mocha -p ./tsconfig.json -t 1000000 'tests/bankrun/**/*.test.ts'",
-    "test:devnet": "anchor test --provider.cluster devnet",
     "build": "anchor build",
-    "typecheck": "tsc --noEmit",
+    "check": "cargo check --workspace --locked",
+    "test": "cargo test --workspace --lib",
+    "typecheck": "npm --prefix ts/shared run typecheck && npm --prefix ts/server run typecheck && npm --prefix ts/bridge run typecheck && npm --prefix ts/keeper run typecheck",
     "deploy": "ts-node scripts/deploy.ts",
-    "init:oracle": "ts-node scripts/init_oracle.ts",
     "init:pool": "ts-node scripts/init_pool.ts",
-    "lint": "echo 'no linter configured yet'"
+    "init:registry": "ts-node scripts/init_registry.ts",
+    "registry:add-signer": "ts-node scripts/add_allowed_signer.ts"
   },
   "devDependencies": {
-    "@coral-xyz/anchor": "^0.30.1",
-    "@solana/spl-token": "^0.4.6",
-    "@solana/web3.js": "^1.95.0",
-    "@types/bn.js": "^5.1.5",
-    "@types/chai": "^4.3.16",
-    "@types/mocha": "^10.0.6",
     "@types/node": "^22.7.0",
-    "anchor-bankrun": "^0.5.0",
-    "bn.js": "^5.2.1",
-    "chai": "^4.4.1",
-    "solana-bankrun": "^0.4.0",
-    "ts-mocha": "^10.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.0"
   }

@@ -1,18 +1,21 @@
 # TypeScript packages
 
-Mirrors the EVM repo structure. Pre-implementation.
-
 ```
 ts/
-├── server/        Hono backend; SIWS auth, tx-builder, Helius webhooks.
-│                  Replaces packages/credit-worker from the EVM repo.
-├── dashboard/     React 19 + Vite + Tailwind v4 + Phantom Connect SDK + ConnectorKit.
-│                  Forks packages/dashboard, swapping wagmi/viem → Solana.
-└── mcp-server/    HTTP-API wrapper for the public CredMesh API. No chain code.
-                   Direct port of packages/mcp-server.
+├── shared/      @credmesh/solana-shared — TS mirror of Rust constants
+│                (PDA seeds, ed25519 message offsets, attestor kinds) +
+│                Anchor discriminator helpers. Imported by every other
+│                ts/ package; the single TS-side mirror of
+│                crates/credmesh-shared.
+├── server/      Hono backend serving the public agent card
+│                (/.well-known/agent.json) and SIWS nonce issuance.
+├── bridge/      EVM ⇒ Solana attestation bridge. HTTP /quote signs the
+│                canonical 128-byte ed25519_credit_message that
+│                credmesh-escrow's request_advance consumes; Solana → EVM
+│                event tail keeps EVM AgentRecord in sync. See
+│                ts/bridge/README.md for env + trust model.
+└── keeper/      Permissionless liquidation crank.
 ```
 
-See `DESIGN.md` §6 for the auth, tx-builder, and webhook integration spec.
-
-The escrow Codama TS client is generated from the Anchor IDL and consumed by
-`ts/server` and `ts/dashboard`. Run `anchor build && codama run` (script TBD).
+Each package is a self-contained `npm` workspace; install per-package
+when you run it (`cd ts/<name> && npm install`).
