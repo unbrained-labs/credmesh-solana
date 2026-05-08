@@ -5,7 +5,7 @@
 // compare against the local `.so`.
 //
 // This script does NOT need an IDL — it deploys raw bytecode. IDL upload is
-// a separate concern (`anchor idl init`) deferred until #15 lands.
+// a separate concern (`anchor idl init`) and not run here.
 //
 // Example:
 //   npx ts-node scripts/deploy.ts \

@@ -5,10 +5,9 @@
  * `expires_at + LIQUIDATION_GRACE_SECONDS` has passed and `state ==
  * Issued`, and submits permissionless `liquidate()` ixs.
  *
- * Implementation is intentionally hand-rolled (no IDL) until issue #15
- * unblocks the Codama-generated client. The keeper does not need typed
- * accounts to do its job — Advance discriminator + a few field offsets
- * is enough.
+ * Implementation is intentionally hand-rolled (no IDL). The keeper does
+ * not need typed accounts to do its job — Advance discriminator + a few
+ * field offsets is enough.
  */
 
 import { readFileSync } from "node:fs";
@@ -87,9 +86,9 @@ interface DecodedAdvance {
  * MIRROR programs/credmesh-escrow/src/state.rs::Advance — field order
  * is load-bearing. Drift here = silent miscount (worst case: keeper
  * liquidates the wrong advance, or skips one that should liquidate).
- * Replace with a Codama-generated client once issue #15 unblocks IDL
- * extraction; until then, keep this comment + the field offsets in
- * sync with the Rust struct by hand.
+ * Keep this comment + the field offsets in sync with the Rust struct
+ * by hand. (A Codama-generated client could replace this if/when an
+ * Anchor IDL becomes available.)
  *
  *   discriminator (8) + bump (1) + agent (32) + receivable_id (32)
  *   + principal (8) + fee_owed (8) + late_penalty_per_day (8)

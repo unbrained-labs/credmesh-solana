@@ -2,9 +2,8 @@
 // credmesh-attestor-registry to allocate the singleton AttestorConfig PDA
 // with the governance Squads-vault pubkey.
 //
-// This is a hand-rolled instruction encoder (no IDL dependency) — Anchor
-// 0.30 IDL extraction is tracked separately as issue #15. Borsh field
-// order MUST match `init_registry(governance: Pubkey)` in
+// This is a hand-rolled instruction encoder (no IDL dependency). Borsh
+// field order MUST match `init_registry(governance: Pubkey)` in
 // programs/credmesh-attestor-registry/src/lib.rs.
 //
 // Example:

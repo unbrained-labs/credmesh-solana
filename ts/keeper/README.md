@@ -34,10 +34,10 @@ realising the LP loss via share-price drop.
 
 ## Status
 
-Issue #15 (Anchor 0.30 IDL extraction) gates the typed Codama-generated
-client. Until that lands, the keeper uses hand-rolled borsh decoding +
-manually-constructed instruction data. This is intentionally minimal
-to keep the surface auditable.
+The keeper uses hand-rolled borsh decoding + manually-constructed
+instruction data. This is intentionally minimal to keep the surface
+auditable; if an Anchor IDL ever becomes available, the keeper can
+swap in a Codama-generated typed client without protocol changes.
 
 The keeper does **not** bundle `claim_and_settle` cranking — that's
 the cranker's job, and Mode B / Mode 3 dispatch is handled in

@@ -2,11 +2,9 @@
 // the singleton Pool PDA + share-mint + USDC vault for a given asset mint
 // (USDC by default).
 //
-// This script uses a HAND-ROLLED instruction encoder because the escrow IDL
-// is currently blocked behind issue #15 (Anchor 0.30 IDL extraction trips
-// on `AssociatedToken` resolution). Once #15 lands and `target/idl/
-// credmesh_escrow.json` exists, this script can be replaced with the
-// Anchor-typed Codama-generated equivalent.
+// This script uses a HAND-ROLLED instruction encoder. If/when an Anchor IDL
+// becomes available at `target/idl/credmesh_escrow.json`, this script can be
+// replaced with the Anchor-typed Codama-generated equivalent.
 //
 // Layout reference: programs/credmesh-escrow/src/instructions/init_pool.rs
 // InitPoolParams + InitPool accounts struct. Borsh field order MUST match
