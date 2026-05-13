@@ -16,6 +16,11 @@ pub mod seeds {
     pub const ALLOWED_SIGNER_SEED: &[u8] = b"allowed_signer";
     pub const ATTESTOR_CONFIG_SEED: &[u8] = b"attestor_config";
     pub const ISSUANCE_LEDGER_SEED: &[u8] = b"issuance_ledger";
+    /// Audit-trail PDA initialized at `liquidate`. The `Advance` PDA is
+    /// closed to the cranker (rent → cranker as the third-party
+    /// incentive); the tombstone preserves the bare facts of the
+    /// default for off-chain reconstruction.
+    pub const LIQUIDATION_TOMBSTONE_SEED: &[u8] = b"liq_tombstone";
 }
 
 pub mod program_ids {

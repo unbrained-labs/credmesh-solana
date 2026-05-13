@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 pub use credmesh_shared::seeds::{
-    ADVANCE_SEED, CONSUMED_SEED, ISSUANCE_LEDGER_SEED, POOL_SEED,
+    ADVANCE_SEED, CONSUMED_SEED, ISSUANCE_LEDGER_SEED, LIQUIDATION_TOMBSTONE_SEED, POOL_SEED,
 };
 
 pub const PROTOCOL_FEE_BPS: u16 = 1500;
@@ -165,6 +165,26 @@ pub struct ConsumedPayment {
     pub nonce: [u8; 16],
     pub agent: Pubkey,
     pub created_at: i64,
+}
+
+/// Audit-trail PDA written at `liquidate`. The `Advance` PDA is closed
+/// to the cranker (rent refund = third-party liquidation incentive);
+/// the tombstone preserves the minimum fact-set needed to reconstruct
+/// the default off-chain — agent, principal lost, expiry, liquidation
+/// timestamp. **Permanent** like `ConsumedPayment`: never closed.
+///
+/// Seeds: `[LIQUIDATION_TOMBSTONE_SEED, pool, agent, receivable_id]`
+/// — mirrors the `Advance` PDA's seeds so the off-chain bridge tail can
+/// derive the tombstone deterministically from the same `AdvanceIssued`
+/// event it already indexed.
+#[account]
+#[derive(InitSpace)]
+pub struct LiquidationTombstone {
+    pub bump: u8,
+    pub agent: Pubkey,
+    pub principal: u64,
+    pub expires_at: i64,
+    pub liquidated_at: i64,
 }
 
 // ProtocolTreasury is not a separate PDA in v1 — `Pool.treasury_ata` stores the
