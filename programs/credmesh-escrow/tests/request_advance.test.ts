@@ -32,7 +32,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
-import { bootstrap, CHAIN_ID_DEVNET, ESCROW_PROGRAM_ID, TestCtx } from "./helpers/setup";
+import { bootstrap, CHAIN_ID_DEVNET, ESCROW_PROGRAM_ID, TestCtx, eventCpiAccounts } from "./helpers/setup";
 import { signCreditAttestation } from "./helpers/ed25519";
 
 const ADVANCE_SEED = Buffer.from("advance");
@@ -188,6 +188,7 @@ describe("request_advance — adversarial", () => {
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
         { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ...eventCpiAccounts(ESCROW_PROGRAM_ID).programKeys,
       ],
       data: encodeRequestAdvance(receivableId, 1_000_000n, nonce),
     });

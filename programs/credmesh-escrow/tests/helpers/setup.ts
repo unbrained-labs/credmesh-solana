@@ -349,6 +349,33 @@ async function sendTx(
   await context.banksClient.processTransaction(tx);
 }
 
+/**
+ * Compute the two trailing accounts that Anchor 0.30's `emit_cpi!`
+ * needs on every ix that calls `emit!`. The workspace has
+ * `event-cpi` enabled (Cargo.toml line 19) which expands `emit!` into
+ * a self-CPI; without these accounts the CPI access-violates reading
+ * past the ix's account list.
+ *   - event_authority: PDA at seeds=[b"__event_authority"], program=programId
+ *   - program: the program itself
+ * Order matters; both are read-only, non-signer.
+ */
+export function eventCpiAccounts(programId: PublicKey): {
+  eventAuthority: PublicKey;
+  programKeys: { pubkey: PublicKey; isSigner: boolean; isWritable: boolean }[];
+} {
+  const [eventAuthority] = PublicKey.findProgramAddressSync(
+    [Buffer.from("__event_authority")],
+    programId,
+  );
+  return {
+    eventAuthority,
+    programKeys: [
+      { pubkey: eventAuthority, isSigner: false, isWritable: false },
+      { pubkey: programId, isSigner: false, isWritable: false },
+    ],
+  };
+}
+
 async function initPool(opts: {
   banksClient: BanksClient;
   context: ProgramTestContext;
@@ -385,6 +412,7 @@ async function initPool(opts: {
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+      ...eventCpiAccounts(ESCROW_PROGRAM_ID).programKeys,
     ],
     data,
   });
@@ -411,6 +439,7 @@ async function initRegistry(opts: {
       { pubkey: opts.deployer.publicKey, isSigner: true, isWritable: true },
       { pubkey: opts.attestorConfigPda, isSigner: false, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ...eventCpiAccounts(ATTESTOR_REGISTRY_PROGRAM_ID).programKeys,
     ],
     data,
   });

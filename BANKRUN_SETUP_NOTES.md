@@ -1,10 +1,62 @@
 # Bankrun harness — setup notes
 
-This worktree scaffolds the bankrun test harness for the post-pivot
+This file scaffolds the bankrun test harness for the post-pivot
 (`evm-parity` / PR #58 / `6317555`) repo. The harness boots and the test
-itself is structurally complete; running it end-to-end requires the
-Rust + Solana toolchain to produce the program `.so` files, which is
-not installed on this machine.
+is structurally wired end-to-end.
+
+## Verified on 2026-05-13 (DaDo session)
+
+- `anchor build` via `docker run backpackapp/build:v0.30.1` produces
+  both `.so` files (252K + 508K). The build requires pinning
+  `wasip2 -> 1.0.0` and `wit-bindgen -> 0.45.1` in `Cargo.lock` to
+  sidestep the `edition2024` regression in the latest registry
+  versions (cargo 1.79 can't parse them). The pin is committed in
+  this PR.
+- `cargo test --workspace --lib --locked` passes locally: 16 pricing
+  tests + 3 program-id tests, 0 failures, 0 warnings of concern.
+- `npm install && npm run test:bankrun` runs the harness but the
+  T-CRY-08 test currently fails in the `before all` bootstrap at the
+  `init_pool` ix with `Access violation in unknown section`
+  (~CU 36744). The `init_registry` ix runs through clean. Likely
+  cause: `event-cpi` is enabled on the workspace (`Cargo.toml` line
+  19), which causes the `emit!` macro to expand into a self-CPI that
+  needs two trailing accounts (`event_authority` PDA + program). I
+  added a `eventCpiAccounts()` helper and appended those to
+  `init_pool`, `init_registry`, and `request_advance` — `init_registry`
+  now succeeds (it failed silently before), but `init_pool` still
+  trips. Possible remaining causes:
+    1. The event-cpi accounts need to be at a position other than the
+       end of the accounts list for `init_pool` specifically.
+    2. The `Pool::INIT_SPACE` allocation is too tight (look at
+       `pending_params: Option<PendingParams>` — InitSpace for Option
+       includes the discriminant byte; verify Anchor's macro produces
+       the right total).
+    3. A `mint::authority = pool` or `mint::freeze_authority = pool`
+       constraint on `share_mint` may trigger a self-referential read
+       before the pool's data is fully written.
+  Use `cargo expand --manifest-path programs/credmesh-escrow/Cargo.toml`
+  inside the docker container to inspect the macro output and confirm
+  which struct fields get auto-injected by `event-cpi`.
+
+## Toolchain summary (the path that worked)
+
+```
+# Local cargo test (16 + 3 unit tests):
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.79.0 --profile minimal
+source $HOME/.cargo/env
+cargo test --workspace --lib --locked
+
+# Anchor build via docker (avoids the edition2024 cargo regression):
+docker pull backpackapp/build:v0.30.1
+# One-time lockfile pin to sidestep edition2024 in transitive deps:
+docker run --rm -v "$(pwd):/workdir" -w /workdir backpackapp/build:v0.30.1 \
+  bash -c "cargo update -p wasip2 --precise 1.0.0"
+docker run --rm -v "$(pwd):/workdir" -w /workdir backpackapp/build:v0.30.1 anchor build
+
+# Run the bankrun harness:
+npm install
+npm run test:bankrun
+```
 
 ## Files added
 
