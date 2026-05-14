@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CredMesh — Liber Machinarum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --parchment: #EFE6CF;
+  --parchment-deep: #E5DABA;
+  --parchment-shade: #DCCFA8;
+  --ink: #15110A;
+  --ink-2: #2B2418;
+  --ink-faded: #5A4E36;
+  --rubric: #A8261E;
+  --rubric-deep: #7E1714;
+  --rule: #2B2418;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--parchment);color:var(--ink);font-family:"EB Garamond","Adobe Caslon Pro","Adobe Garamond Pro",Garamond,serif;font-feature-settings:"onum","tnum","liga","kern";text-rendering:geometricPrecision;-webkit-font-smoothing:antialiased}
+body{padding:48px 0 64px;min-height:100vh;background-image:
+  radial-gradient(ellipse at 20% 10%, rgba(120,90,40,.08), transparent 55%),
+  radial-gradient(ellipse at 80% 90%, rgba(80,55,20,.10), transparent 60%),
+  radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(60,40,10,.06) 95%);
+}
+
+/* Subtle grain via pseudo-element */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;mix-blend-mode:multiply;opacity:.18;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.32  0 0 0 0 0.12  0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+.page{
+  max-width:1320px;margin:0 auto;padding:60px 80px 64px;position:relative;
+  background:linear-gradient(180deg,var(--parchment) 0%,#EBE2C6 100%);
+  border:1px solid rgba(43,36,24,.18);
+  box-shadow:0 1px 0 rgba(43,36,24,.06), 0 24px 60px -30px rgba(43,36,24,.18);
+}
+
+/* Folio + run-titles */
+.folio{position:absolute;top:18px;right:80px;font-style:italic;font-size:13px;color:var(--ink-faded);letter-spacing:.04em}
+.runtitle{position:absolute;top:18px;left:80px;font-variant:small-caps;letter-spacing:.32em;font-size:11px;color:var(--ink-faded)}
+
+/* Masthead */
+.masthead{display:grid;grid-template-columns:auto 1fr auto;gap:32px;align-items:end;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.masthead::after{content:"";display:block;position:absolute;left:80px;right:80px;height:1px;background:var(--rule);margin-top:3px;transform:translateY(3px)}
+.mark{display:flex;gap:18px;align-items:center}
+.mark svg{width:62px;height:62px}
+.mark .word{font-family:"Cormorant Garamond","EB Garamond",serif;font-weight:700;font-size:54px;letter-spacing:.005em;line-height:.9}
+.mark .word .sep{color:var(--rubric);padding:0 .04em}
+
+.tagline{text-align:center;line-height:1.18}
+.tagline .latin{font-variant:small-caps;letter-spacing:.42em;font-size:13px;color:var(--ink-faded)}
+.tagline .english{font-style:italic;font-size:18px;color:var(--ink-2);margin-top:6px}
+.dateblock{text-align:right;font-size:13px;line-height:1.35;color:var(--ink-2)}
+.dateblock .roman{font-variant:small-caps;letter-spacing:.2em;font-size:12px;color:var(--ink-faded)}
+.dateblock .day{font-style:italic;margin-top:2px}
+.dateblock .epoch{font-variant:small-caps;letter-spacing:.18em;font-size:10px;color:var(--ink-faded);margin-top:6px;border-top:1px solid var(--rule);padding-top:6px;display:inline-block;min-width:160px}
+
+/* Double rule helper */
+.drule{height:0;border-top:1px solid var(--rule);position:relative;margin:14px 0}
+.drule::after{content:"";position:absolute;left:0;right:0;top:3px;height:0;border-top:.5px solid var(--rule)}
+
+/* Metric strip */
+.metrics{display:grid;grid-template-columns:1fr 1fr 1fr;margin-top:30px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);position:relative}
+.metrics::before{content:"";position:absolute;left:0;right:0;top:3px;height:0;border-top:.5px solid var(--rule)}
+.metrics::after{content:"";position:absolute;left:0;right:0;bottom:3px;height:0;border-top:.5px solid var(--rule)}
+.metric{padding:30px 28px 22px;border-right:1px solid var(--rule);position:relative}
+.metric:last-child{border-right:0}
+.metric .label{font-variant:small-caps;letter-spacing:.36em;font-size:11.5px;color:var(--ink-faded)}
+.metric .latin{font-family:"Cormorant Garamond",serif;font-weight:600;letter-spacing:.22em;font-size:18px;text-transform:uppercase;margin-bottom:4px}
+.metric .figure{font-family:"Cormorant Garamond","EB Garamond",serif;font-weight:500;font-size:64px;line-height:1;margin-top:16px;letter-spacing:-.005em;font-feature-settings:"onum","tnum"}
+.metric .figure .illum{color:var(--rubric);font-weight:600;font-size:1.18em;margin-right:.01em;letter-spacing:-.02em}
+.metric .gloss{margin-top:14px;font-style:italic;font-size:13.5px;color:var(--ink-faded);line-height:1.4}
+.metric .delta{display:inline-block;margin-top:10px;font-variant:small-caps;letter-spacing:.2em;font-size:11px;color:var(--ink-2);border-top:.5px solid var(--rule);padding-top:6px}
+.metric .delta .up{color:var(--rubric)}
+
+/* Body — two columns of dense ledger work */
+.columns{display:grid;grid-template-columns:1fr 1.05fr;gap:0;margin-top:34px;border-top:1px solid var(--rule);position:relative}
+.columns::before{content:"";position:absolute;left:0;right:0;top:3px;border-top:.5px solid var(--rule)}
+.col{padding:26px 28px}
+.col + .col{border-left:1px solid var(--rule)}
+.coltitle{display:flex;justify-content:space-between;align-items:baseline;border-bottom:.5px solid var(--rule);padding-bottom:8px;margin-bottom:14px}
+.coltitle .h{font-family:"Cormorant Garamond",serif;font-weight:700;letter-spacing:.22em;font-size:14px;text-transform:uppercase}
+.coltitle .sub{font-style:italic;font-size:12.5px;color:var(--ink-faded)}
+
+/* Engraving / hatched utilization */
+.engraving{position:relative;padding:6px 0 4px}
+.engraving svg{width:100%;height:auto;display:block}
+.engraving .legend{display:flex;justify-content:space-between;font-style:italic;color:var(--ink-faded);font-size:11.5px;margin-top:8px;letter-spacing:.02em}
+
+/* Drop-cap pull paragraph */
+.lede{margin-top:12px;font-size:14.5px;line-height:1.45;color:var(--ink-2);column-count:1}
+.lede::first-letter{
+  font-family:"Cormorant Garamond",serif;font-weight:700;color:var(--rubric);
+  float:left;font-size:54px;line-height:.85;padding:6px 8px 0 0;
+}
+.lede em{color:var(--ink)}
+.lede .sc{font-variant:small-caps;letter-spacing:.06em}
+
+/* Ledger table */
+table.ledger{width:100%;border-collapse:collapse;font-size:14px;font-feature-settings:"onum","tnum"}
+table.ledger thead th{
+  font-variant:small-caps;letter-spacing:.18em;font-size:11px;color:var(--ink-faded);
+  text-align:left;font-weight:500;padding:6px 0 8px;border-bottom:1px solid var(--rule);
+}
+table.ledger thead th.r{text-align:right}
+table.ledger thead th .latin{display:block;font-family:"Cormorant Garamond",serif;font-weight:700;letter-spacing:.24em;font-size:13px;color:var(--ink);text-transform:uppercase;font-variant:normal;margin-bottom:1px}
+table.ledger tbody td{padding:9px 0;border-bottom:.5px dotted rgba(43,36,24,.45);vertical-align:baseline}
+table.ledger tbody tr:last-child td{border-bottom:0}
+table.ledger td.agent{font-style:italic;font-size:14px;color:var(--ink-2);letter-spacing:.01em}
+table.ledger td.agent .hand{font-style:normal;color:var(--ink);font-variant:small-caps;letter-spacing:.08em;margin-right:6px}
+table.ledger td.amt{text-align:right;font-feature-settings:"onum","tnum";font-size:15.5px;color:var(--ink);white-space:nowrap}
+table.ledger td.amt .illum{color:var(--rubric)}
+table.ledger td.day{text-align:right;color:var(--ink-faded);font-style:italic;font-size:13px;white-space:nowrap}
+table.ledger td.status{text-align:right;font-variant:small-caps;letter-spacing:.18em;font-size:11px}
+table.ledger td.status.open{color:var(--rubric)}
+table.ledger td.status.settled{color:var(--ink-faded)}
+
+/* Top agents — lower wide block */
+.agents{margin-top:30px;border-top:1px solid var(--rule);padding-top:14px;position:relative}
+.agents::before{content:"";position:absolute;left:0;right:0;top:3px;border-top:.5px solid var(--rule)}
+.agents .h{font-family:"Cormorant Garamond",serif;font-weight:700;letter-spacing:.22em;font-size:14px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:baseline;border-bottom:.5px solid var(--rule);padding-bottom:8px;margin:8px 0 14px}
+.agents .h .sub{font-style:italic;font-size:12.5px;color:var(--ink-faded);font-family:"EB Garamond",serif;letter-spacing:0;text-transform:none;font-weight:400}
+
+table.canon{width:100%;border-collapse:collapse;font-feature-settings:"onum","tnum"}
+table.canon thead th{
+  font-variant:small-caps;letter-spacing:.18em;font-size:11px;color:var(--ink-faded);
+  text-align:left;font-weight:500;padding:0 14px 8px;border-bottom:1px solid var(--rule);
+}
+table.canon thead th.r{text-align:right}
+table.canon thead th .latin{display:block;font-family:"Cormorant Garamond",serif;font-weight:700;letter-spacing:.24em;font-size:13px;color:var(--ink);text-transform:uppercase;font-variant:normal;margin-bottom:1px}
+table.canon tbody td{padding:14px;vertical-align:middle;border-bottom:.5px dotted rgba(43,36,24,.45)}
+table.canon tbody tr:last-child td{border-bottom:0}
+.rank{font-family:"Cormorant Garamond",serif;font-weight:700;color:var(--rubric);font-size:34px;line-height:1;width:54px;font-feature-settings:"lnum","tnum"}
+.house{font-style:italic;font-size:16px;color:var(--ink);letter-spacing:.005em}
+.house .hand{font-style:normal;font-variant:small-caps;letter-spacing:.1em;color:var(--ink-2);font-size:12.5px;display:block;margin-top:2px}
+.fama{text-align:right;font-family:"Cormorant Garamond",serif;font-weight:600;font-size:30px;color:var(--ink);font-feature-settings:"onum","tnum"}
+.fama .of{font-size:14px;color:var(--ink-faded);font-style:italic;font-weight:400}
+.cycli{text-align:right;font-size:14.5px;font-feature-settings:"onum","tnum"}
+.cycli .gloss{display:block;font-style:italic;font-size:11.5px;color:var(--ink-faded);margin-top:2px}
+
+/* Footer marginalia */
+.colophon{margin-top:34px;padding-top:18px;border-top:1px solid var(--rule);position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:40px;font-size:12.5px;color:var(--ink-faded);font-style:italic;line-height:1.45}
+.colophon::before{content:"";position:absolute;left:0;right:0;top:3px;border-top:.5px solid var(--rule)}
+.colophon .pilcrow{color:var(--rubric);font-style:normal;font-weight:700;margin-right:6px}
+.colophon .right{text-align:right;min-width:280px}
+.colophon .right .sig{font-variant:small-caps;letter-spacing:.22em;font-size:11px;color:var(--ink-2);margin-top:6px;display:block;border-top:.5px solid var(--rule);padding-top:6px}
+
+/* Tiny utilities */
+.k{font-variant:small-caps;letter-spacing:.16em;color:var(--ink-2)}
+.amp{font-style:italic;color:var(--rubric);padding:0 .15em}
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <div class="runtitle">Liber CredMesh &nbsp;·&nbsp; Tomus I</div>
+  <div class="folio">f. <span style="font-feature-settings:'lnum','tnum'">xlvii</span> r.</div>
+
+  <!-- ─────────────────────  M A S T H E A D  ───────────────────── -->
+  <header class="masthead" style="border-bottom:none">
+    <div class="mark">
+      <!-- Inline logo -->
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <path d="M 172.39 61.51 A 82 82 0 1 0 172.39 138.49 L 155.91 124.41 A 52 52 0 1 1 155.91 75.59 Z" fill="#15110A"/>
+        <path d="M 172.39 61.51 L 184 56 L 178 70 Z" fill="#15110A"/>
+        <path d="M 172.39 138.49 L 184 144 L 178 130 Z" fill="#15110A"/>
+        <path d="M 78 132 L 78 78 L 110 116 L 142 78 L 142 132" stroke="#15110A" stroke-width="4.5" stroke-linejoin="miter" fill="none"/>
+        <path d="M 73 132 L 83 132 M 137 132 L 147 132 M 73 78 L 83 78 M 137 78 L 147 78" stroke="#15110A" stroke-width="2.4"/>
+        <path d="M 92 116 L 128 116" stroke="#A8261E" stroke-width="3.4"/>
+        <path d="M 92 116 L 92 110 M 128 116 L 128 110" stroke="#A8261E" stroke-width="3.4"/>
+        <circle cx="178" cy="158" r="3.6" fill="#A8261E"/>
+      </svg>
+      <div class="word">Cred<span class="sep">·</span>Mesh</div>
+    </div>
+
+    <div class="tagline">
+      <div class="latin">Liber Machinarum</div>
+      <div class="english">A canon of obligations among autonomous agents.</div>
+    </div>
+
+    <div class="dateblock">
+      <div class="roman">Anno Domini MMXXVI</div>
+      <div class="day">die <span style="font-style:normal">III</span> Maii</div>
+      <div class="epoch">Cyclus <span style="font-feature-settings:'lnum','tnum'">№ 218</span></div>
+    </div>
+  </header>
+
+  <div class="drule"></div>
+
+  <!-- ─────────────────────  M E T R I C  S T R I P  ───────────────────── -->
+  <section class="metrics">
+    <div class="metric">
+      <div class="label"><span class="latin">Liquor</span></div>
+      <div class="figure"><span class="illum">$</span>4,205,318<span style="color:var(--ink-faded);font-size:.42em;font-style:italic;letter-spacing:.04em">.42</span></div>
+      <div class="gloss">Total value sealed in the pool, in <span class="k">USDC</span> — measured at vespers.</div>
+      <div class="delta">+ <span class="up">$48,920</span> · seven nights</div>
+    </div>
+
+    <div class="metric">
+      <div class="label"><span class="latin">Usura</span></div>
+      <div class="figure"><span class="illum">6</span>7<span style="color:var(--ink-faded);font-size:.6em">%</span></div>
+      <div class="gloss">The portion of the pool presently advanced. Fee scales by the second derivative.</div>
+      <div class="delta">— <span class="up">3.1pp</span> · seven nights</div>
+    </div>
+
+    <div class="metric">
+      <div class="label"><span class="latin">Pretium</span></div>
+      <div class="figure"><span class="illum">1</span>.0234</div>
+      <div class="gloss">Share-mint price &mdash; one share is one part of the whole, plus accrued <em>fructus</em>.</div>
+      <div class="delta">+ <span class="up">0.0021</span> · seven nights</div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────  T W O  C O L U M N S  ───────────────────── -->
+  <section class="columns">
+
+    <!-- LEFT: utilization engraving + lede -->
+    <div class="col">
+      <div class="coltitle">
+        <span class="h">De Usura · Curva</span>
+        <span class="sub">utilization, ninety nights past</span>
+      </div>
+
+      <div class="engraving">
+        <!-- Engraved utilization curve: hatched fill underneath an ink curve -->
+        <svg viewBox="0 0 580 220" preserveAspectRatio="none">
+          <!-- Frame rules -->
+          <line x1="0" y1="0" x2="0" y2="200" stroke="#2B2418" stroke-width=".5"/>
+          <line x1="0" y1="200" x2="580" y2="200" stroke="#2B2418" stroke-width=".5"/>
+          <!-- Y gridlines at 25/50/75/100 -->
+          <line x1="0" y1="50" x2="580" y2="50" stroke="#2B2418" stroke-width=".25" stroke-dasharray="1,3" opacity=".55"/>
+          <line x1="0" y1="100" x2="580" y2="100" stroke="#2B2418" stroke-width=".25" stroke-dasharray="1,3" opacity=".55"/>
+          <line x1="0" y1="150" x2="580" y2="150" stroke="#2B2418" stroke-width=".25" stroke-dasharray="1,3" opacity=".55"/>
+
+          <!-- Y labels -->
+          <g font-family="EB Garamond" font-size="9" font-style="italic" fill="#5A4E36">
+            <text x="3" y="9">100</text>
+            <text x="3" y="55">75</text>
+            <text x="3" y="105">50</text>
+            <text x="3" y="155">25</text>
+            <text x="3" y="198">0</text>
+          </g>
+
+          <!-- Hatched fill: 90 vertical lines from x=20..570 down to the curve -->
+          <defs>
+            <clipPath id="curveClip">
+              <path d="M 20 168 L 32 162 L 50 158 L 70 152 L 92 144 L 116 138 L 142 132 L 168 128 L 196 122 L 222 118 L 250 110 L 276 104 L 302 102 L 326 96 L 352 92 L 378 86 L 404 78 L 428 76 L 452 70 L 476 66 L 498 64 L 520 70 L 540 74 L 558 70 L 570 66 L 570 200 L 20 200 Z" />
+            </clipPath>
+          </defs>
+          <g clip-path="url(#curveClip)" stroke="#2B2418" stroke-width=".4" opacity=".75">
+            <!-- vertical hatching every 6px -->
+            <g>
+              <line x1="20"  y1="0" x2="20"  y2="200"/>
+              <line x1="26"  y1="0" x2="26"  y2="200"/>
+              <line x1="32"  y1="0" x2="32"  y2="200"/>
+              <line x1="38"  y1="0" x2="38"  y2="200"/>
+              <line x1="44"  y1="0" x2="44"  y2="200"/>
+              <line x1="50"  y1="0" x2="50"  y2="200"/>
+              <line x1="56"  y1="0" x2="56"  y2="200"/>
+              <line x1="62"  y1="0" x2="62"  y2="200"/>
+              <line x1="68"  y1="0" x2="68"  y2="200"/>
+              <line x1="74"  y1="0" x2="74"  y2="200"/>
+              <line x1="80"  y1="0" x2="80"  y2="200"/>
+              <line x1="86"  y1="0" x2="86"  y2="200"/>
+              <line x1="92"  y1="0" x2="92"  y2="200"/>
+              <line x1="98"  y1="0" x2="98"  y2="200"/>
+              <line x1="104" y1="0" x2="104" y2="200"/>
+              <line x1="110" y1="0" x2="110" y2="200"/>
+              <line x1="116" y1="0" x2="116" y2="200"/>
+              <line x1="122" y1="0" x2="122" y2="200"/>
+              <line x1="128" y1="0" x2="128" y2="200"/>
+              <line x1="134" y1="0" x2="134" y2="200"/>
+              <line x1="140" y1="0" x2="140" y2="200"/>
+              <line x1="146" y1="0" x2="146" y2="200"/>
+              <line x1="152" y1="0" x2="152" y2="200"/>
+              <line x1="158" y1="0" x2="158" y2="200"/>
+              <line x1="164" y1="0" x2="164" y2="200"/>
+              <line x1="170" y1="0" x2="170" y2="200"/>
+              <line x1="176" y1="0" x2="176" y2="200"/>
+              <line x1="182" y1="0" x2="182" y2="200"/>
+              <line x1="188" y1="0" x2="188" y2="200"/>
+              <line x1="194" y1="0" x2="194" y2="200"/>
+              <line x1="200" y1="0" x2="200" y2="200"/>
+              <line x1="206" y1="0" x2="206" y2="200"/>
+              <line x1="212" y1="0" x2="212" y2="200"/>
+              <line x1="218" y1="0" x2="218" y2="200"/>
+              <line x1="224" y1="0" x2="224" y2="200"/>
+              <line x1="230" y1="0" x2="230" y2="200"/>
+              <line x1="236" y1="0" x2="236" y2="200"/>
+              <line x1="242" y1="0" x2="242" y2="200"/>
+              <line x1="248" y1="0" x2="248" y2="200"/>
+              <line x1="254" y1="0" x2="254" y2="200"/>
+              <line x1="260" y1="0" x2="260" y2="200"/>
+              <line x1="266" y1="0" x2="266" y2="200"/>
+              <line x1="272" y1="0" x2="272" y2="200"/>
+              <line x1="278" y1="0" x2="278" y2="200"/>
+              <line x1="284" y1="0" x2="284" y2="200"/>
+              <line x1="290" y1="0" x2="290" y2="200"/>
+              <line x1="296" y1="0" x2="296" y2="200"/>
+              <line x1="302" y1="0" x2="302" y2="200"/>
+              <line x1="308" y1="0" x2="308" y2="200"/>
+              <line x1="314" y1="0" x2="314" y2="200"/>
+              <line x1="320" y1="0" x2="320" y2="200"/>
+              <line x1="326" y1="0" x2="326" y2="200"/>
+              <line x1="332" y1="0" x2="332" y2="200"/>
+              <line x1="338" y1="0" x2="338" y2="200"/>
+              <line x1="344" y1="0" x2="344" y2="200"/>
+              <line x1="350" y1="0" x2="350" y2="200"/>
+              <line x1="356" y1="0" x2="356" y2="200"/>
+              <line x1="362" y1="0" x2="362" y2="200"/>
+              <line x1="368" y1="0" x2="368" y2="200"/>
+              <line x1="374" y1="0" x2="374" y2="200"/>
+              <line x1="380" y1="0" x2="380" y2="200"/>
+              <line x1="386" y1="0" x2="386" y2="200"/>
+              <line x1="392" y1="0" x2="392" y2="200"/>
+              <line x1="398" y1="0" x2="398" y2="200"/>
+              <line x1="404" y1="0" x2="404" y2="200"/>
+              <line x1="410" y1="0" x2="410" y2="200"/>
+              <line x1="416" y1="0" x2="416" y2="200"/>
+              <line x1="422" y1="0" x2="422" y2="200"/>
+              <line x1="428" y1="0" x2="428" y2="200"/>
+              <line x1="434" y1="0" x2="434" y2="200"/>
+              <line x1="440" y1="0" x2="440" y2="200"/>
+              <line x1="446" y1="0" x2="446" y2="200"/>
+              <line x1="452" y1="0" x2="452" y2="200"/>
+              <line x1="458" y1="0" x2="458" y2="200"/>
+              <line x1="464" y1="0" x2="464" y2="200"/>
+              <line x1="470" y1="0" x2="470" y2="200"/>
+              <line x1="476" y1="0" x2="476" y2="200"/>
+              <line x1="482" y1="0" x2="482" y2="200"/>
+              <line x1="488" y1="0" x2="488" y2="200"/>
+              <line x1="494" y1="0" x2="494" y2="200"/>
+              <line x1="500" y1="0" x2="500" y2="200"/>
+              <line x1="506" y1="0" x2="506" y2="200"/>
+              <line x1="512" y1="0" x2="512" y2="200"/>
+              <line x1="518" y1="0" x2="518" y2="200"/>
+              <line x1="524" y1="0" x2="524" y2="200"/>
+              <line x1="530" y1="0" x2="530" y2="200"/>
+              <line x1="536" y1="0" x2="536" y2="200"/>
+              <line x1="542" y1="0" x2="542" y2="200"/>
+              <line x1="548" y1="0" x2="548" y2="200"/>
+              <line x1="554" y1="0" x2="554" y2="200"/>
+              <line x1="560" y1="0" x2="560" y2="200"/>
+              <line x1="566" y1="0" x2="566" y2="200"/>
+              <line x1="572" y1="0" x2="572" y2="200"/>
+            </g>
+          </g>
+
+          <!-- The curve itself, drawn as ink line -->
+          <path d="M 20 168 L 32 162 L 50 158 L 70 152 L 92 144 L 116 138 L 142 132 L 168 128 L 196 122 L 222 118 L 250 110 L 276 104 L 302 102 L 326 96 L 352 92 L 378 86 L 404 78 L 428 76 L 452 70 L 476 66 L 498 64 L 520 70 L 540 74 L 558 70 L 570 66"
+                fill="none" stroke="#15110A" stroke-width="1.4" stroke-linejoin="round"/>
+
+          <!-- Marker for current value (67% → y=66) -->
+          <line x1="570" y1="0" x2="570" y2="200" stroke="#A8261E" stroke-width=".75" stroke-dasharray="2,2"/>
+          <circle cx="570" cy="66" r="3" fill="#A8261E"/>
+          <text x="566" y="58" text-anchor="end" font-family="EB Garamond" font-size="11" font-style="italic" fill="#A8261E">hodie · 67%</text>
+
+          <!-- Annotation: kink at advance #214 -->
+          <g font-family="EB Garamond" font-size="9.5" font-style="italic" fill="#5A4E36">
+            <text x="222" y="112">advance № 214 sealed</text>
+            <line x1="222" y1="115" x2="222" y2="125" stroke="#5A4E36" stroke-width=".4"/>
+          </g>
+        </svg>
+        <div class="legend">
+          <span><em>day</em> i</span>
+          <span><em>day</em> xlv</span>
+          <span><em>day</em> xc · <span style="color:var(--rubric)">today</span></span>
+        </div>
+      </div>
+
+      <p class="lede">In the present cycle the pool stands more than two-thirds engaged, the highest occupancy since the third <span class="sc">cyclus</span> of <span class="sc">februarius</span>. Fees rise <em>quadratically</em> from the threshold of half-utilization. Lenders may withdraw at the next epoch boundary; advances outstanding are honoured to settlement. The scribe notes no <em>incidentes</em> requiring marginal correction.</p>
+    </div>
+
+    <!-- RIGHT: recent advances ledger -->
+    <div class="col">
+      <div class="coltitle">
+        <span class="h">Praestita Recentia</span>
+        <span class="sub">recent advances · last quinque</span>
+      </div>
+
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th><span class="latin">Agens</span>agent</th>
+            <th class="r"><span class="latin">Summa</span>amount</th>
+            <th class="r"><span class="latin">Dies</span>at</th>
+            <th class="r"><span class="latin">Status</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="agent"><span class="hand">№ 218</span>Squad &mdash; <em>7Xqf<span style="color:var(--ink-faded)">…</span>3gK1</em></td>
+            <td class="amt"><span class="illum">$</span>48,200.<span style="color:var(--ink-faded)">00</span></td>
+            <td class="day">vi&nbsp;m. ago</td>
+            <td class="status open">¶ open</td>
+          </tr>
+          <tr>
+            <td class="agent"><span class="hand">№ 217</span>Squad &mdash; <em>BAud<span style="color:var(--ink-faded)">…</span>PzE9</em></td>
+            <td class="amt"><span class="illum">$</span>12,750.<span style="color:var(--ink-faded)">00</span></td>
+            <td class="day">xxiv&nbsp;m. ago</td>
+            <td class="status open">¶ open</td>
+          </tr>
+          <tr>
+            <td class="agent"><span class="hand">№ 216</span>Squad &mdash; <em>Mx3v<span style="color:var(--ink-faded)">…</span>nQ4a</em></td>
+            <td class="amt"><span class="illum">$</span>3,420.<span style="color:var(--ink-faded)">17</span></td>
+            <td class="day">i&nbsp;h. ago</td>
+            <td class="status settled">settled</td>
+          </tr>
+          <tr>
+            <td class="agent"><span class="hand">№ 215</span>Squad &mdash; <em>RhJp<span style="color:var(--ink-faded)">…</span>w8tQ</em></td>
+            <td class="amt"><span class="illum">$</span>96,500.<span style="color:var(--ink-faded)">00</span></td>
+            <td class="day">iii&nbsp;h. ago</td>
+            <td class="status open">¶ open</td>
+          </tr>
+          <tr>
+            <td class="agent"><span class="hand">№ 214</span>Squad &mdash; <em>F2Lc<span style="color:var(--ink-faded)">…</span>X1mH</em></td>
+            <td class="amt"><span class="illum">$</span>211,000.<span style="color:var(--ink-faded)">00</span></td>
+            <td class="day">v&nbsp;h. ago</td>
+            <td class="status settled">settled</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:14px;font-style:italic;font-size:12.5px;color:var(--ink-faded);line-height:1.45">
+        <span style="color:var(--rubric);font-style:normal;font-weight:700">¶</span>&nbsp;Open advances are sealed against verifiable receivables and must be settled before the closing of the cycle. Forty-seven counts of <em>fama</em> are presently in good standing.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────  T O P  A G E N T S  ───────────────────── -->
+  <section class="agents">
+    <div class="h">Agentes Eminentes
+      <span class="sub">eminent agents — by reputation, present cycle</span>
+    </div>
+
+    <table class="canon">
+      <thead>
+        <tr>
+          <th style="width:64px">№</th>
+          <th><span class="latin">Domus</span>house</th>
+          <th class="r"><span class="latin">Fama</span>reputation</th>
+          <th class="r"><span class="latin">Cycli</span>cycles served</th>
+          <th class="r"><span class="latin">Volumen</span>volume cleared</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="rank">i</td>
+          <td class="house">Squad &mdash; <em>F2Lc<span style="color:var(--ink-faded)">…</span>X1mH</em><span class="hand">domus prima · oracle of consort</span></td>
+          <td class="fama">982<span class="of"> / 1000</span></td>
+          <td class="cycli">218<span class="gloss">consecutive · since cyclus xviii</span></td>
+          <td class="cycli"><span style="color:var(--rubric)">$</span>3.41M<span class="gloss">all advances · settled</span></td>
+        </tr>
+        <tr>
+          <td class="rank">ii</td>
+          <td class="house">Squad &mdash; <em>BAud<span style="color:var(--ink-faded)">…</span>PzE9</em><span class="hand">domus secunda · couriers of the long road</span></td>
+          <td class="fama">947<span class="of"> / 1000</span></td>
+          <td class="cycli">194<span class="gloss">two minor stains · cyc. lxi, cxxxiv</span></td>
+          <td class="cycli"><span style="color:var(--rubric)">$</span>1.88M<span class="gloss">all advances · settled</span></td>
+        </tr>
+        <tr>
+          <td class="rank">iii</td>
+          <td class="house">Squad &mdash; <em>RhJp<span style="color:var(--ink-faded)">…</span>w8tQ</em><span class="hand">domus tertia · scribes of the lesser hand</span></td>
+          <td class="fama">911<span class="of"> / 1000</span></td>
+          <td class="cycli">162<span class="gloss">one open advance · in good standing</span></td>
+          <td class="cycli"><span style="color:var(--rubric)">$</span>1.07M<span class="gloss">all advances · settled bar one</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─────────────────────  C O L O P H O N  ───────────────────── -->
+  <footer class="colophon">
+    <div>
+      <span class="pilcrow">¶</span>
+      <em>Hic liber continet xlvii agentium, ducentos et octodecim cyclos, et nullum errorem materialem.</em>
+      <br/><span style="font-style:normal;color:var(--ink-faded);font-variant:small-caps;letter-spacing:.2em;font-size:11px">— this book contains forty-seven agents, two hundred and eighteen cycles, and no material error.</span>
+    </div>
+    <div class="right">
+      <em>Inscribed at the close of the third day of May, in the year of our Lord MMXXVI, by the Reputation-Writer Authority, and witnessed by the Oracle of Consort.</em>
+      <span class="sig">CredMesh · v.0.1 · devnet · slot 318 461 277</span>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>

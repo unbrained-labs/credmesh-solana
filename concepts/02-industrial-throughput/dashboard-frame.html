@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>CredMesh — Process Control · CM-001</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bone:        #EDE6D3;
+    --bone-light:  #F5EFDD;
+    --bone-dark:   #DDD5C0;
+    --iron:        #2E2A26;
+    --iron-soft:   #6B635A;
+    --brass:       #B8965A;
+    --brass-dark:  #8C6F3F;
+    --fume:        #E8C547;
+    --fume-dark:   #B0941F;
+    --alarm:       #C2362B;
+    --grid:        rgba(46, 42, 38, 0.07);
+    --grid-bold:   rgba(46, 42, 38, 0.14);
+    --counter-bg:  #15110D;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    background: var(--bone);
+    color: var(--iron);
+    font-feature-settings: "tnum" 1, "ss01" 1;
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+  }
+
+  /* engineering vellum: 8px crosshatch + 64px bold grid */
+  body {
+    background-image:
+      repeating-linear-gradient(0deg,  var(--grid) 0 0.5px, transparent 0.5px 8px),
+      repeating-linear-gradient(90deg, var(--grid) 0 0.5px, transparent 0.5px 8px),
+      repeating-linear-gradient(0deg,  var(--grid-bold) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(90deg, var(--grid-bold) 0 1px, transparent 1px 64px);
+    min-height: 100vh;
+    padding: 28px 32px 56px;
+  }
+
+  .sheet {
+    max-width: 1376px;
+    margin: 0 auto;
+    border: 1px solid var(--iron);
+    background: var(--bone-light);
+    background-image:
+      repeating-linear-gradient(0deg,  var(--grid) 0 0.5px, transparent 0.5px 8px),
+      repeating-linear-gradient(90deg, var(--grid) 0 0.5px, transparent 0.5px 8px);
+    box-shadow: 1px 1px 0 0 var(--iron), 4px 4px 0 -1px rgba(46,42,38,0.1);
+  }
+
+  /* ============ TITLE BLOCK ============ */
+  .title-block {
+    display: grid;
+    grid-template-columns: 96px 1fr auto;
+    border-bottom: 1.5px solid var(--iron);
+  }
+  .title-block .logo-cell {
+    border-right: 1px solid var(--iron);
+    padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bone);
+  }
+  .title-block .title-cell {
+    padding: 16px 22px 14px;
+    display: flex; flex-direction: column; gap: 6px;
+    border-right: 1px solid var(--iron);
+  }
+  .title-block .title-cell .h {
+    font-size: 26px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .title-block .title-cell .sub {
+    font-size: 10.5px; color: var(--iron-soft);
+    text-transform: uppercase; letter-spacing: 0.14em;
+  }
+  .title-block .meta-cell {
+    padding: 14px 22px;
+    font-size: 10px; line-height: 1.7;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    display: grid; grid-template-columns: auto auto; gap: 2px 16px;
+    align-content: center;
+    color: var(--iron-soft);
+    min-width: 240px;
+  }
+  .title-block .meta-cell b { color: var(--iron); font-weight: 600; }
+
+  /* ============ READOUT ROW ============ */
+  .readout-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1.5px solid var(--iron);
+  }
+  .readout {
+    padding: 14px 18px 18px;
+    border-right: 1px solid var(--iron);
+    position: relative;
+    background: var(--bone-light);
+  }
+  .readout:last-child { border-right: none; }
+
+  .readout .tag {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--iron-soft);
+    margin-bottom: 12px;
+  }
+  .readout .tag .code {
+    border: 1px solid var(--iron-soft);
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 8.5px; color: var(--iron); font-weight: 500;
+    letter-spacing: 0.1em;
+    background: var(--bone);
+  }
+
+  /* mechanical counter — black wheel-window with fume-yellow digits */
+  .counter {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--iron);
+    background: var(--counter-bg);
+    color: var(--fume);
+    padding: 0;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0;
+    box-shadow:
+      inset 0 2px 0 rgba(0,0,0,0.55),
+      inset 0 -2px 0 rgba(255,255,255,0.04),
+      0 1px 0 rgba(0,0,0,0.2);
+    font-feature-settings: "tnum" 1;
+  }
+  .counter .d {
+    padding: 7px 5px 6px;
+    min-width: 22px;
+    text-align: center;
+    border-right: 1px solid #2a231b;
+    text-shadow: 0 0 1px rgba(232, 197, 71, 0.4);
+  }
+  .counter .d:last-of-type { border-right: none; }
+  .counter .sep { padding: 7px 1px 6px; color: rgba(232, 197, 71, 0.55); }
+  .counter .unit {
+    align-self: stretch;
+    display: flex; align-items: center; padding: 0 9px;
+    border-left: 1px solid #2a231b;
+    font-size: 10px; color: var(--brass);
+    letter-spacing: 0.14em;
+    font-weight: 500;
+  }
+  .counter.sm { font-size: 22px; }
+  .counter.sm .d { padding: 5px 3px 4px; min-width: 16px; }
+
+  .readout .delta {
+    margin-top: 12px;
+    font-size: 10px; color: var(--iron-soft);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    display: flex; gap: 14px; align-items: center;
+  }
+  .readout .delta .arrow { color: var(--brass); font-weight: 600; }
+  .readout .delta .warn  { color: var(--alarm); font-weight: 600; }
+
+  /* ============ MID ROW ============ */
+  .mid-row {
+    display: grid;
+    grid-template-columns: 480px 1fr;
+    border-bottom: 1.5px solid var(--iron);
+  }
+  .mid-row .panel {
+    padding: 14px 18px 18px;
+    border-right: 1px solid var(--iron);
+  }
+  .mid-row .panel:last-child { border-right: none; }
+
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--iron-soft);
+    border-bottom: 0.5px solid var(--iron);
+    padding-bottom: 7px;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+  .panel-header b { color: var(--iron); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; }
+  .panel-header .code {
+    border: 1px solid var(--iron-soft); padding: 2px 7px; border-radius: 999px;
+    font-size: 8.5px; color: var(--iron); background: var(--bone);
+    margin-left: auto;
+  }
+  .panel-header .meta { font-size: 9.5px; color: var(--iron-soft); letter-spacing: 0.1em; }
+
+  /* ============ TABLES ============ */
+  table.log {
+    width: 100%; border-collapse: collapse;
+    font-size: 11.5px;
+  }
+  .log th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--iron-soft);
+    padding: 7px 9px;
+    border-bottom: 1px solid var(--iron);
+    background: var(--bone-dark);
+  }
+  .log td {
+    padding: 9px;
+    border-bottom: 0.5px dashed rgba(46,42,38,0.28);
+    vertical-align: middle;
+  }
+  .log tr:last-child td { border-bottom: none; }
+  .log td.num   { text-align: right; font-variant-numeric: tabular-nums; }
+  .log td.mono  { color: var(--iron); }
+  .log td.muted { color: var(--iron-soft); }
+
+  .pill {
+    display: inline-block; padding: 2px 7px;
+    font-size: 9px; letter-spacing: 0.12em;
+    border: 1px solid var(--iron-soft);
+    border-radius: 0;
+    text-transform: uppercase;
+    font-weight: 500;
+    background: var(--bone);
+  }
+  .pill.open  { background: var(--brass);    color: #15110D; border-color: var(--brass-dark); }
+  .pill.flag  { background: var(--fume);     color: var(--iron); border-color: var(--fume-dark); }
+  .pill.clear { background: var(--bone-dark); color: var(--iron-soft); }
+  .pill.alarm { background: var(--alarm);    color: var(--bone-light); border-color: #8a2620; }
+
+  /* ============ BOTTOM ROW ============ */
+  .bot-row {
+    display: grid;
+    grid-template-columns: 1fr 480px;
+    border-bottom: 1.5px solid var(--iron);
+  }
+  .bot-row .panel { padding: 14px 18px 18px; border-right: 1px solid var(--iron); }
+  .bot-row .panel:last-child { border-right: none; }
+
+  /* agents — reputation gauges */
+  .rep-head {
+    display: grid; grid-template-columns: 70px 1fr 110px 64px; gap: 12px;
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--iron-soft);
+    padding: 7px 0;
+    border-bottom: 1px solid var(--iron);
+    background: var(--bone-dark);
+    margin: 0 -18px;
+    padding-left: 18px; padding-right: 18px;
+  }
+  .agent-row {
+    display: grid; grid-template-columns: 70px 1fr 110px 64px; gap: 12px;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 0.5px dashed rgba(46,42,38,0.28);
+  }
+  .agent-row:last-child { border-bottom: none; }
+  .agent-row .id {
+    font-size: 11px; color: var(--iron);
+    border: 1px solid var(--iron-soft); border-radius: 0;
+    padding: 3px 6px; text-align: center;
+    background: var(--bone);
+    letter-spacing: 0.06em;
+  }
+  .agent-row .name { font-size: 13px; font-weight: 500; }
+  .agent-row .name .sub {
+    display: block; font-size: 9.5px; color: var(--iron-soft);
+    margin-top: 3px; letter-spacing: 0.08em; text-transform: uppercase;
+    font-weight: 400;
+  }
+  .agent-row .gauge {
+    height: 18px;
+    border: 1px solid var(--iron);
+    position: relative;
+    background: var(--bone-dark);
+    overflow: hidden;
+  }
+  .agent-row .gauge .fill { height: 100%; background: var(--brass); }
+  .agent-row .gauge .fill.warn { background: var(--fume); }
+  .agent-row .gauge .ticks {
+    position: absolute; inset: 0; display: flex; justify-content: space-between;
+    pointer-events: none; padding: 0;
+  }
+  .agent-row .gauge .ticks span {
+    width: 1px; background: rgba(46,42,38,0.35);
+  }
+  .agent-row .gauge .ticks span:nth-child(odd) { height: 50%; align-self: flex-end; }
+  .agent-row .score {
+    text-align: right; font-size: 16px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============ FOOTER MAINT LOG ============ */
+  .maint {
+    display: grid; grid-template-columns: 1fr auto;
+    padding: 12px 22px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--iron-soft);
+    align-items: center;
+  }
+  .maint b { color: var(--iron); font-weight: 600; }
+  .led {
+    display: inline-block; width: 9px; height: 9px;
+    background: var(--brass); margin-right: 8px;
+    vertical-align: middle;
+    border: 1px solid var(--brass-dark);
+    box-shadow: 0 0 0 1px var(--bone-light);
+  }
+  .led.alarm { background: var(--alarm); border-color: #8a2620; }
+  .led.warn  { background: var(--fume);  border-color: var(--fume-dark); }
+
+  /* ============ STAMP ============ */
+  .stamp {
+    position: absolute;
+    bottom: 18px; right: 28px;
+    border: 1.5px solid var(--alarm);
+    color: var(--alarm);
+    padding: 6px 12px;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.18em;
+    transform: rotate(-4deg);
+    opacity: 0.78;
+    background: rgba(237, 230, 211, 0.6);
+  }
+
+  /* ============ FOOTER NOTES ============ */
+  .legend {
+    padding: 12px 22px;
+    font-size: 9.5px; color: var(--iron-soft);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    border-top: 1px solid var(--iron);
+    display: flex; gap: 24px; flex-wrap: wrap;
+    background: var(--bone-dark);
+  }
+  .legend .swatch {
+    display: inline-block; width: 12px; height: 12px;
+    vertical-align: middle; margin-right: 6px;
+    border: 1px solid var(--iron);
+  }
+</style>
+</head>
+<body>
+<main class="sheet" style="position: relative;">
+
+  <!-- ============ TITLE BLOCK ============ -->
+  <header class="title-block">
+    <div class="logo-cell">
+      <svg viewBox="0 0 200 200" width="58" height="58" aria-hidden="true">
+        <rect x="68" y="12" width="64" height="8" fill="#2E2A26"/>
+        <line x1="100" y1="20" x2="100" y2="34" stroke="#2E2A26" stroke-width="2.5"/>
+        <polyline points="86,36 114,44 86,52 114,60 86,68 114,76 86,84"
+                  fill="none" stroke="#2E2A26" stroke-width="1.5"/>
+        <line x1="100" y1="84" x2="100" y2="92" stroke="#2E2A26" stroke-width="2.5"/>
+        <polygon points="56,92 144,92 100,140" fill="#2E2A26"/>
+        <polygon points="56,188 144,188 100,140" fill="#2E2A26"/>
+        <line x1="46" y1="140" x2="154" y2="140" stroke="#2E2A26" stroke-width="2.5"/>
+      </svg>
+    </div>
+    <div class="title-cell">
+      <span class="h">CredMesh / Process Control</span>
+      <span class="sub">PANEL CM-001 · POOL-USDC-A · ON-CHAIN CREDIT MANIFOLD · SOLANA-MAINNET-BETA</span>
+      <span class="sub" style="font-size: 9.5px; letter-spacing: 0.18em;">DRAWING SHEET CM-001-A · CONFORMS TO ISA S5.1 · VESSEL TAG V-USDC-1</span>
+    </div>
+    <div class="meta-cell">
+      <span>SHEET</span><b>01 / 04</b>
+      <span>REVISION</span><b>F · 2026.05.03</b>
+      <span>LAST TICK</span><b>14:22:08 UTC</b>
+      <span>OPERATOR</span><b>D.AUDIT-STAGING</b>
+      <span>DRAWN</span><b>UNBRAINED LABS</b>
+    </div>
+  </header>
+
+  <!-- ============ FOUR READOUTS ============ -->
+  <section class="readout-row">
+
+    <!-- TVL -->
+    <div class="readout">
+      <div class="tag">
+        <span>FEEDSTOCK · TOTAL VALUE LOCKED</span>
+        <span class="code">LIC-001</span>
+      </div>
+      <div class="counter">
+        <span class="d">0</span><span class="d">4</span>
+        <span class="sep">·</span>
+        <span class="d">2</span><span class="d">8</span><span class="d">7</span>
+        <span class="sep">·</span>
+        <span class="d">1</span><span class="d">9</span><span class="d">3</span>
+        <span class="sep">.</span>
+        <span class="d">4</span><span class="d">2</span>
+        <span class="unit">USDC</span>
+      </div>
+      <div class="delta">
+        <span><span class="arrow">▲</span> +18,402.11 / 24h</span>
+        <span>HEAD 4.21 MPa</span>
+      </div>
+    </div>
+
+    <!-- Utilization -->
+    <div class="readout">
+      <div class="tag">
+        <span>UTILIZATION · DRAWN / DEPOSITED</span>
+        <span class="code">PI-117</span>
+      </div>
+      <div class="counter">
+        <span class="d">0</span><span class="d">6</span><span class="d">7</span>
+        <span class="sep">.</span>
+        <span class="d">4</span>
+        <span class="unit">%</span>
+      </div>
+      <div class="delta">
+        <span><span class="arrow">▲</span> +2.1pp / 1h</span>
+        <span>SETPOINT 80.0%</span>
+      </div>
+    </div>
+
+    <!-- Share Price -->
+    <div class="readout">
+      <div class="tag">
+        <span>SHARE PRICE · cmUSDC / USDC</span>
+        <span class="code">XI-002</span>
+      </div>
+      <div class="counter">
+        <span class="d">1</span>
+        <span class="sep">.</span>
+        <span class="d">0</span><span class="d">2</span><span class="d">3</span><span class="d">4</span>
+        <span class="unit">RATIO</span>
+      </div>
+      <div class="delta">
+        <span><span class="arrow">▲</span> +0.0017 / 24h</span>
+        <span>APY 7.34%</span>
+      </div>
+    </div>
+
+    <!-- Active agents -->
+    <div class="readout">
+      <div class="tag">
+        <span>ACTIVE AGENTS · BORROWERS ON LINE</span>
+        <span class="code">KI-301</span>
+      </div>
+      <div class="counter">
+        <span class="d">0</span><span class="d">4</span><span class="d">7</span>
+        <span class="unit">UNITS</span>
+      </div>
+      <div class="delta">
+        <span><span class="arrow">▲</span> +3 / 24h</span>
+        <span>QUEUED 2</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============ MID ROW: GAUGE + STRIP CHART ============ -->
+  <section class="mid-row">
+
+    <!-- Utilization manometer (semicircle gauge) -->
+    <div class="panel">
+      <div class="panel-header">
+        <b>Utilization Manometer</b>
+        <span class="meta">PV 67.4% · SP 80.0% · HI-HI 95%</span>
+        <span class="code">PI-117</span>
+      </div>
+
+      <svg viewBox="0 0 440 280" width="100%" height="270" aria-label="utilization manometer">
+        <defs>
+          <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#C2362B" stroke-width="2" opacity="0.55"/>
+          </pattern>
+          <pattern id="hatch-warn" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#B0941F" stroke-width="2" opacity="0.55"/>
+          </pattern>
+        </defs>
+
+        <!-- bezel rectangle -->
+        <rect x="6" y="6" width="428" height="268" fill="none" stroke="#2E2A26" stroke-width="0.5"/>
+
+        <!-- safe band (0-80%) brass — arc endpoint at 80%: (357.55, 140.04) -->
+        <path d="M 50 240 A 170 170 0 0 1 357.55 140.04"
+              fill="none" stroke="#B8965A" stroke-width="22"/>
+        <!-- warning band (80-95%) fume hatched — endpoint at 95%: (387.9, 213.41) -->
+        <path d="M 357.55 140.04 A 170 170 0 0 1 387.9 213.41"
+              fill="none" stroke="url(#hatch-warn)" stroke-width="22"/>
+        <!-- alarm band (95-100%) red hatched — endpoint at 100%: (390, 240) -->
+        <path d="M 387.9 213.41 A 170 170 0 0 1 390 240"
+              fill="none" stroke="url(#hatch)" stroke-width="22"/>
+
+        <!-- inner arc rule line -->
+        <path d="M 50 240 A 170 170 0 0 1 390 240" fill="none" stroke="#2E2A26" stroke-width="1.25"/>
+
+        <!-- tick marks every 10% (11 ticks). Major every 20%, minor every 10%. -->
+        <!-- Compute: angle = 180 - p*1.8 (degrees from +x axis) -->
+        <!-- Use script-free static placement -->
+        <g stroke="#2E2A26" stroke-width="1">
+          <!-- 0% angle 180 -->
+          <line x1="50" y1="240" x2="36" y2="240" stroke-width="2"/>
+          <!-- 10% angle 162 -->
+          <line x1="58.30" y1="187.46" x2="44.99" y2="183.13"/>
+          <!-- 20% angle 144 -->
+          <line x1="82.46" y1="140.07" x2="71.13" y2="131.84" stroke-width="2"/>
+          <!-- 30% angle 126 -->
+          <line x1="120.07" y1="102.46" x2="111.84" y2="91.13"/>
+          <!-- 40% angle 108 -->
+          <line x1="167.46" y1="78.30" x2="163.13" y2="64.99" stroke-width="2"/>
+          <!-- 50% angle 90 -->
+          <line x1="220" y1="70" x2="220" y2="56" stroke-width="2.5"/>
+          <!-- 60% angle 72 -->
+          <line x1="272.54" y1="78.30" x2="276.87" y2="64.99" stroke-width="2"/>
+          <!-- 70% angle 54 -->
+          <line x1="319.93" y1="102.46" x2="328.16" y2="91.13"/>
+          <!-- 80% angle 36 -->
+          <line x1="357.54" y1="140.07" x2="368.87" y2="131.84" stroke-width="2"/>
+          <!-- 90% angle 18 -->
+          <line x1="381.70" y1="187.46" x2="395.01" y2="183.13"/>
+          <!-- 100% angle 0 -->
+          <line x1="390" y1="240" x2="404" y2="240" stroke-width="2"/>
+        </g>
+
+        <!-- tick labels -->
+        <g font-family="'IBM Plex Mono', monospace" font-size="10" fill="#6B635A" text-anchor="middle">
+          <text x="32" y="258">0</text>
+          <text x="68"  y="121">20</text>
+          <text x="155" y="50">40</text>
+          <text x="220" y="44">50</text>
+          <text x="285" y="50">60</text>
+          <text x="372" y="121">80</text>
+          <text x="408" y="258">100</text>
+        </g>
+
+        <!-- needle at 67.4% : angle = 180 - 67.4*1.8 = 58.68° -->
+        <!-- end at radius 162 from (220, 240): cx + r*cos(58.68°), cy - r*sin(58.68°) -->
+        <!-- cos(58.68°) ≈ 0.5202 ; sin(58.68°) ≈ 0.8540 -->
+        <!-- end ≈ (220 + 84.27, 240 - 138.34) = (304.27, 101.66) -->
+        <g>
+          <line x1="220" y1="240" x2="304.27" y2="101.66"
+                stroke="#C2362B" stroke-width="3" stroke-linecap="square"/>
+          <!-- needle counterweight -->
+          <line x1="220" y1="240" x2="208" y2="260"
+                stroke="#C2362B" stroke-width="3" stroke-linecap="square"/>
+          <!-- pivot -->
+          <circle cx="220" cy="240" r="11" fill="#2E2A26"/>
+          <circle cx="220" cy="240" r="4"  fill="#B8965A"/>
+        </g>
+
+        <!-- digital readout under gauge -->
+        <g font-family="'IBM Plex Mono', monospace">
+          <rect x="156" y="252" width="128" height="20" fill="#15110D" stroke="#2E2A26" stroke-width="0.75"/>
+          <text x="220" y="267" text-anchor="middle" fill="#E8C547" font-size="13" font-weight="600" letter-spacing="0.06em">67.4 %</text>
+        </g>
+
+        <!-- side labels -->
+        <text x="14"  y="270" font-family="'IBM Plex Mono', monospace" font-size="8" fill="#6B635A" letter-spacing="0.1em">MIN</text>
+        <text x="395" y="270" font-family="'IBM Plex Mono', monospace" font-size="8" fill="#6B635A" letter-spacing="0.1em">MAX</text>
+        <text x="220" y="270" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="8" fill="#6B635A" letter-spacing="0.18em" dy="20">% OF DEPOSIT DRAWN</text>
+
+        <!-- setpoint indicator (80%) -->
+        <!-- angle 180 - 80*1.8 = 36° -->
+        <!-- mark at radius 178 -->
+        <!-- (220 + 178*cos(36°), 240 - 178*sin(36°)) ≈ (220 + 144.0, 240 - 104.6) = (364.0, 135.4) -->
+        <polygon points="364,135 372,128 372,142" fill="#2E2A26"/>
+        <text x="378" y="119" font-family="'IBM Plex Mono', monospace" font-size="8" fill="#2E2A26" letter-spacing="0.12em">SP 80</text>
+      </svg>
+    </div>
+
+    <!-- Strip chart -->
+    <div class="panel">
+      <div class="panel-header">
+        <b>Throughput Strip Chart</b>
+        <span class="meta">FT-204 · advances issued / hr · last 24 cycles · scale 0–60</span>
+        <span class="code">FT-204</span>
+      </div>
+
+      <svg viewBox="0 0 820 280" width="100%" height="270" aria-label="strip chart">
+        <!-- bezel -->
+        <rect x="0.5" y="0.5" width="819" height="279" fill="none" stroke="#2E2A26" stroke-width="0.5"/>
+
+        <!-- chart paper (bone) inside frame -->
+        <rect x="50" y="20" width="750" height="220" fill="#F5EFDD" stroke="#2E2A26" stroke-width="0.75"/>
+
+        <!-- horizontal grid lines (chart paper rule) every 22px = 6 lines -->
+        <g stroke="#2E2A26" stroke-width="0.4" opacity="0.35">
+          <line x1="50" y1="64"  x2="800" y2="64"/>
+          <line x1="50" y1="108" x2="800" y2="108"/>
+          <line x1="50" y1="152" x2="800" y2="152"/>
+          <line x1="50" y1="196" x2="800" y2="196"/>
+        </g>
+
+        <!-- vertical tick paper feed every 31.25px (24 cycles across 750 wide) -->
+        <g stroke="#2E2A26" stroke-width="0.3" opacity="0.25">
+          <line x1="81.25"  y1="20" x2="81.25"  y2="240"/>
+          <line x1="112.50" y1="20" x2="112.50" y2="240"/>
+          <line x1="143.75" y1="20" x2="143.75" y2="240"/>
+          <line x1="175.00" y1="20" x2="175.00" y2="240"/>
+          <line x1="206.25" y1="20" x2="206.25" y2="240"/>
+          <line x1="237.50" y1="20" x2="237.50" y2="240"/>
+          <line x1="268.75" y1="20" x2="268.75" y2="240"/>
+          <line x1="300.00" y1="20" x2="300.00" y2="240"/>
+          <line x1="331.25" y1="20" x2="331.25" y2="240"/>
+          <line x1="362.50" y1="20" x2="362.50" y2="240"/>
+          <line x1="393.75" y1="20" x2="393.75" y2="240"/>
+          <line x1="425.00" y1="20" x2="425.00" y2="240"/>
+          <line x1="456.25" y1="20" x2="456.25" y2="240"/>
+          <line x1="487.50" y1="20" x2="487.50" y2="240"/>
+          <line x1="518.75" y1="20" x2="518.75" y2="240"/>
+          <line x1="550.00" y1="20" x2="550.00" y2="240"/>
+          <line x1="581.25" y1="20" x2="581.25" y2="240"/>
+          <line x1="612.50" y1="20" x2="612.50" y2="240"/>
+          <line x1="643.75" y1="20" x2="643.75" y2="240"/>
+          <line x1="675.00" y1="20" x2="675.00" y2="240"/>
+          <line x1="706.25" y1="20" x2="706.25" y2="240"/>
+          <line x1="737.50" y1="20" x2="737.50" y2="240"/>
+          <line x1="768.75" y1="20" x2="768.75" y2="240"/>
+        </g>
+
+        <!-- y-axis labels -->
+        <g font-family="'IBM Plex Mono', monospace" font-size="9" fill="#6B635A" text-anchor="end">
+          <text x="44" y="244">0</text>
+          <text x="44" y="200">15</text>
+          <text x="44" y="156">30</text>
+          <text x="44" y="112">45</text>
+          <text x="44" y="68">60</text>
+          <text x="44" y="24" font-weight="600" fill="#2E2A26">ADV</text>
+        </g>
+
+        <!-- x-axis labels -->
+        <g font-family="'IBM Plex Mono', monospace" font-size="9" fill="#6B635A" text-anchor="middle" letter-spacing="0.06em">
+          <text x="65"  y="258">−24h</text>
+          <text x="237" y="258">−18h</text>
+          <text x="425" y="258">−12h</text>
+          <text x="612" y="258">−6h</text>
+          <text x="785" y="258">NOW</text>
+        </g>
+
+        <!-- bars: 24 cycles, each ~24px wide centred in 31.25 cell -->
+        <!-- heights are mock ranging 8–48 advances -->
+        <g fill="#B8965A" stroke="#8C6F3F" stroke-width="0.5">
+          <rect x="55"     y="194" width="22" height="46"/>
+          <rect x="86.25"  y="174" width="22" height="66"/>
+          <rect x="117.5"  y="158" width="22" height="82"/>
+          <rect x="148.75" y="180" width="22" height="60"/>
+          <rect x="180"    y="148" width="22" height="92"/>
+          <rect x="211.25" y="120" width="22" height="120"/>
+          <rect x="242.5"  y="106" width="22" height="134"/>
+          <rect x="273.75" y="138" width="22" height="102"/>
+          <rect x="305"    y="166" width="22" height="74"/>
+          <rect x="336.25" y="194" width="22" height="46"/>
+          <rect x="367.5"  y="208" width="22" height="32"/>
+          <rect x="398.75" y="200" width="22" height="40"/>
+          <rect x="430"    y="178" width="22" height="62"/>
+          <rect x="461.25" y="146" width="22" height="94"/>
+          <rect x="492.5"  y="126" width="22" height="114"/>
+          <rect x="523.75" y="98"  width="22" height="142"/>
+          <rect x="555"    y="80"  width="22" height="160" fill="#E8C547" stroke="#B0941F"/>
+          <rect x="586.25" y="116" width="22" height="124"/>
+          <rect x="617.5"  y="142" width="22" height="98"/>
+          <rect x="648.75" y="156" width="22" height="84"/>
+          <rect x="680"    y="134" width="22" height="106"/>
+          <rect x="711.25" y="122" width="22" height="118"/>
+          <rect x="742.5"  y="100" width="22" height="140"/>
+          <rect x="773.75" y="82"  width="22" height="158" fill="#E8C547" stroke="#B0941F"/>
+        </g>
+
+        <!-- alarm band (above 50 = y < 96) -->
+        <line x1="50" y1="96" x2="800" y2="96"
+              stroke="#C2362B" stroke-width="0.75" stroke-dasharray="3 4"/>
+        <text x="800" y="92" text-anchor="end" font-family="'IBM Plex Mono', monospace"
+              font-size="9" fill="#C2362B" letter-spacing="0.1em">PEAK ALARM 50/h</text>
+
+        <!-- average reference line -->
+        <line x1="50" y1="170" x2="800" y2="170"
+              stroke="#2E2A26" stroke-width="0.6" stroke-dasharray="1 3"/>
+        <text x="58" y="166" font-family="'IBM Plex Mono', monospace" font-size="9" fill="#2E2A26" letter-spacing="0.06em">μ 24h = 24.7</text>
+
+        <!-- annotation flag -->
+        <line x1="566" y1="80" x2="566" y2="40" stroke="#2E2A26" stroke-width="0.5"/>
+        <circle cx="566" cy="80" r="2.5" fill="#2E2A26"/>
+        <rect x="510" y="22" width="118" height="20" fill="#F5EFDD" stroke="#2E2A26" stroke-width="0.5"/>
+        <text x="569" y="36" text-anchor="middle" font-family="'IBM Plex Mono', monospace"
+              font-size="9" fill="#2E2A26" letter-spacing="0.06em">PEAK · 51 ADV/h</text>
+      </svg>
+    </div>
+
+  </section>
+
+  <!-- ============ BOTTOM ROW: ADVANCES + AGENTS ============ -->
+  <section class="bot-row">
+
+    <!-- Recent advances -->
+    <div class="panel">
+      <div class="panel-header">
+        <b>Recent Advances · Issuance Log</b>
+        <span class="meta">cmEscrow · last 5 entries · sorted by sequence DESC</span>
+        <span class="code">LOG-A</span>
+      </div>
+      <table class="log">
+        <thead>
+          <tr>
+            <th style="width: 88px;">SEQ</th>
+            <th style="width: 132px;">TX</th>
+            <th>AGENT / SQUAD</th>
+            <th class="num" style="width: 130px;">PRINCIPAL · USDC</th>
+            <th class="num" style="width: 70px;">FEE bps</th>
+            <th class="num" style="width: 80px;">AGE</th>
+            <th style="width: 80px;">STATUS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="muted">#02·11842</td>
+            <td class="mono">5C7f…aA42</td>
+            <td>AGT-014 · ORACLE-PRIME<br><span style="font-size:9.5px; color: var(--iron-soft); letter-spacing:0.06em;">SQ:5Cdf…0aA2 · receivable RC-091</span></td>
+            <td class="num">12,500.0000</td>
+            <td class="num">47</td>
+            <td class="num">00:02:14</td>
+            <td><span class="pill open">OPEN</span></td>
+          </tr>
+          <tr>
+            <td class="muted">#02·11841</td>
+            <td class="mono">9F1c…bC10</td>
+            <td>AGT-022 · INDEXER-DELTA<br><span style="font-size:9.5px; color: var(--iron-soft); letter-spacing:0.06em;">SQ:9Faa…cC18 · receivable RC-088</span></td>
+            <td class="num">4,200.0000</td>
+            <td class="num">38</td>
+            <td class="num">00:08:42</td>
+            <td><span class="pill open">OPEN</span></td>
+          </tr>
+          <tr>
+            <td class="muted">#02·11840</td>
+            <td class="mono">7Ee2…dD81</td>
+            <td>AGT-007 · VAULT-OPS-NORTH<br><span style="font-size:9.5px; color: var(--iron-soft); letter-spacing:0.06em;">SQ:7Eef…dD8c · receivable RC-085 · &gt; cap-warn</span></td>
+            <td class="num">60,000.0000</td>
+            <td class="num">52</td>
+            <td class="num">00:14:08</td>
+            <td><span class="pill flag">FLAG</span></td>
+          </tr>
+          <tr>
+            <td class="muted">#02·11839</td>
+            <td class="mono">3B0a…eE73</td>
+            <td>AGT-031 · KEEPER-OMEGA<br><span style="font-size:9.5px; color: var(--iron-soft); letter-spacing:0.06em;">SQ:3B11…eE7f · receivable RC-082</span></td>
+            <td class="num">875.5000</td>
+            <td class="num">31</td>
+            <td class="num">00:23:51</td>
+            <td><span class="pill clear">CLEARED</span></td>
+          </tr>
+          <tr>
+            <td class="muted">#02·11838</td>
+            <td class="mono">5C7f…aA31</td>
+            <td>AGT-014 · ORACLE-PRIME<br><span style="font-size:9.5px; color: var(--iron-soft); letter-spacing:0.06em;">SQ:5Cdf…0aA2 · receivable RC-079</span></td>
+            <td class="num">8,200.0000</td>
+            <td class="num">38</td>
+            <td class="num">00:31:07</td>
+            <td><span class="pill clear">CLEARED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Top agents -->
+    <div class="panel">
+      <div class="panel-header">
+        <b>Top Agents · Reputation Gauges</b>
+        <span class="meta">8004-shape rolling digest · scale 0–1000</span>
+        <span class="code">RIC-301</span>
+      </div>
+
+      <div class="rep-head">
+        <span>TAG</span>
+        <span>AGENT · SQUAD VAULT</span>
+        <span>REPUTATION</span>
+        <span style="text-align: right;">SCORE</span>
+      </div>
+
+      <div class="agent-row">
+        <span class="id">AGT-014</span>
+        <span class="name">ORACLE-PRIME
+          <span class="sub">SQ:5Cdf…0aA2 · 412 cycles · 0 defaults</span>
+        </span>
+        <span class="gauge">
+          <span class="fill" style="width: 92.4%;"></span>
+          <span class="ticks">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </span>
+        </span>
+        <span class="score">924</span>
+      </div>
+
+      <div class="agent-row">
+        <span class="id">AGT-022</span>
+        <span class="name">INDEXER-DELTA
+          <span class="sub">SQ:9Faa…cC18 · 308 cycles · 1 default</span>
+        </span>
+        <span class="gauge">
+          <span class="fill" style="width: 81.2%;"></span>
+          <span class="ticks">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </span>
+        </span>
+        <span class="score">812</span>
+      </div>
+
+      <div class="agent-row">
+        <span class="id">AGT-007</span>
+        <span class="name">VAULT-OPS-NORTH
+          <span class="sub">SQ:7Eef…dD8c · 219 cycles · 0 defaults</span>
+        </span>
+        <span class="gauge">
+          <span class="fill warn" style="width: 73.8%;"></span>
+          <span class="ticks">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </span>
+        </span>
+        <span class="score">738</span>
+      </div>
+
+      <!-- mini summary block -->
+      <div style="margin-top: 14px; padding-top: 12px; border-top: 0.5px dashed rgba(46,42,38,0.28);
+                  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; font-size: 10px;
+                  color: var(--iron-soft); text-transform: uppercase; letter-spacing: 0.08em;">
+        <div>
+          <div style="color: var(--iron); font-size: 16px; font-weight: 600; margin-bottom: 2px;">47</div>
+          <div>AGENTS / 30D</div>
+        </div>
+        <div>
+          <div style="color: var(--iron); font-size: 16px; font-weight: 600; margin-bottom: 2px;">681</div>
+          <div>MEAN REP</div>
+        </div>
+        <div>
+          <div style="color: var(--alarm); font-size: 16px; font-weight: 600; margin-bottom: 2px;">3</div>
+          <div>FLAGGED</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============ FOOTER MAINT ============ -->
+  <footer class="maint">
+    <span><span class="led"></span><b>VALVE OPEN.</b> &nbsp;FLOW NOMINAL · NO ALARMS LATCHED · NEXT INSPECTION 2026-05-04 06:00 UTC</span>
+    <span>FEED 4.21 MPa · OUTLET 3.94 MPa · ΔP 0.27 MPa · ED25519-SIG OK · ORACLE WORKER WK-03 ONLINE</span>
+  </footer>
+
+  <!-- legend -->
+  <div class="legend">
+    <span><span class="swatch" style="background: var(--brass);"></span>SAFE BAND</span>
+    <span><span class="swatch" style="background: var(--fume);"></span>WARNING (≥ 80% UTIL)</span>
+    <span><span class="swatch" style="background: var(--alarm);"></span>ALARM (≥ 95% UTIL)</span>
+    <span><span class="swatch" style="background: var(--counter-bg);"></span>READOUT — MECHANICAL TOTALIZER</span>
+    <span style="margin-left: auto;">DRG &nbsp;CM-001-A &nbsp;·&nbsp; SCALE 1:1 &nbsp;·&nbsp; SHEET 01/04 &nbsp;·&nbsp; UNCONTROLLED COPY</span>
+  </div>
+
+  <span class="stamp">DEVNET · NOT FOR FUNDS</span>
+
+</main>
+</body>
+</html>

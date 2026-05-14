@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CredMesh — Statistical Bulletin No. 1 / 2026</title>
+<link rel="preconnect" href="https://rsms.me/">
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<style>
+  :root {
+    --paper:  #F4F2EE;
+    --paper2: #ECE9E2;
+    --ink:    #0A0A0A;
+    --ink2:   #1A1A1A;
+    --mute:   #6B6B6B;
+    --rule:   #0A0A0A;
+    --red:    #C8102E;
+    --grid:   12;
+  }
+
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { background: #DEDBD3; }
+
+  body {
+    font-family: 'Helvetica Neue', 'Helvetica', 'Inter', 'Arial', sans-serif;
+    font-feature-settings: "ss01","cv11","tnum","kern";
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .page {
+    width: 1360px;
+    margin: 24px auto 48px;
+    padding: 0 40px 56px;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    position: relative;
+  }
+
+  /* ============== MASTHEAD ============== */
+  .masthead {
+    display: grid;
+    grid-template-columns: 14px 1fr auto auto auto;
+    gap: 16px;
+    align-items: end;
+    padding: 22px 0 12px;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .swatch { width: 14px; height: 14px; background: var(--red); margin-bottom: 4px; }
+  .brand {
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -0.6px;
+    line-height: 1;
+  }
+  .brand .pipe { color: var(--mute); margin: 0 14px; font-weight: 400; }
+  .brand .sub  { font-weight: 400; font-size: 12px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink); }
+
+  .masthead .stamp {
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .masthead .stamp .lab { color: var(--mute); display: block; }
+
+  /* Sub-masthead caption row */
+  .subhead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0 6px;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-bottom: 0.5px solid var(--ink);
+  }
+  .subhead em {
+    font-style: normal;
+    color: var(--mute);
+  }
+
+  /* Heavy double rule under masthead — bulletin convention */
+  .heavyrule {
+    height: 4px;
+    margin: 4px 0 0;
+    background:
+      linear-gradient(var(--ink), var(--ink)) top/100% 1.5px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) bottom/100% 0.5px no-repeat;
+  }
+
+  /* ============== TABLE OF CONTENTS ============== */
+  .toc {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 24px;
+    padding: 18px 0 22px;
+    border-bottom: 0.5px solid var(--ink);
+  }
+  .toc .label {
+    grid-column: span 2;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--mute);
+    padding-top: 2px;
+  }
+  .toc ol {
+    grid-column: span 5;
+    margin: 0; padding: 0;
+    list-style: none;
+    font-size: 12px;
+    line-height: 1.9;
+    column-count: 1;
+  }
+  .toc ol li {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    gap: 8px;
+    border-bottom: 0.5px dotted #c4bfb4;
+  }
+  .toc ol li .num { color: var(--mute); }
+  .toc ol li .pg  { color: var(--mute); font-variant-numeric: tabular-nums; }
+
+  /* ============== SECTION HEADERS ============== */
+  .section { padding: 26px 0 4px; }
+  .section-head {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 16px;
+    align-items: end;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: 18px;
+  }
+  .section-head .num {
+    font-size: 38px;
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -1px;
+    color: var(--ink);
+  }
+  .section-head h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    text-transform: none;
+  }
+  .section-head h2 small {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--mute);
+    font-weight: 400;
+  }
+  .section-head .meta {
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--mute);
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  /* ============== POOL AGGREGATES ============== */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+  }
+  .stat {
+    padding: 22px 24px 22px;
+    border-right: 0.5px solid var(--ink);
+  }
+  .stat:last-child { border-right: 0; }
+  .stat .lab {
+    font-size: 9.5px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .stat .unit {
+    font-size: 9.5px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--mute);
+    margin-bottom: 18px;
+  }
+  .stat .val {
+    font-weight: 900;
+    font-size: 56px;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--ink);
+  }
+  .stat .val sup {
+    font-size: 13px;
+    font-weight: 400;
+    vertical-align: super;
+    margin-left: 6px;
+    color: var(--ink);
+    letter-spacing: 0;
+  }
+  .stat .delta {
+    margin-top: 14px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--mute);
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+  .stat .delta .v { color: var(--ink); font-weight: 700; }
+  .stat .delta .v.up::before    { content: "▲ "; color: var(--red); }
+  .stat .delta .v.down::before  { content: "▼ "; color: var(--ink); }
+  .stat .delta .v.flat::before  { content: "■ "; color: var(--mute); }
+
+  .footnotes {
+    padding: 12px 0 24px;
+    font-size: 10px;
+    line-height: 1.55;
+    color: var(--ink);
+    column-count: 2;
+    column-gap: 36px;
+    border-bottom: 0.5px solid var(--ink);
+  }
+  .footnotes .fn { display: block; }
+  .footnotes sup { font-size: 8.5px; margin-right: 4px; color: var(--ink); }
+
+  /* ============== UTILISATION CHART ============== */
+  .chart-wrap {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 32px;
+    border-top: 0;
+    padding: 6px 0 14px;
+  }
+  .chart-wrap svg { width: 100%; height: 220px; display: block; }
+  .chart-cap {
+    font-size: 10px;
+    line-height: 1.55;
+    color: var(--ink);
+    padding-top: 8px;
+    border-top: 0.5px solid var(--ink);
+    margin-top: 10px;
+  }
+  .chart-cap em { font-style: italic; color: var(--mute); }
+  .chart-aside {
+    border-left: 0.5px solid var(--ink);
+    padding-left: 24px;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .chart-aside .lab {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--mute);
+    margin: 0 0 8px;
+  }
+  .chart-aside dl { margin: 0; display: grid; grid-template-columns: 1fr auto; row-gap: 4px; column-gap: 12px; }
+  .chart-aside dt { color: var(--mute); font-size: 10.5px; }
+  .chart-aside dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 11px; }
+  .chart-aside hr { border: 0; border-top: 0.5px solid var(--ink); margin: 10px 0; }
+
+  /* ============== TABLES ============== */
+  .twocol {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 32px;
+    margin-top: 4px;
+  }
+
+  table.bul {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  table.bul caption {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--mute);
+    padding-bottom: 6px;
+  }
+  table.bul thead th {
+    text-align: left;
+    font-weight: 700;
+    font-size: 9.5px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--ink);
+    padding: 8px 10px 6px;
+    border-top: 1.5px solid var(--ink);
+    border-bottom: 0.5px solid var(--ink);
+    white-space: nowrap;
+    vertical-align: bottom;
+  }
+  table.bul tbody td {
+    padding: 9px 10px;
+    border-bottom: 0.5px solid #d6d2c8;
+    vertical-align: baseline;
+    color: var(--ink);
+  }
+  table.bul tbody tr:last-child td { border-bottom: 1.5px solid var(--ink); }
+  table.bul .num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.bul .ix  { color: var(--mute); width: 28px; }
+  table.bul .mono { font-family: 'JetBrains Mono','Menlo','Consolas',monospace; font-size: 11px; }
+  table.bul .ok  { color: var(--ink); }
+  table.bul .ok::before { content: "✓"; margin-right: 4px; }
+  table.bul .pend { color: var(--red); }
+  table.bul .pend::before { content: "○"; margin-right: 4px; }
+  table.bul tbody tr:hover { background: var(--paper2); }
+
+  /* Score bars (in reputation table) inline, monospaced ASCII style */
+  .bar {
+    display: inline-block;
+    width: 110px;
+    height: 6px;
+    background: #d6d2c8;
+    position: relative;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .bar > span {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: var(--ink);
+  }
+
+  /* ============== COLOPHON ============== */
+  .colophon {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1.5px solid var(--ink);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .colophon .left .blurb {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 10.5px;
+    color: var(--mute);
+    margin-top: 6px;
+    max-width: 720px;
+    line-height: 1.5;
+  }
+  .colophon .right { text-align: right; line-height: 1.7; color: var(--mute); }
+  .colophon .right b { color: var(--ink); font-weight: 700; }
+
+  /* selection */
+  ::selection { background: var(--red); color: #fff; }
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ============== MASTHEAD ============== -->
+  <header class="masthead">
+    <div class="swatch" aria-hidden="true"></div>
+    <div class="brand">
+      CREDMESH<span class="pipe">|</span><span class="sub">Statistical Bulletin · No. 1 / 2026</span>
+    </div>
+    <div class="stamp">
+      <span class="lab">Issue</span>
+      I · 2026
+    </div>
+    <div class="stamp">
+      <span class="lab">Snapshot</span>
+      03.05.2026 · 14:00 UTC
+    </div>
+    <div class="stamp">
+      <span class="lab">Page</span>
+      1 / 1
+    </div>
+  </header>
+
+  <div class="subhead">
+    <span>Vol. I, Issue 1 — Programmable Credit Registry — Solana Mainnet-Beta</span>
+    <em>Ed.: CredMesh · Frankfurt am Main · Compiled at slot 312 884 102</em>
+  </div>
+  <div class="heavyrule" role="presentation"></div>
+
+  <!-- ============== TABLE OF CONTENTS ============== -->
+  <section class="toc" aria-label="Contents">
+    <div class="label">Contents</div>
+    <ol>
+      <li><span class="num">§1</span><span>Pool Aggregates</span><span class="pg">01</span></li>
+      <li><span class="num">§2</span><span>Utilisation Curve, 30 Day</span><span class="pg">01</span></li>
+    </ol>
+    <ol>
+      <li><span class="num">§3</span><span>Recent Advances</span><span class="pg">01</span></li>
+      <li><span class="num">§4</span><span>Counterparty Reputation</span><span class="pg">01</span></li>
+    </ol>
+  </section>
+
+  <!-- ============== § 1 POOL AGGREGATES ============== -->
+  <section class="section" id="s1">
+    <div class="section-head">
+      <div class="num">§1</div>
+      <h2>Pool aggregates
+        <small>Snapshot as at 03 May 2026, 14:00:00 UTC · USDC pool, Solana mainnet-beta</small>
+      </h2>
+      <div class="meta">Table 1.A<br>On-chain</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="lab">Total value locked<sup>¹</sup></div>
+        <div class="unit">USD, vault + outstanding</div>
+        <div class="val">4 218 442<span style="color:var(--mute);font-weight:400;">.18</span></div>
+        <div class="delta">
+          <span class="v up">+ 0.18 %</span>
+          <span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:400;">+ 1.92 %</span>
+          <span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Utilisation<sup>²</sup></div>
+        <div class="unit">Per cent of TVL deployed</div>
+        <div class="val">67<span style="color:var(--mute);font-weight:400;">.34</span></div>
+        <div class="delta">
+          <span class="v up">+ 1.20 pp</span>
+          <span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:400;">+ 4.81 pp</span>
+          <span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Share price<sup>³</sup></div>
+        <div class="unit">USDC per pool share</div>
+        <div class="val">1<span style="color:var(--mute);font-weight:400;">.0234</span></div>
+        <div class="delta">
+          <span class="v up">+ 0.0011</span>
+          <span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:400;">+ 0.0089</span>
+          <span>30 d</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <span class="fn"><sup>¹</sup>Sum of pool vault USDC balance and outstanding principal across all active advances. Excludes accrued but undistributed protocol fees.</span>
+      <span class="fn"><sup>²</sup>Outstanding principal divided by TVL. Drives the piecewise-linear utilisation fee curve described in DESIGN §3.5.</span>
+      <span class="fn"><sup>³</sup>Pool-share unit price, marked to fee accrual since deployment on 12 March 2026. Shares are non-rebasing.</span>
+      <span class="fn">Sources: pool vault account, advance state PDAs, share-mint supply. Compiled at slot 312 884 102.</span>
+    </div>
+  </section>
+
+  <!-- ============== § 2 UTILISATION CURVE ============== -->
+  <section class="section" id="s2">
+    <div class="section-head">
+      <div class="num">§2</div>
+      <h2>Utilisation curve, 30 day
+        <small>Daily close · Per cent · Solana mainnet-beta</small>
+      </h2>
+      <div class="meta">Chart 2.A<br>On-chain</div>
+    </div>
+
+    <div class="chart-wrap">
+      <!-- Hand-drawn line chart, no fill, 1px, hairline grid -->
+      <svg viewBox="0 0 760 220" preserveAspectRatio="none" aria-label="Utilisation, daily close, last 30 days">
+        <!-- frame -->
+        <rect x="40" y="8" width="700" height="180" fill="none" stroke="#0A0A0A" stroke-width="0.6"/>
+
+        <!-- horizontal gridlines at 50/60/70/80 -->
+        <g stroke="#0A0A0A" stroke-width="0.3" stroke-dasharray="2 3" opacity="0.55">
+          <line x1="40" y1="44"  x2="740" y2="44"/>   <!-- 80 -->
+          <line x1="40" y1="80"  x2="740" y2="80"/>   <!-- 70 -->
+          <line x1="40" y1="116" x2="740" y2="116"/>  <!-- 60 -->
+          <line x1="40" y1="152" x2="740" y2="152"/>  <!-- 50 -->
+        </g>
+
+        <!-- y-axis labels -->
+        <g font-family="'Helvetica Neue','Inter','Helvetica',sans-serif" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+          <text x="34" y="47"  text-anchor="end">80</text>
+          <text x="34" y="83"  text-anchor="end">70</text>
+          <text x="34" y="119" text-anchor="end">60</text>
+          <text x="34" y="155" text-anchor="end">50</text>
+          <text x="34" y="191" text-anchor="end">40</text>
+        </g>
+
+        <!-- x-axis labels (day stamps every 5 days) -->
+        <g font-family="'Helvetica Neue','Inter','Helvetica',sans-serif" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+          <text x="40"  y="206" text-anchor="middle">04.04</text>
+          <text x="156" y="206" text-anchor="middle">09.04</text>
+          <text x="272" y="206" text-anchor="middle">14.04</text>
+          <text x="389" y="206" text-anchor="middle">19.04</text>
+          <text x="506" y="206" text-anchor="middle">24.04</text>
+          <text x="623" y="206" text-anchor="middle">29.04</text>
+          <text x="740" y="206" text-anchor="middle">03.05</text>
+        </g>
+
+        <!-- data line: 30 daily points, ranging 50–72%, ending at 67.34
+             y = 188 - (val - 40) * 3.6   (40% bottom, 80% near top)
+             values:
+             58.1 56.2 53.4 55.0 57.8 59.4 60.1 58.7 57.3 59.0
+             61.4 62.8 64.0 63.1 60.6 58.4 59.9 62.5 64.7 65.6
+             63.9 62.1 60.5 62.4 64.9 66.2 65.4 66.1 67.0 67.34
+             x = 40 + i * (700/29) -->
+        <polyline
+          fill="none"
+          stroke="#0A0A0A"
+          stroke-width="1.2"
+          stroke-linejoin="miter"
+          stroke-linecap="butt"
+          points="
+40,123.16
+64.14,128.92
+88.28,139.04
+112.41,133.28
+136.55,123.16
+160.69,117.40
+184.83,114.88
+208.97,119.92
+233.10,124.96
+257.24,118.84
+281.38,113.16
+305.52,108.12
+329.66,103.80
+353.79,107.04
+377.93,116.08
+402.07,123.96
+426.21,118.56
+450.34,108.84
+474.48,100.92
+498.62,97.68
+522.76,103.80
+546.90,110.28
+571.03,116.04
+595.17,109.20
+619.31,100.20
+643.45,95.52
+667.59,98.40
+691.72,95.88
+715.86,92.66
+740,91.44
+"
+        />
+
+        <!-- end-point marker, sovereign red -->
+        <rect x="736.5" y="87.94" width="7" height="7" fill="#C8102E"/>
+        <line x1="740" y1="91.44" x2="740" y2="188" stroke="#C8102E" stroke-width="0.6" stroke-dasharray="2 2"/>
+        <text x="734" y="78" text-anchor="end" font-family="'Helvetica Neue','Inter','Helvetica',sans-serif" font-size="10" font-weight="700" fill="#C8102E">67.34 %</text>
+      </svg>
+
+      <aside class="chart-aside">
+        <p class="lab">Period statistics</p>
+        <dl>
+          <dt>Open (04.04)</dt><dd>58.10 %</dd>
+          <dt>Close (03.05)</dt><dd>67.34 %</dd>
+          <dt>Period high</dt><dd>72.42 %</dd>
+          <dt>Period low</dt><dd>53.40 %</dd>
+          <dt>Mean</dt><dd>61.78 %</dd>
+          <dt>St. dev.</dt><dd>4.91 pp</dd>
+        </dl>
+        <hr>
+        <p class="lab">Curve regime</p>
+        <dl>
+          <dt>Optimum</dt><dd>80.00 %</dd>
+          <dt>Base fee</dt><dd>0.50 %</dd>
+          <dt>Slope below opt.</dt><dd>4.00 %</dd>
+          <dt>Slope above opt.</dt><dd>60.00 %</dd>
+        </dl>
+      </aside>
+    </div>
+
+    <div class="chart-cap">
+      <strong>Chart 2.A.</strong>&nbsp; Pool utilisation, daily close, per cent. <em>Last observation: 03 May 2026, 14:00 UTC.</em> Dashed horizontal lines indicate regime gridlines at 50, 60, 70 and 80 per cent. The piecewise-linear fee curve inflects at 80 per cent (optimum); see DESIGN §3.5 for the rate model.
+    </div>
+  </section>
+
+  <!-- ============== § 3 RECENT ADVANCES + § 4 REPUTATION ============== -->
+  <section class="section twocol">
+
+    <!-- §3 -->
+    <div>
+      <div class="section-head" style="grid-template-columns: 60px 1fr auto;">
+        <div class="num">§3</div>
+        <h2>Recent advances
+          <small>Last 5 settled · USDC · Solana mainnet-beta</small>
+        </h2>
+        <div class="meta">Table 3.A</div>
+      </div>
+
+      <table class="bul" aria-label="Recent advances">
+        <thead>
+          <tr>
+            <th class="ix">Nº</th>
+            <th>Time (UTC)</th>
+            <th>Agent (Squads vault)</th>
+            <th class="num">Principal</th>
+            <th class="num">Fee</th>
+            <th class="num">Util. ⌀</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ix">05</td>
+            <td>14:02:11</td>
+            <td class="mono">aQ7w…vK2p</td>
+            <td class="num">8 400.00</td>
+            <td class="num">12.60</td>
+            <td class="num">67.34</td>
+            <td><span class="ok">Settled</span></td>
+          </tr>
+          <tr>
+            <td class="ix">04</td>
+            <td>13:48:55</td>
+            <td class="mono">x2Px…rB9c</td>
+            <td class="num">2 250.00</td>
+            <td class="num">3.38</td>
+            <td class="num">67.21</td>
+            <td><span class="ok">Settled</span></td>
+          </tr>
+          <tr>
+            <td class="ix">03</td>
+            <td>13:31:02</td>
+            <td class="mono">kM4n…tE1f</td>
+            <td class="num">18 000.00</td>
+            <td class="num">27.00</td>
+            <td class="num">66.94</td>
+            <td><span class="ok">Settled</span></td>
+          </tr>
+          <tr>
+            <td class="ix">02</td>
+            <td>12:59:44</td>
+            <td class="mono">jD8s…hC5y</td>
+            <td class="num">750.00</td>
+            <td class="num">1.13</td>
+            <td class="num">66.42</td>
+            <td><span class="ok">Settled</span></td>
+          </tr>
+          <tr>
+            <td class="ix">01</td>
+            <td>12:14:08</td>
+            <td class="mono">pR6q…nW3m</td>
+            <td class="num">41 200.00</td>
+            <td class="num">61.80</td>
+            <td class="num">65.81</td>
+            <td><span class="pend">Cranking</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+        <span class="fn">Source: <code>credmesh-escrow</code> advance state PDAs. Counts of 47 active advances at snapshot. Fees computed at issuance per the utilisation regime in §2.</span>
+      </div>
+    </div>
+
+    <!-- §4 -->
+    <div>
+      <div class="section-head" style="grid-template-columns: 60px 1fr auto;">
+        <div class="num">§4</div>
+        <h2>Counterparty reputation
+          <small>Top 3 by rolling-digest score · 0 – 1000</small>
+        </h2>
+        <div class="meta">Table 4.A</div>
+      </div>
+
+      <table class="bul" aria-label="Top agents by reputation">
+        <thead>
+          <tr>
+            <th class="ix">Rk.</th>
+            <th>Agent</th>
+            <th>Score (digest)</th>
+            <th class="num">Repaid</th>
+            <th class="num">Def.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ix">01</td>
+            <td class="mono">kM4n…tE1f</td>
+            <td><span class="bar"><span style="width:99.2%;"></span></span><b>992.4</b></td>
+            <td class="num">142</td>
+            <td class="num">0</td>
+          </tr>
+          <tr>
+            <td class="ix">02</td>
+            <td class="mono">aQ7w…vK2p</td>
+            <td><span class="bar"><span style="width:97.7%;"></span></span><b>977.1</b></td>
+            <td class="num">96</td>
+            <td class="num">0</td>
+          </tr>
+          <tr>
+            <td class="ix">03</td>
+            <td class="mono">pR6q…nW3m</td>
+            <td><span class="bar"><span style="width:96.2%;"></span></span><b>961.8</b></td>
+            <td class="num">211</td>
+            <td class="num">1</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+        <span class="fn">Score is the rolling 8004-shape digest commit; horizon = 90 days. <code>Def.</code> counts late-settle events ≥ 4 epochs past advance maturity.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== COLOPHON ============== -->
+  <footer class="colophon">
+    <div class="left">
+      Cred&shy;Mesh — Programmable&nbsp;credit&nbsp;registry · Issued&nbsp;on&nbsp;Solana
+      <p class="blurb">A canonical, on-chain credit issuer for autonomous agents. Liquidity providers post USDC; agents take advances against verifiable receivables, governed by a piecewise-linear utilisation fee curve. This bulletin reproduces the live state of the protocol at the snapshot timestamp.</p>
+    </div>
+    <div class="right">
+      <span class="lab">Compiled</span><br>
+      <b>03.05.2026 · 14:00:00 UTC</b><br>
+      Slot <b>312 884 102</b><br>
+      Block hash <b>9F3a…71B2</b><br>
+      Programme &nbsp;<b>cREdM…sH11</b>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>
