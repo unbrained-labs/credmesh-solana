@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CredMesh — Elements / Annex Z · Type Specimen</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* page-local layout helpers (specimen sheet only) */
+  .specimen { padding: var(--s-5) 0; border-bottom: var(--rule-hair) solid var(--ink); }
+  .specimen-head {
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    gap: var(--s-4);
+    align-items: baseline;
+    margin-bottom: var(--s-4);
+    padding-bottom: var(--s-2);
+    border-bottom: var(--rule-thin) solid var(--ink);
+  }
+  .specimen-head .ix {
+    font-size: var(--t-head);
+    font-weight: var(--w-black);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .specimen-head h2 {
+    margin: 0;
+    font-size: var(--t-head);
+    font-weight: var(--w-bold);
+    letter-spacing: var(--track-head);
+  }
+  .specimen-head h2 small {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--mute);
+    font-weight: var(--w-roman);
+  }
+  .specimen-head .ref {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--mute);
+    text-align: right;
+  }
+
+  .scale-row {
+    display: grid;
+    grid-template-columns: 60px 90px 1fr 280px;
+    gap: var(--s-4);
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: var(--rule-hair) dotted var(--rule-dot);
+  }
+  .scale-row.last { border-bottom: 0; }
+  .scale-row .name {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+  .scale-row .px { font-family: var(--font-mono); font-size: var(--t-rule); color: var(--ink); }
+  .scale-row .role {
+    font-size: var(--t-fine);
+    color: var(--mute);
+    text-align: right;
+    font-weight: var(--w-light);
+  }
+
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--s-3);
+  }
+  .swatch-cell {
+    border: var(--rule-thin) solid var(--ink);
+    background: var(--paper);
+  }
+  .swatch-cell .chip { height: 80px; border-bottom: var(--rule-thin) solid var(--ink); }
+  .swatch-cell dl { margin: 0; padding: 8px 10px; font-size: var(--t-foot); letter-spacing: var(--track-caps); text-transform: uppercase; }
+  .swatch-cell dt { color: var(--mute); }
+  .swatch-cell dd {
+    margin: 2px 0 0;
+    font-family: var(--font-mono);
+    font-size: var(--t-rule);
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
+  }
+
+  .space-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px;
+    gap: var(--s-3);
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: var(--rule-hair) dotted var(--rule-dot);
+    font-size: var(--t-rule);
+  }
+  .space-row .nm { font-size: var(--t-foot); letter-spacing: var(--track-caps); text-transform: uppercase; color: var(--mute); }
+  .space-row .bar { background: var(--ink); height: 10px; }
+  .space-row .px { font-family: var(--font-mono); text-align: right; font-size: var(--t-rule); }
+
+  .specimen-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-6);
+  }
+
+  .label-tag {
+    display: inline-block;
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+    border: var(--rule-hair) solid var(--mute);
+    padding: 2px 6px;
+    margin-bottom: var(--s-2);
+  }
+
+  .demo-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-4);
+  }
+
+  .pill-row { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+
+  .step-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-5);
+  }
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ============== MASTHEAD ============== -->
+  <header class="masthead">
+    <div class="swatch" aria-hidden="true"></div>
+    <div class="brand">
+      CREDMESH<span class="pipe">|</span><span class="sub">Statistical Bulletin · No. 1 / 2026</span>
+    </div>
+    <div class="stamp"><span class="lab">Issue</span>I · 2026</div>
+    <div class="stamp"><span class="lab">Annex</span>Z</div>
+    <div class="stamp"><span class="lab">Compiled</span>03.05.2026 · 14:00 UTC</div>
+    <div class="stamp"><span class="lab">Page</span>05 / 05</div>
+  </header>
+
+  <div class="subhead">
+    <span>Vol. I — Type Specimen, Primitive Inventory &amp; Designer Handoff</span>
+    <em>Ed.: CredMesh · Frankfurt am Main · Compiled at slot 268 437 902</em>
+  </div>
+  <div class="heavyrule"></div>
+
+  <div class="annex-bar">
+    <div class="label">Bulletin Annexes</div>
+    <nav>
+      <a href="dashboard-frame.html">Annex A — Pool Aggregates</a>
+      <a href="agent-observatory.html">Annex B — Counterparty Dossier</a>
+      <a href="governance.html">Annex C — Resolutions Pending</a>
+      <a href="elements.html" class="is-current">Annex Z — Type Specimen</a>
+    </nav>
+    <div class="meta">Plate <b>Z.0</b><br>Designer Handoff</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- §1 TYPE LADDER -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.1</div>
+      <h2>Type ladder
+        <small>Helvetica 95 · 75 · 55 · 45 — Inter when not licensed · 4px line-grid</small>
+      </h2>
+      <div class="ref">Plate Z.1<br>Specimen</div>
+    </div>
+
+    <div class="scale-row">
+      <span class="name">--t-foot</span><span class="px">9 / 13</span>
+      <span style="font-size:9px;letter-spacing:var(--track-caps);text-transform:uppercase;">SETTLED · 268 437 902 · ED25519 SIG</span>
+      <span class="role">Page no., gazette stamp, registry ix</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-fine</span><span class="px">10 / 15</span>
+      <span style="font-size:10px;font-weight:var(--w-light);">¹ Source: pool vault account at slot 268 437 902. Consumed in advance #4 712.</span>
+      <span class="role">Footnote, caption, source line</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-rule</span><span class="px">11 / 16</span>
+      <span style="font-size:11px;font-family:var(--font-mono);">5tQp7N3xBcK4mYz1WqL8Pf2vDhJ9sR6n…m9wK</span>
+      <span class="role">Axis tick, secondary cell, hex address</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-base</span><span class="px">12 / 17</span>
+      <span style="font-size:12px;">Liquidity providers post USDC; agents take advances against verifiable receivables, governed by the utilisation curve in §2.</span>
+      <span class="role">Body, primary table cell</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-lede</span><span class="px">14 / 20</span>
+      <span style="font-size:14px;">The canonical credit registry for autonomous agents.</span>
+      <span class="role">Lede paragraph, summary</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-head</span><span class="px">18 / 24</span>
+      <span style="font-size:18px;font-weight:var(--w-bold);letter-spacing:var(--track-head);">Pool aggregates</span>
+      <span class="role">Section heading (H2)</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-display-s</span><span class="px">24 / 28</span>
+      <span style="font-size:24px;font-weight:var(--w-bold);letter-spacing:var(--track-head);">Counterparty Dossier</span>
+      <span class="role">Sub-display, schedule heading</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-display-m</span><span class="px">38 / 36</span>
+      <span style="font-size:38px;font-weight:var(--w-black);letter-spacing:-0.04em;line-height:0.9;">§3</span>
+      <span class="role">Annex / § number</span>
+    </div>
+    <div class="scale-row">
+      <span class="name">--t-display-l</span><span class="px">56 / 56</span>
+      <span style="font-size:56px;font-weight:var(--w-black);letter-spacing:-0.035em;line-height:1;">4 218 442<span style="color:var(--mute);font-weight:var(--w-roman);">.18</span></span>
+      <span class="role">Stat hero (TVL, Share Price)</span>
+    </div>
+    <div class="scale-row last">
+      <span class="name">--t-display-xl</span><span class="px">80 / 72</span>
+      <span style="font-size:80px;font-weight:var(--w-black);letter-spacing:-0.05em;line-height:0.85;">B</span>
+      <span class="role">Annex masthead letter</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §2 COLOR -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.2</div>
+      <h2>Color tokens
+        <small>One accent — sovereign red. Everything else is paper or ink.</small>
+      </h2>
+      <div class="ref">Plate Z.2<br>Specimen</div>
+    </div>
+
+    <div class="swatch-grid">
+      <div class="swatch-cell"><div class="chip" style="background:var(--paper);"></div><dl><dt>Paper</dt><dd>--paper · #F4F2EE</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--paper-2);"></div><dl><dt>Paper 2</dt><dd>--paper-2 · #ECE9E2</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--paper-3);"></div><dl><dt>Paper 3</dt><dd>--paper-3 · #E2DED4</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--paper-edge);"></div><dl><dt>Paper edge</dt><dd>--paper-edge · #DEDBD3</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--ink);"></div><dl><dt style="color:#aaa;">Ink</dt><dd style="color:#fff;">--ink · #0A0A0A</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--ink-2);"></div><dl><dt style="color:#aaa;">Ink 2</dt><dd style="color:#fff;">--ink-2 · #1A1A1A</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--mute);"></div><dl><dt style="color:#fff;">Mute</dt><dd style="color:#fff;">--mute · #6B6B6B</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--mute-2);"></div><dl><dt style="color:#fff;">Mute 2</dt><dd style="color:#fff;">--mute-2 · #908A7E</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--rule-fine);"></div><dl><dt>Rule fine</dt><dd>--rule-fine · #C9C4B7</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--red);"></div><dl><dt style="color:#f6c0c8;">Sovereign red</dt><dd style="color:#fff;">--red · #C8102E</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--red-deep);"></div><dl><dt style="color:#f6c0c8;">Red deep</dt><dd style="color:#fff;">--red-deep · #8E0B20</dd></dl></div>
+      <div class="swatch-cell"><div class="chip" style="background:var(--red-tint);"></div><dl><dt>Red tint</dt><dd>--red-tint · #F2D9DD</dd></dl></div>
+    </div>
+
+    <div class="footnotes cols-1" style="border-bottom:0;padding-bottom:0;margin-top:var(--s-3);">
+      <span class="fn"><sup>¹</sup>Sovereign red appears at most twice per screen. Reserved for: a single numeric delta of consequence; a destructive-action gate; the registered-issuer mark in the masthead.</span>
+      <span class="fn"><sup>²</sup>No green, no yellow, no blue. Status is encoded by glyph (✓ ○ ▸ † ✖) and by position in the bulletin, not by hue.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §3 SPACING + RULES -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.3</div>
+      <h2>Spacing &amp; rules
+        <small>4px base · three rule weights only · whitespace is structural</small>
+      </h2>
+      <div class="ref">Plate Z.3<br>Specimen</div>
+    </div>
+
+    <div class="specimen-grid-2">
+      <div>
+        <div class="label-tag">Spacing scale (4px base)</div>
+        <div class="space-row"><span class="nm">--s-1</span><span class="bar" style="width:4px;"></span><span class="px">4 px</span></div>
+        <div class="space-row"><span class="nm">--s-2</span><span class="bar" style="width:8px;"></span><span class="px">8 px</span></div>
+        <div class="space-row"><span class="nm">--s-3</span><span class="bar" style="width:12px;"></span><span class="px">12 px</span></div>
+        <div class="space-row"><span class="nm">--s-4</span><span class="bar" style="width:16px;"></span><span class="px">16 px</span></div>
+        <div class="space-row"><span class="nm">--s-5</span><span class="bar" style="width:24px;"></span><span class="px">24 px · gutter</span></div>
+        <div class="space-row"><span class="nm">--s-6</span><span class="bar" style="width:32px;"></span><span class="px">32 px</span></div>
+        <div class="space-row"><span class="nm">--s-7</span><span class="bar" style="width:48px;"></span><span class="px">48 px · §-break</span></div>
+        <div class="space-row"><span class="nm">--s-8</span><span class="bar" style="width:64px;"></span><span class="px">64 px</span></div>
+      </div>
+      <div>
+        <div class="label-tag">Rule weights (only three)</div>
+
+        <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin:8px 0 4px;">Hairline · 0.5 px</div>
+        <div style="border-top:var(--rule-hair) solid var(--ink);height:0;margin-bottom:14px;"></div>
+
+        <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin:8px 0 4px;">Thin · 1 px</div>
+        <div style="border-top:var(--rule-thin) solid var(--ink);height:0;margin-bottom:14px;"></div>
+
+        <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin:8px 0 4px;">Heavy · 1.5 px</div>
+        <div style="border-top:var(--rule-heavy) solid var(--ink);height:0;margin-bottom:14px;"></div>
+
+        <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin:8px 0 4px;">Heavy double rule (masthead break)</div>
+        <div class="heavyrule" style="margin:0;"></div>
+
+        <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin:14px 0 4px;">Dotted leader (TOC, registry)</div>
+        <div style="border-top:var(--rule-hair) dotted var(--rule-dot);height:0;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §4 IDENTITY STRIP / PUBKEY CHIPS -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.4</div>
+      <h2>Identity strip &amp; pubkey chips
+        <small>Hex addresses are first-class data. Truncation rule: first 4 + last 4. Full on copy.</small>
+      </h2>
+      <div class="ref">Plate Z.4<br>Specimen</div>
+    </div>
+
+    <div style="border:var(--rule-thin) solid var(--ink);padding:var(--s-4) var(--s-5);">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-5);">
+        <div>
+          <div class="label-tag">Squads vault</div>
+          <span class="pk"><span class="role">[A-1]</span><span class="full">5tQp…m9wK</span><span class="copy">copy</span></span>
+        </div>
+        <div>
+          <div class="label-tag">MPL Agent registry</div>
+          <span class="pk"><span class="role">[A-2]</span><span class="full">7Hn3…vK4r</span><span class="copy">copy</span></span>
+        </div>
+        <div>
+          <div class="label-tag">Owner</div>
+          <span class="pk"><span class="role">[A-3]</span><span class="full">aQ7w…vK2p</span><span class="copy">copy</span></span>
+        </div>
+        <div>
+          <div class="label-tag">Operator since</div>
+          <span style="font-family:var(--font-mono);font-size:var(--t-rule);">slot 267 102 884</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footnotes cols-1" style="border-bottom:0;padding-bottom:0;margin-top:var(--s-3);">
+      <span class="fn"><sup>¹</sup>Each pubkey is shown as <code>first 4…last 4</code> by convention. The bracketed tag (<code>[A-1]</code>) is a per-page registry index that resolves to the full pubkey in the registry block at the bottom of every annex.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §5 STAT CARDS -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.5</div>
+      <h2>Stat cells
+        <small>Number first. Unit on its own line. Footnote ref tied to the source row in §F.</small>
+      </h2>
+      <div class="ref">Plate Z.5<br>Specimen</div>
+    </div>
+
+    <div class="stats cols-3">
+      <div class="stat">
+        <div class="lab">Total value locked<sup class="fn-ref">¹</sup></div>
+        <div class="unit">USD, vault + outstanding</div>
+        <div class="val">4 218 442<span class="dec">.18</span></div>
+        <div class="delta">
+          <span class="v up">+ 0.18 %</span><span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:var(--w-roman);">+ 1.92 %</span><span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Utilisation<sup class="fn-ref">²</sup></div>
+        <div class="unit">Per cent of TVL deployed</div>
+        <div class="val">67<span class="dec">.34</span></div>
+        <div class="delta">
+          <span class="v up">+ 1.20 pp</span><span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:var(--w-roman);">+ 4.81 pp</span><span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Share price<sup class="fn-ref">³</sup></div>
+        <div class="unit">USDC per pool share</div>
+        <div class="val">1<span class="dec">.0234</span></div>
+        <div class="delta">
+          <span class="v up">+ 0.0011</span><span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:var(--w-roman);">+ 0.0089</span><span>30 d</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <span class="fn"><sup>¹</sup>Sum of pool vault USDC balance and outstanding principal across active advances. Excludes accrued, undistributed protocol fees.</span>
+      <span class="fn"><sup>²</sup>Outstanding principal divided by TVL. Drives the piecewise-linear utilisation curve described in DESIGN §3.5.</span>
+      <span class="fn"><sup>³</sup>Pool-share unit price, marked to fee accrual since deployment on 12 March 2026. Shares are non-rebasing.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §6 STATUS PILLS / GLYPHS -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.6</div>
+      <h2>Status glyphs &amp; pills
+        <small>Bulletin marks, not coloured chips. State is text + glyph + slot delta.</small>
+      </h2>
+      <div class="ref">Plate Z.6<br>Specimen</div>
+    </div>
+
+    <div class="pill-row" style="margin-bottom:var(--s-3);">
+      <span class="pill ink">FINALIZED <span class="delta">slot 268 437 902</span></span>
+      <span class="pill">PENDING <span class="delta">+13 slots</span></span>
+      <span class="pill mute">SENT <span class="delta">slot 268 437 901</span></span>
+      <span class="pill">DEFERRED <span class="delta">timelock 36 h 12 m</span></span>
+      <span class="pill red">ERRATA <span class="delta">0x1771</span></span>
+    </div>
+
+    <div class="pill-row">
+      <span><span class="mk ok"></span>Settled</span>
+      <span><span class="mk pend"></span>Cranking</span>
+      <span><span class="mk sent"></span>Sent</span>
+      <span><span class="mk defer"></span>Deferred</span>
+      <span><span class="mk err"></span>Errata</span>
+    </div>
+
+    <div class="footnotes cols-1" style="border-bottom:0;padding-bottom:0;margin-top:var(--s-3);">
+      <span class="fn"><sup>¹</sup>Glyph + label is the canonical encoding. The slot delta (<code>+13 slots</code>) and the program-error code (<code>0x1771 → CredmeshError::InvalidFeeCurve</code>) are part of the brand surface — never collapsed to a bare checkmark.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §7 LIFECYCLE LEDGER -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.7</div>
+      <h2>Lifecycle ledger
+        <small>Sent → Pending → Finalized. Each row a gazetted entry with slot stamp and tx-sig citation.</small>
+      </h2>
+      <div class="ref">Plate Z.7<br>Specimen</div>
+    </div>
+
+    <div class="ledger">
+      <div class="row">
+        <div class="state sent">▸ SENT</div>
+        <div class="desc">deposit_lp · 5 000.0000 USDC · constructed by fee-payer</div>
+        <div class="sig mono">3aPmQ…9rN1k</div>
+        <div class="slot">slot 268 437 901</div>
+      </div>
+      <div class="row is-current">
+        <div class="state pending">○ PENDING</div>
+        <div class="desc">awaiting cluster confirmation · 1 / 32 slots</div>
+        <div class="sig mono">3aPmQ…9rN1k</div>
+        <div class="slot">+1 slots</div>
+      </div>
+      <div class="row">
+        <div class="state finalized">✓ FINALIZED</div>
+        <div class="desc">deposit_lp finalized · share-mint +4 882.6913</div>
+        <div class="sig mono">3aPmQ…9rN1k</div>
+        <div class="slot">slot 268 437 934</div>
+      </div>
+    </div>
+
+    <div class="footnotes cols-1" style="border-bottom:0;padding-bottom:0;margin-top:var(--s-3);">
+      <span class="fn"><sup>¹</sup>The ledger is never collapsed to a single ✓. Three states, three rows, three slot stamps. Failure substitutes a fourth row with class <code>.errata</code> and a <code>0x</code> program-error code.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §8 ACTION PANEL — incl. destructive variant -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.8</div>
+      <h2>Action panels
+        <small>Primary cta · Secondary · Destructive (engrossed). Destructive carries the strongest chrome on the page.</small>
+      </h2>
+      <div class="ref">Plate Z.8<br>Specimen</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-5);">
+      <div class="action-panel">
+        <div>
+          <div class="head">Primary action · Plate D.4</div>
+          <h3>Deposit USDC</h3>
+          <p>Mint pool shares against your USDC balance at the prevailing share price (1.0234). Settled in three states; receipt below the panel.</p>
+        </div>
+        <div style="display:flex;gap:var(--s-2);">
+          <button class="btn ghost">Cancel</button>
+          <button class="btn primary">Sign &amp; submit</button>
+        </div>
+      </div>
+
+      <div class="action-panel is-destructive">
+        <div>
+          <div class="head">Destructive action · gated</div>
+          <h3>Request emergency exit</h3>
+          <p>Posts an irrevocable transaction to the canonical ledger. Pool freezes for the calling agent; outstanding advances are crystallised at last-known fee.<sup class="fn-ref red">¹</sup></p>
+        </div>
+        <div style="display:flex;gap:var(--s-3);align-items:center;">
+          <span class="stamp-engrossed">Engrossed</span>
+          <button class="btn destructive">Sign &amp; engross</button>
+        </div>
+        <div class="footrule">
+          ¹ This action posts a transaction to the canonical ledger and cannot be reverted.
+            Counter-signature by the registered owner key required.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §9 TIME SERIES CHART -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.9</div>
+      <h2>Time-series chart
+        <small>1 px line, no fill, no legend frame. Marker on last observation. Caption beneath in 10 pt.</small>
+      </h2>
+      <div class="ref">Plate Z.9<br>Specimen</div>
+    </div>
+
+    <div style="border-top:var(--rule-thin) solid var(--ink);padding-top:var(--s-3);">
+      <svg viewBox="0 0 1100 200" preserveAspectRatio="none" style="width:100%;height:200px;display:block;">
+        <rect x="40" y="8" width="1040" height="160" fill="none" stroke="#0A0A0A" stroke-width="0.6"/>
+        <g stroke="#0A0A0A" stroke-width="0.3" stroke-dasharray="2 3" opacity="0.55">
+          <line x1="40" y1="40"  x2="1080" y2="40"/>
+          <line x1="40" y1="72"  x2="1080" y2="72"/>
+          <line x1="40" y1="104" x2="1080" y2="104"/>
+          <line x1="40" y1="136" x2="1080" y2="136"/>
+        </g>
+        <g font-family="var(--font-sans)" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+          <text x="34" y="43" text-anchor="end">1.030</text>
+          <text x="34" y="75" text-anchor="end">1.025</text>
+          <text x="34" y="107" text-anchor="end">1.020</text>
+          <text x="34" y="139" text-anchor="end">1.015</text>
+          <text x="34" y="171" text-anchor="end">1.010</text>
+        </g>
+        <polyline fill="none" stroke="#0A0A0A" stroke-width="1.2"
+          points="40,135 75,132 110,128 145,125 180,121 215,118 250,116 285,113 320,110 355,108 390,107 425,103 460,100 495,99 530,96 565,93 600,91 635,87 670,84 705,80 740,77 775,74 810,71 845,69 880,66 915,63 950,60 985,57 1020,53 1055,49 1080,46"/>
+        <rect x="1076.5" y="42.5" width="7" height="7" fill="#C8102E"/>
+        <line x1="1080" y1="46" x2="1080" y2="168" stroke="#C8102E" stroke-width="0.6" stroke-dasharray="2 2"/>
+        <text x="1074" y="33" text-anchor="end" font-family="var(--font-sans)" font-size="10" font-weight="700" fill="#C8102E">1.0234</text>
+      </svg>
+      <p style="font-size:var(--t-fine);font-weight:var(--w-light);font-style:italic;color:var(--ink);margin:var(--s-2) 0 0;">
+        <strong>Chart Z.9.</strong>&nbsp; Share price, daily close, USDC. <em>Last observation: 03 May 2026 — slot 268 437 902. Hover any tick to read slot + timestamp + value.</em>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §10 STEP CHART (reputation timeline) -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.10</div>
+      <h2>Step chart
+        <small>Reputation digest is discrete — transitions are steps, not slopes.</small>
+      </h2>
+      <div class="ref">Plate Z.10<br>Specimen</div>
+    </div>
+
+    <div style="border-top:var(--rule-thin) solid var(--ink);padding-top:var(--s-3);">
+      <svg viewBox="0 0 1100 180" preserveAspectRatio="none" style="width:100%;height:180px;display:block;">
+        <rect x="40" y="8" width="1040" height="140" fill="none" stroke="#0A0A0A" stroke-width="0.6"/>
+        <g stroke="#0A0A0A" stroke-width="0.3" stroke-dasharray="2 3" opacity="0.55">
+          <line x1="40" y1="36"  x2="1080" y2="36"/>
+          <line x1="40" y1="64"  x2="1080" y2="64"/>
+          <line x1="40" y1="92"  x2="1080" y2="92"/>
+          <line x1="40" y1="120" x2="1080" y2="120"/>
+        </g>
+        <g font-family="var(--font-sans)" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+          <text x="34" y="39" text-anchor="end">1000</text>
+          <text x="34" y="67" text-anchor="end">980</text>
+          <text x="34" y="95" text-anchor="end">960</text>
+          <text x="34" y="123" text-anchor="end">940</text>
+          <text x="34" y="151" text-anchor="end">920</text>
+        </g>
+        <polyline fill="none" stroke="#0A0A0A" stroke-width="1.4"
+          points="40,108 130,108 130,92 230,92 230,80 360,80 360,64 480,64 480,72 580,72 580,52 740,52 740,44 880,44 880,36 1080,36"/>
+        <g fill="#0A0A0A">
+          <circle cx="130" cy="92" r="2"/><circle cx="230" cy="80" r="2"/>
+          <circle cx="360" cy="64" r="2"/><circle cx="480" cy="72" r="2"/>
+          <circle cx="580" cy="52" r="2"/><circle cx="740" cy="44" r="2"/>
+          <circle cx="880" cy="36" r="2"/>
+        </g>
+        <rect x="1076.5" y="32.5" width="7" height="7" fill="#C8102E"/>
+        <text x="1074" y="24" text-anchor="end" font-family="var(--font-sans)" font-size="10" font-weight="700" fill="#C8102E">992.4</text>
+      </svg>
+      <p style="font-size:var(--t-fine);font-weight:var(--w-light);font-style:italic;margin:var(--s-2) 0 0;">
+        <strong>Chart Z.10.</strong>&nbsp; Reputation digest, discrete-step. Each transition writes a new 8004-shape commit at a known slot.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §11 SCHEDULE (table) -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.11</div>
+      <h2>Schedule (table)
+        <small>Heavy rule above and below. Hairline between rows. Tabular figures, monospace addresses.</small>
+      </h2>
+      <div class="ref">Plate Z.11<br>Specimen</div>
+    </div>
+
+    <table class="bul" aria-label="Sample schedule">
+      <caption>Schedule Z.11.A · Recent advances · USDC pool</caption>
+      <thead>
+        <tr>
+          <th class="ix">Nº</th>
+          <th>Time (UTC)</th>
+          <th>Agent</th>
+          <th class="num">Principal</th>
+          <th class="num">Fee</th>
+          <th class="num">Slot</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ix">05</td>
+          <td>14:02:11</td>
+          <td><span class="pk"><span class="role">[A-1]</span><span class="full mono">5tQp…m9wK</span></span></td>
+          <td class="num">8 400.0000</td>
+          <td class="num">12.6000</td>
+          <td class="num">268 437 902</td>
+          <td><span class="mk ok"></span>Settled</td>
+        </tr>
+        <tr>
+          <td class="ix">04</td>
+          <td>13:48:55</td>
+          <td><span class="pk"><span class="role">[A-2]</span><span class="full mono">7Hn3…vK4r</span></span></td>
+          <td class="num">2 250.0000</td>
+          <td class="num">3.3750</td>
+          <td class="num">268 436 211</td>
+          <td><span class="mk ok"></span>Settled</td>
+        </tr>
+        <tr>
+          <td class="ix">03</td>
+          <td>13:31:02</td>
+          <td><span class="pk"><span class="role">[A-3]</span><span class="full mono">aQ7w…vK2p</span></span></td>
+          <td class="num">18 000.0000</td>
+          <td class="num">27.0000</td>
+          <td class="num">268 434 817</td>
+          <td><span class="mk pend"></span>Cranking <span class="pill" style="margin-left:6px;">+12 slots</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §12 FOOTNOTE / CALLOUT primitives -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.12</div>
+      <h2>Footnote &amp; callout
+        <small>This is what separates a bulletin from a dashboard. Numbered superscripts; source row below.</small>
+      </h2>
+      <div class="ref">Plate Z.12<br>Specimen</div>
+    </div>
+
+    <div class="footnotes" style="border-bottom:0;padding-bottom:0;">
+      <span class="fn"><sup>¹</sup>Sum of pool vault USDC balance and outstanding principal across active advances. Compiled at slot 268 437 902.</span>
+      <span class="fn"><sup>²</sup>Outstanding principal divided by TVL. Drives the piecewise-linear utilisation fee curve described in DESIGN §3.5.</span>
+      <span class="fn"><sup>³</sup>Pool-share unit price, marked to fee accrual since deployment on 12 March 2026. Shares are non-rebasing.</span>
+      <span class="fn"><sup>⁴</sup>Active-agents count includes only Squads-vault agents with at least one settled advance in the trailing 30 days.</span>
+      <span class="fn"><sup>⁵</sup>Pool status follows the binary <code>Open ↔ Frozen</code> register; transitions require a governance resolution and a 36-hour timelock.</span>
+      <span class="fn">Sources: <code>credmesh-escrow</code> pool PDA, advance state PDAs, share-mint supply, governance program account state. Block hash <code>9F3a…71B2</code>.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §13 ERRATA -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.13</div>
+      <h2>Errata
+        <small>Failed transactions get red rule, program-error name, and an instrument citation.</small>
+      </h2>
+      <div class="ref">Plate Z.13<br>Specimen</div>
+    </div>
+
+    <div class="errata">
+      <h4>Errata · last 1 h</h4>
+      <div class="item">
+        <div class="code">0x1771</div>
+        <div class="desc">request_advance — <s>InvalidFeeCurve</s> · <code>CredmeshError::InvalidFeeCurve</code> raised at piecewise inflection; advance not issued.</div>
+        <div class="slot">slot 268 437 871</div>
+      </div>
+      <div class="item">
+        <div class="code">0x17A4</div>
+        <div class="desc">claim_and_settle — <s>CrankerNotAdvanceAgent</s> · <code>CredmeshError::CrankerNotAdvanceAgent</code>. Cranker pubkey did not match advance.agent (v1 invariant).</div>
+        <div class="slot">slot 268 437 502</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §14 REGISTRY INDEX -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.14</div>
+      <h2>Registry index
+        <small>Every short pubkey on the page resolves here. Bottom-of-annex convention.</small>
+      </h2>
+      <div class="ref">Plate Z.14<br>Specimen</div>
+    </div>
+
+    <div class="registry">
+      <h4>Registry of pubkeys cited in this annex</h4>
+      <table>
+        <tr><td class="ix">[A-1]</td><td class="role">Agent · Squads vault</td><td class="full">5tQp7N3xBcK4mYz1WqL8Pf2vDhJ9sR6n4tBdLhCmVxYz3KqWm9wK</td></tr>
+        <tr><td class="ix">[A-2]</td><td class="role">Agent · Squads vault</td><td class="full">7Hn3jX9pK2mLcQrW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvK4r</td></tr>
+        <tr><td class="ix">[A-3]</td><td class="role">Agent · Squads vault</td><td class="full">aQ7wRtY8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiVK2p</td></tr>
+        <tr><td class="ix">[P-1]</td><td class="role">Pool · USDC mainnet-beta</td><td class="full">cREdM3hPxKqW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvKiJsH11</td></tr>
+        <tr><td class="ix">[O-1]</td><td class="role">Receivable oracle worker</td><td class="full">orac1KvBxN3jPm9HrAcZqLyTvKiJsH11pK2mLcQrW4tFvB8sR2zR</td></tr>
+        <tr><td class="ix">[F-1]</td><td class="role">Fee-payer (server)</td><td class="full">FeeP1yer8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiK7p9</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §15 ANNEX MASTHEAD -->
+  <!-- ============================================================ -->
+  <section class="specimen">
+    <div class="specimen-head">
+      <div class="ix">§Z.15</div>
+      <h2>Annex masthead
+        <small>Used at the top of Annex B / Annex C to identify the dossier in the bulletin run.</small>
+      </h2>
+      <div class="ref">Plate Z.15<br>Specimen</div>
+    </div>
+
+    <div class="annex-masthead">
+      <div class="annex-no">B<small>Annex</small></div>
+      <h1>Counterparty dossier
+        <small>Agent · Squads vault [A-1] · 5tQp…m9wK · operator since slot 267 102 884</small>
+      </h1>
+      <div class="stamp">
+        <span style="color:var(--mute);">Compiled</span><br>
+        <b>03.05.2026 · 14:00 UTC</b><br>
+        <span class="mono">slot 268 437 902</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== COLOPHON ============== -->
+  <footer class="colophon">
+    <div class="left">
+      Cred&shy;Mesh — Programmable&nbsp;credit&nbsp;registry · Annex&nbsp;Z · Type&nbsp;specimen
+      <p class="blurb">This specimen sheet documents every primitive used across Annexes A — C of Statistical Bulletin No. 1. Print at 100 % to verify hairline integrity. Designer handoff master.</p>
+    </div>
+    <div class="right">
+      <span style="color:var(--mute);">Compiled</span><br>
+      <b>03.05.2026 · 14:00:00 UTC</b><br>
+      <span class="mono">slot 268 437 902</span><br>
+      <span class="mono">block 9F3a…71B2</span><br>
+      <span class="mono">programme cREdM…sH11</span>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>
