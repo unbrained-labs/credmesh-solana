@@ -7,7 +7,11 @@ pub use credmesh_shared::seeds::{
 pub const PROTOCOL_FEE_BPS: u16 = 1500;
 pub const BPS_DENOMINATOR: u64 = 10_000;
 
-pub const CLAIM_WINDOW_SECONDS: i64 = 7 * 24 * 60 * 60;
+// CLAIM_WINDOW_SECONDS removed — settlement now allowed any time from
+// issuance up to `expires_at + LIQUIDATION_GRACE_SECONDS`, gated only on
+// the upper bound. The pre-pivot 7-day lower-bound guard blocked the
+// dominant micro-loan use case (advances with TTLs measured in minutes,
+// not days).
 pub const LIQUIDATION_GRACE_SECONDS: i64 = 14 * 24 * 60 * 60;
 
 pub const VIRTUAL_ASSETS_OFFSET: u64 = 1_000_000;

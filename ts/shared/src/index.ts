@@ -21,7 +21,9 @@ export const ATTESTOR_CONFIG_SEED = "attestor_config";
 
 // ── Time constants (mirror programs/credmesh-escrow/src/state.rs) ──────────
 
-export const CLAIM_WINDOW_SECONDS = 7 * 24 * 60 * 60;
+// CLAIM_WINDOW_SECONDS removed — settlement now allowed any time from
+// issuance up to `expires_at + LIQUIDATION_GRACE_SECONDS`. The on-chain
+// handler gates only the upper bound.
 export const LIQUIDATION_GRACE_SECONDS = 14 * 24 * 60 * 60;
 export const MAX_LATE_DAYS = 365;
 

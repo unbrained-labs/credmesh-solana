@@ -6,7 +6,7 @@ use crate::errors::CredmeshError;
 use crate::events::AdvanceSettled;
 use crate::state::{
     Advance, AdvanceState, ConsumedPayment, Pool, ADVANCE_SEED, BPS_DENOMINATOR,
-    CLAIM_WINDOW_SECONDS, CONSUMED_SEED, MAX_LATE_DAYS, POOL_SEED, PROTOCOL_FEE_BPS,
+    CONSUMED_SEED, LIQUIDATION_GRACE_SECONDS, MAX_LATE_DAYS, POOL_SEED, PROTOCOL_FEE_BPS,
 };
 
 /// Single-mode settlement: the agent calls this themselves with USDC in
@@ -79,14 +79,20 @@ pub struct ClaimAndSettle<'info> {
 pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
 
-    // Settlement window opens at `expires_at - CLAIM_WINDOW_SECONDS`.
-    let claim_window_start = ctx
+    // Settlement is allowed any time from issuance up to the moment
+    // liquidation becomes eligible (`expires_at + LIQUIDATION_GRACE_SECONDS`).
+    // No lower bound — the use case is many micro-loans with very fast
+    // repayment (agents pulling advances for inference costs, settling
+    // within minutes), so any pre-expiry gate would block the common path.
+    // The strict `<` keeps `claim_and_settle` and `liquidate` mutually
+    // exclusive at the exact transition timestamp.
+    let claim_window_end = ctx
         .accounts
         .advance
         .expires_at
-        .checked_sub(CLAIM_WINDOW_SECONDS)
+        .checked_add(LIQUIDATION_GRACE_SECONDS)
         .ok_or(CredmeshError::MathOverflow)?;
-    require!(now >= claim_window_start, CredmeshError::NotSettleable);
+    require!(now < claim_window_end, CredmeshError::NotSettleable);
 
     // Memo-nonce binding: the tx must include a Memo ix carrying the
     // ConsumedPayment.nonce bytes. Defends against the
