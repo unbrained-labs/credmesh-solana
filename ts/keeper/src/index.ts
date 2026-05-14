@@ -122,7 +122,9 @@ interface LiquidateAccounts {
   cranker: Address;
   advance: Address;
   consumed: Address;
+  tombstone: Address;
   pool: Address;
+  systemProgram: Address;
 }
 
 async function buildLiquidateIx(
@@ -131,13 +133,17 @@ async function buildLiquidateIx(
   liquidateDiscriminator: Uint8Array,
 ) {
   // Anchor liquidate ix has no args beyond the discriminator.
+  // Account order MUST match the Liquidate<'info> struct in
+  // programs/credmesh-escrow/src/instructions/liquidate.rs.
   return {
     programAddress: programId,
     accounts: [
       { address: accounts.cranker, role: AccountRole.WRITABLE_SIGNER },
       { address: accounts.advance, role: AccountRole.WRITABLE },
       { address: accounts.consumed, role: AccountRole.READONLY },
+      { address: accounts.tombstone, role: AccountRole.WRITABLE },
       { address: accounts.pool, role: AccountRole.WRITABLE },
+      { address: accounts.systemProgram, role: AccountRole.READONLY },
     ],
     data: liquidateDiscriminator,
   };
@@ -171,6 +177,24 @@ async function deriveConsumedPda(
     programAddress: ESCROW_PROGRAM_ID,
     seeds: [
       CONSUMED_SEED,
+      getAddressEncoder().encode(pool),
+      agent,
+      receivableId,
+    ],
+  });
+  return pda;
+}
+
+async function deriveTombstonePda(
+  pool: Address,
+  agent: Uint8Array,
+  receivableId: Uint8Array,
+): Promise<Address> {
+  const LIQUIDATION_TOMBSTONE_SEED = new TextEncoder().encode("liq_tombstone");
+  const [pda] = await getProgramDerivedAddress({
+    programAddress: ESCROW_PROGRAM_ID,
+    seeds: [
+      LIQUIDATION_TOMBSTONE_SEED,
       getAddressEncoder().encode(pool),
       agent,
       receivableId,
@@ -259,10 +283,20 @@ async function tick(deps: {
   // we cap at the batch size since liquidation events are rare per-tick.
   const results = await Promise.allSettled(
     liquidatable.map(async (adv) => {
-      const consumedPda = await deriveConsumedPda(pool, adv.agent, adv.receivableId);
+      const [consumedPda, tombstonePda] = await Promise.all([
+        deriveConsumedPda(pool, adv.agent, adv.receivableId),
+        deriveTombstonePda(pool, adv.agent, adv.receivableId),
+      ]);
       const ix = await buildLiquidateIx(
         ESCROW_PROGRAM_ID,
-        { cranker: signer.address, advance: adv.pubkey, consumed: consumedPda, pool },
+        {
+          cranker: signer.address,
+          advance: adv.pubkey,
+          consumed: consumedPda,
+          tombstone: tombstonePda,
+          pool,
+          systemProgram: address("11111111111111111111111111111111"),
+        },
         liquidateDiscriminator,
       );
       const tx = pipe(
