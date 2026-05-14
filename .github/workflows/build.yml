@@ -13,7 +13,7 @@ env:
 
 jobs:
   cargo-check:
-    name: cargo check (workspace)
+    name: cargo check + fmt + clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,10 +28,26 @@ jobs:
         run: cargo check --workspace --locked
       - name: cargo fmt
         run: cargo fmt --all -- --check
-        continue-on-error: true
       - name: cargo clippy
         run: cargo clippy --workspace -- -D warnings
-        continue-on-error: true
+
+  cargo-test:
+    name: cargo test (workspace --lib)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Install dependencies for solana-program build
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev pkg-config
+      - name: cargo test
+        # --lib only; this is the pure-math + program-id unit-test suite.
+        # The bankrun + integration suites live under
+        # programs/**/tests/ and require anchor build, which is a
+        # separate (Docker-based) job — tracked as a follow-up.
+        run: cargo test --workspace --lib --locked
 
   # NOTE: the previous `anchor-build` job is intentionally removed.
   #
@@ -40,24 +56,37 @@ jobs:
   # The local build uses the canonical Docker recipe
   # (backpackapp/build:v0.30.1 + cargo-build-sbf --tools-version v1.50).
   #
-  # `cargo check` below catches the same regressions for ~95% of changes;
+  # `cargo check` above catches the same regressions for ~95% of changes;
   # the few that need a real `anchor build` are caught locally before merge.
   # A Docker-based replacement job is tracked as a follow-up issue.
 
   ts-typecheck:
-    name: typescript typecheck
+    name: typescript typecheck (all packages)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install workspace deps
+      # Install per-package deps (each ts/* is its own npm package; the
+      # root package.json is a thin runner that fans out into the four).
+      - name: Install ts/shared deps
+        working-directory: ts/shared
+        run: npm install --ignore-scripts
+      - name: Install ts/server deps
         working-directory: ts/server
+        run: npm install --ignore-scripts
+      - name: Install ts/bridge deps
+        working-directory: ts/bridge
+        run: npm install --ignore-scripts
+      - name: Install ts/keeper deps
+        working-directory: ts/keeper
+        run: npm install --ignore-scripts
+      # Typecheck via the root runner; fails fast on the first package
+      # that doesn't typecheck.
+      - name: npm run typecheck (all four packages)
         run: |
-          if [ -f package.json ]; then npm install --ignore-scripts; fi
-      - name: typecheck server
-        working-directory: ts/server
-        run: |
-          if [ -f package.json ]; then npm run typecheck --if-present; fi
-        continue-on-error: true
+          npm --prefix ts/shared run typecheck
+          npm --prefix ts/server run typecheck
+          npm --prefix ts/bridge run typecheck
+          npm --prefix ts/keeper run typecheck
