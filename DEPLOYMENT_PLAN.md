@@ -145,15 +145,17 @@ from the bridge host **before** any Solana pool accepts traffic:
 
 | Contract | Method consumed by bridge | Notes |
 |---|---|---|
-| `ReputationCreditOracle` | `maxExposure(address)` → uint256 | USDC atoms |
-| `TrustlessEscrow` | `exposure(address)` → uint256 | aggregate outstanding |
+| `ReputationCreditOracle` | `getCredit(address)` → `(score,totalExposure,maxExposure)` or legacy `maxExposure(address)` fallback | bridge uses `maxExposure` as the credit cap |
+| `TrustlessEscrow` | `exposure(address)` → uint256 | EVM-lane outstanding only; Solana-local outstanding is added on-chain via `AgentIssuanceLedger.live_principal` |
 
 Confirm with the EVM team that:
 1. The exact contract addresses are set in env (`EVM_REPUTATION_CREDIT_ORACLE_ADDRESS`, `EVM_TRUSTLESS_ESCROW_ADDRESS`).
 2. The ABI methods are stable (no upcoming breaking change).
-3. There is an event the EVM side replays into when the bridge POSTs
-   to `EVM_CREDIT_WORKER_URL/solana-event` (or accept that the event
-   tail logs locally only, per the handoff fallback).
+3. There is an authenticated endpoint the EVM side replays into when
+   the bridge POSTs to `EVM_CREDIT_WORKER_URL/solana-event`. Set
+   `EVM_CREDIT_WORKER_TOKEN` in production so the event tail sends
+   `Authorization: Bearer <token>`; otherwise accept that the event tail
+   logs locally only, per the handoff fallback.
 
 If the EVM contracts are not yet deployed to mainnet (Base), v1 is
 **not** mainnet-ready regardless of Solana readiness.
@@ -348,8 +350,8 @@ Block until this passes:
 2. Bridge `/quote` for the test agent → returns signed attestation.
 3. Agent submits `[ed25519_verify, request_advance(receivable_id, 10
    USDC, nonce)]`. Tx succeeds. `AdvanceIssued` event fires.
-4. Bridge event tail logs `AdvanceIssued` (or POSTs to
-   `EVM_CREDIT_WORKER_URL/solana-event` if wired).
+4. Bridge event tail logs `AdvanceIssued` (or POSTs authenticated
+   decoded fields to `EVM_CREDIT_WORKER_URL/solana-event` if wired).
 5. Agent `claim_and_settle(payment_amount = principal + fee_owed)`
    with a Memo ix carrying the `consumed.nonce`. Tx succeeds.
    `AdvanceSettled` event fires. Pool `total_assets` and

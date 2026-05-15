@@ -10,9 +10,10 @@ EVM-attested credit limits to underwrite advances).
    they `POST /quote` with
    `{ agent_pubkey_b58, pool_pubkey_b58, nonce_hex, ttl_seconds? }`.
    The bridge resolves the agent's EVM address from its
-   operator-curated binding map, reads
-   `ReputationCreditOracle.maxExposure(agent)` and
-   `TrustlessEscrow.exposure(agent)` from the EVM RPC, signs a 128-byte
+   operator-curated binding map, reads the credit limit from
+   `ReputationCreditOracle.getCredit(agent)` with a `maxExposure(agent)`
+   fallback, reads EVM-lane outstanding from `TrustlessEscrow.exposure(agent)`,
+   signs a 128-byte
    `ed25519_credit_message`, and returns
    `{ message_b64, signature_b64, signer_pubkey_b58, expires_at,
    attested_at, credit_limit_atoms, outstanding_atoms }`. The caller
@@ -23,7 +24,7 @@ EVM-attested credit limits to underwrite advances).
    `SOLANA_WS_URL`, decodes `AdvanceIssued` / `AdvanceSettled` /
    `AdvanceLiquidated` events by the Anchor `event:<Name>`
    discriminator. When `EVM_CREDIT_WORKER_URL` is set, it POSTs each
-   event as `{ version: 1, event, slot, signature, raw_b64 }` to
+   event as `{ version: 1, event, slot, signature, raw_b64, ...decodedFields }` to
    `<url>/solana-event` so the EVM-side worker can keep AgentRecord
    state in sync. When unset, the tail logs the deltas locally — no
    silent no-op.
@@ -60,6 +61,7 @@ EVM-attested credit limits to underwrite advances).
 | `BRIDGE_RATE_LIMIT_BURST` | no | default `30` (per-key burst cap on /quote) |
 | `BRIDGE_RATE_LIMIT_REFILL_PER_SEC` | no | default `0.2` = 12 quotes/min steady |
 | `EVM_CREDIT_WORKER_URL` | no | when set, the event tail POSTs `AdvanceIssued`/`AdvanceSettled`/`AdvanceLiquidated` envelopes to `<url>/solana-event` so EVM AgentRecord state stays in sync. When unset, the tail still runs and logs the deltas locally — useful for devnet bring-up while the EVM endpoint isn't live |
+| `EVM_CREDIT_WORKER_TOKEN` | no | bearer token sent to `<EVM_CREDIT_WORKER_URL>/solana-event` as `Authorization: Bearer <token>`. Production deployments SHOULD set this whenever `EVM_CREDIT_WORKER_URL` is set |
 
 ## Run
 
@@ -74,8 +76,12 @@ npm run dev
 - HTTP `/quote` endpoint that signs ed25519 credit attestations against
   the canonical `ed25519_credit_message` layout (matches Rust verifier
   byte-for-byte).
-- EVM read path via viem against `ReputationCreditOracle.maxExposure`
-  + `TrustlessEscrow.exposure`. Refuses to issue attestations if any
+- EVM read path via viem against `ReputationCreditOracle.getCredit`
+  for the current credit cap, with `maxExposure` fallback, plus
+  `TrustlessEscrow.exposure` for EVM-lane outstanding. Solana-local
+  outstanding is added on-chain through `AgentIssuanceLedger.live_principal`;
+  the bridge MUST NOT sign replayed Solana exposure into `outstanding_atoms`
+  or the program will double-count it. Refuses to issue attestations if any
   required env var is missing — explicit refusal beats silent fallback.
 - Bridge signing key loaded from a Solana-keypair-format JSON file (64
   bytes: secret + public). Compromise-bounded by the 15-min TTL plus
@@ -86,7 +92,7 @@ npm run dev
   `SOLANA_WS_URL` and decodes `AdvanceIssued`/`AdvanceSettled`/
   `AdvanceLiquidated` events via the Anchor `event:<Name>`
   discriminator. When `EVM_CREDIT_WORKER_URL` is set, each event is
-  POSTed as `{ version, event, slot, signature, raw_b64 }` to
+  POSTed as `{ version, event, slot, signature, raw_b64, ...decodedFields }` to
   `<url>/solana-event`. When unset, the tail logs the deltas locally —
   no silent-success no-op; the operator sees them in stdout.
 

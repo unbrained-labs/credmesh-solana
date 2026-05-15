@@ -5,8 +5,9 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 use crate::errors::CredmeshError;
 use crate::events::AdvanceSettled;
 use crate::state::{
-    Advance, AdvanceState, ConsumedPayment, Pool, ADVANCE_SEED, BPS_DENOMINATOR,
-    CONSUMED_SEED, LIQUIDATION_GRACE_SECONDS, MAX_LATE_DAYS, POOL_SEED, PROTOCOL_FEE_BPS,
+    Advance, AdvanceState, AgentIssuanceLedger, ConsumedPayment, Pool, ADVANCE_SEED,
+    BPS_DENOMINATOR, CONSUMED_SEED, ISSUANCE_LEDGER_SEED, LIQUIDATION_GRACE_SECONDS, MAX_LATE_DAYS,
+    POOL_SEED, PROTOCOL_FEE_BPS,
 };
 
 /// Single-mode settlement: the agent calls this themselves with USDC in
@@ -43,6 +44,15 @@ pub struct ClaimAndSettle<'info> {
         constraint = consumed.agent == advance.agent @ CredmeshError::ReplayDetected
     )]
     pub consumed: Account<'info, ConsumedPayment>,
+
+    #[account(
+        mut,
+        seeds = [ISSUANCE_LEDGER_SEED, pool.key().as_ref(), advance.agent.as_ref()],
+        bump = issuance_ledger.bump,
+        constraint = issuance_ledger.agent == advance.agent @ CredmeshError::ReplayDetected,
+        constraint = issuance_ledger.pool == pool.key() @ CredmeshError::ReplayDetected
+    )]
+    pub issuance_ledger: Account<'info, AgentIssuanceLedger>,
 
     #[account(mut, seeds = [POOL_SEED, pool.asset_mint.as_ref()], bump = pool.bump)]
     pub pool: Account<'info, Pool>,
@@ -122,7 +132,10 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
         .ok_or(CredmeshError::MathOverflow)?
         .checked_add(late_penalty)
         .ok_or(CredmeshError::MathOverflow)?;
-    require!(payment_amount >= total_owed, CredmeshError::WaterfallSumMismatch);
+    require!(
+        payment_amount >= total_owed,
+        CredmeshError::WaterfallSumMismatch
+    );
 
     // 15% / 85% split on (fee + late penalty); principal returns in full.
     let total_fee = fee_owed
@@ -195,6 +208,12 @@ pub fn handler(ctx: Context<ClaimAndSettle>, payment_amount: u64) -> Result<()> 
             usdc_decimals,
         )?;
     }
+
+    let ledger = &mut ctx.accounts.issuance_ledger;
+    ledger.live_principal = ledger
+        .live_principal
+        .checked_sub(principal)
+        .ok_or(CredmeshError::MathOverflow)?;
 
     let pool = &mut ctx.accounts.pool;
     pool.deployed_amount = pool

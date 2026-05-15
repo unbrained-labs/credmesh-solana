@@ -100,10 +100,7 @@ pub mod credmesh_attestor_registry {
     }
 }
 
-fn require_governance_cpi(
-    sysvar_ai: &UncheckedAccount<'_>,
-    expected_vault: &Pubkey,
-) -> Result<()> {
+fn require_governance_cpi(sysvar_ai: &UncheckedAccount<'_>, expected_vault: &Pubkey) -> Result<()> {
     credmesh_shared::ix_introspection::require_squads_governance_cpi(
         &sysvar_ai.to_account_info(),
         expected_vault,

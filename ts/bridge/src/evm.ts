@@ -1,7 +1,7 @@
 /**
  * EVM read interface. Reads ReputationCreditOracle for an agent's
- * current credit limit and TrustlessEscrow.exposure() for outstanding
- * balance. The bridge consults these and signs the on-Solana
+ * current credit limit and EVM-lane outstanding balance. The bridge consults
+ * these and signs the on-Solana
  * attestation; we never trust client-supplied values.
  *
  * Implemented against viem's `createPublicClient` + the EVM contract
@@ -19,6 +19,7 @@ import {
 } from "viem";
 
 const REPUTATION_CREDIT_ORACLE_ABI = parseAbi([
+  "function getCredit(address agent) view returns (uint256 score, uint256 totalExposure, uint256 maxExposure)",
   "function maxExposure(address agent) view returns (uint256)",
 ]);
 
@@ -35,9 +36,9 @@ export interface EvmConfig {
 export interface EvmAgentSnapshot {
   /// In USDC atoms (6 decimals). Capped at $1000 by EVM.
   creditLimitAtoms: bigint;
-  /// Current outstanding exposure across EVM-tracked advances. The EVM
-  /// AgentRecord/SignerRegistry holds this; the bridge replays Solana
-  /// settle/liquidate events back to keep it accurate.
+  /// Current outstanding exposure from the EVM lane only. Solana adds its
+  /// local live_principal on-chain; including replayed Solana exposure here
+  /// would double-count it.
   outstandingAtoms: bigint;
 }
 
@@ -50,24 +51,40 @@ export class EvmReader {
     });
   }
 
-  /// Reads (creditLimitAtoms, outstandingAtoms) for an agent from EVM.
+  /// Reads (creditLimitAtoms, evmOutstandingAtoms) for an agent from EVM.
   /// Returns the values as USDC atoms (the EVM contract returns raw u256
   /// in 6-decimal USDC; we cast to bigint).
   async fetchAgent(agent: Address): Promise<EvmAgentSnapshot> {
-    const [maxExposure, currentExposure] = await Promise.all([
-      this.client.readContract({
+    const currentExposure = await this.client.readContract({
+      address: this.cfg.trustlessEscrow,
+      abi: TRUSTLESS_ESCROW_ABI,
+      functionName: "exposure",
+      args: [agent],
+    });
+
+    try {
+      const [, , maxExposure] = await this.client.readContract({
         address: this.cfg.reputationCreditOracle,
         abi: REPUTATION_CREDIT_ORACLE_ABI,
-        functionName: "maxExposure",
+        functionName: "getCredit",
         args: [agent],
-      }),
-      this.client.readContract({
-        address: this.cfg.trustlessEscrow,
-        abi: TRUSTLESS_ESCROW_ABI,
-        functionName: "exposure",
-        args: [agent],
-      }),
-    ]);
+      });
+      return {
+        creditLimitAtoms: maxExposure,
+        outstandingAtoms: currentExposure,
+      };
+    } catch (err) {
+      console.warn(
+        `[evm] getCredit failed; falling back to legacy maxExposure read: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+
+    const maxExposure = await this.client.readContract({
+      address: this.cfg.reputationCreditOracle,
+      abi: REPUTATION_CREDIT_ORACLE_ABI,
+      functionName: "maxExposure",
+      args: [agent],
+    });
 
     return {
       creditLimitAtoms: maxExposure,

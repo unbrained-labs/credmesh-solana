@@ -189,9 +189,10 @@ pub fn require_squads_governance_cpi(
                 if ix.program_id != SQUADS_V4 {
                     continue;
                 }
-                let writable_match = ix.accounts.iter().any(|a| {
-                    a.pubkey == *expected_vault && a.is_writable
-                });
+                let writable_match = ix
+                    .accounts
+                    .iter()
+                    .any(|a| a.pubkey == *expected_vault && a.is_writable);
                 if writable_match {
                     return Ok(());
                 }

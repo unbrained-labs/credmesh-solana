@@ -218,4 +218,9 @@ pub struct AgentIssuanceLedger {
     pub pool: Pubkey,
     pub window_start: i64,
     pub issued_in_window: u64,
+    /// Solana-native outstanding principal for this (pool, agent). The bridge
+    /// attests EVM-lane outstanding only; request_advance adds this value
+    /// on-chain to block stale-attestation capacity reuse without double
+    /// counting replayed Solana exposure.
+    pub live_principal: u64,
 }

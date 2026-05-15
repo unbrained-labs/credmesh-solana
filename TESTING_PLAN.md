@@ -63,7 +63,7 @@ will rot. Every test in this plan maps to a load-bearing invariant.
 
 | Invariant | Test ID | Layer |
 |---|---|---|
-| `amount <= attested_credit_limit - attested_outstanding` | T-UND-01 | L2 |
+| `amount <= attested_credit_limit - (attested_evm_outstanding + live_principal)`; no double-count when EVM has replayed Solana events | T-UND-01 | L2 |
 | `amount <= pool.max_advance_abs` | T-UND-02 | L2 |
 | `amount >= MIN_ADVANCE_ATOMS` | T-UND-03 | L2 |
 | Per-agent window cap: `issued_in_window + amount <= pool.agent_window_cap` (when cap > 0) | T-UND-04 | L2 |

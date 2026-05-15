@@ -105,7 +105,10 @@ pub fn handler(
     amount: u64,
     nonce: [u8; 16],
 ) -> Result<()> {
-    require!(amount >= MIN_ADVANCE_ATOMS, CredmeshError::AdvanceExceedsCap);
+    require!(
+        amount >= MIN_ADVANCE_ATOMS,
+        CredmeshError::AdvanceExceedsCap
+    );
 
     let clock = Clock::get()?;
     let now = clock.unix_timestamp;
@@ -114,16 +117,15 @@ pub fn handler(
     // EVM ReputationRegistry + ReputationCreditOracle, computes the agent's
     // current credit_limit + outstanding, signs a 128-byte canonical
     // message. We extract + verify here.
-    let (signed_pubkey, signed_msg) =
-        credmesh_shared::ix_introspection::verify_prev_ed25519(
-            &ctx.accounts.instructions_sysvar.to_account_info(),
-        )
-        .map_err(|e| match e {
-            credmesh_shared::ix_introspection::IxIntrospectionError::Ed25519OffsetMismatch => {
-                error!(CredmeshError::Ed25519MessageMismatch)
-            }
-            _ => error!(CredmeshError::Ed25519Missing),
-        })?;
+    let (signed_pubkey, signed_msg) = credmesh_shared::ix_introspection::verify_prev_ed25519(
+        &ctx.accounts.instructions_sysvar.to_account_info(),
+    )
+    .map_err(|e| match e {
+        credmesh_shared::ix_introspection::IxIntrospectionError::Ed25519OffsetMismatch => {
+            error!(CredmeshError::Ed25519MessageMismatch)
+        }
+        _ => error!(CredmeshError::Ed25519Missing),
+    })?;
 
     require!(
         signed_msg.len() == credmesh_shared::ed25519_credit_message::TOTAL_LEN,
@@ -135,8 +137,7 @@ pub fn handler(
         CredmeshError::Ed25519SignerUnknown
     );
     require!(
-        ctx.accounts.allowed_signer.kind
-            == credmesh_shared::AttestorKind::CreditBridge.as_u8(),
+        ctx.accounts.allowed_signer.kind == credmesh_shared::AttestorKind::CreditBridge.as_u8(),
         CredmeshError::Ed25519SignerUnknown
     );
 
@@ -166,11 +167,11 @@ pub fn handler(
     let msg_chain_id = u64_le(&signed_msg, M::CHAIN_ID_OFFSET);
     let version = u64_le(&signed_msg, M::VERSION_OFFSET);
 
+    require!(version == M::VERSION, CredmeshError::Ed25519MessageMismatch);
     require!(
-        version == M::VERSION,
+        msg_nonce == nonce.as_ref(),
         CredmeshError::Ed25519MessageMismatch
     );
-    require!(msg_nonce == nonce.as_ref(), CredmeshError::Ed25519MessageMismatch);
     // Cross-cluster replay defense: a devnet attestation MUST NOT verify
     // against a mainnet pool, and vice versa, even when the same bridge
     // signer is whitelisted on both. pool.chain_id is set at init_pool.
@@ -182,21 +183,14 @@ pub fn handler(
     // (3) Freshness checks — short-TTL bounds the blast radius of a
     // compromised bridge signer key.
     require!(
-        attested_at <= now
-            && (now - attested_at) <= M::MAX_ATTESTATION_AGE_SECONDS,
+        attested_at <= now && (now - attested_at) <= M::MAX_ATTESTATION_AGE_SECONDS,
         CredmeshError::ReceivableStale
     );
     require!(expires_at > now, CredmeshError::ReceivableExpired);
 
-    // (4) Underwrite. The attested credit_limit is the EVM-derived cap;
-    // attested_outstanding is the EVM-tracked sum across all chains. Pool
-    // governance also caps via max_advance_abs.
     let pool = &ctx.accounts.pool;
-    let available_credit = attested_credit_limit.saturating_sub(attested_outstanding);
-    require!(amount <= available_credit, CredmeshError::AdvanceExceedsCredit);
-    require!(amount <= pool.max_advance_abs, CredmeshError::AdvanceExceedsCap);
 
-    // (4b) Roll the per-agent issuance ledger forward and enforce the
+    // (4) Roll the per-agent issuance ledger forward and enforce the
     // window cap. Bounds the principal a single agent can pull in
     // `AGENT_WINDOW_SECONDS` — bridge-key-compromise blast-radius bound.
     let ledger = &mut ctx.accounts.issuance_ledger;
@@ -225,6 +219,27 @@ pub fn handler(
     }
     ledger.issued_in_window = new_issued;
 
+    // (4b) Underwrite. The attested credit_limit is the EVM-derived cap.
+    // attested_outstanding is EVM-lane outstanding only; this Solana lane
+    // adds live_principal on-chain so replayed Solana exposure is never
+    // counted twice.
+    let combined_outstanding = attested_outstanding
+        .checked_add(ledger.live_principal)
+        .ok_or(CredmeshError::MathOverflow)?;
+    let available_credit = attested_credit_limit.saturating_sub(combined_outstanding);
+    require!(
+        amount <= available_credit,
+        CredmeshError::AdvanceExceedsCredit
+    );
+    require!(
+        amount <= pool.max_advance_abs,
+        CredmeshError::AdvanceExceedsCap
+    );
+    ledger.live_principal = ledger
+        .live_principal
+        .checked_add(amount)
+        .ok_or(CredmeshError::MathOverflow)?;
+
     // (5) Fee computation against the pool's curve. duration_seconds
     // = (expires_at - now), used as the loan tenor for fee math.
     let duration_seconds = expires_at.saturating_sub(now).max(0) as u64;
@@ -234,7 +249,7 @@ pub fn handler(
         duration_seconds,
         utilization,
         0, // default_count: per-agent default history is on EVM; the
-           // bridge could fold a defaults proxy into trust_score later.
+        // bridge could fold a defaults proxy into trust_score later.
         &pool.fee_curve,
     )?;
     let late_penalty_per_day = compute_late_penalty_per_day(amount, &pool.fee_curve)?;

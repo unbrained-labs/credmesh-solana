@@ -72,13 +72,22 @@ function loadConfig() {
   const signingKey = loadSigningKey(process.env.BRIDGE_SIGNING_KEY_PATH!);
   const agentBindings = loadAgentBindings(process.env.BRIDGE_AGENT_BINDINGS_PATH!);
   const authTokens = loadAuthTokens(process.env.BRIDGE_AUTH_TOKENS);
+  const evmCreditWorkerToken = process.env.EVM_CREDIT_WORKER_TOKEN ?? null;
   // Token-bucket: 30-quote burst, 12 quotes/min steady (one every 5s).
   // Tunable via env for cluster-specific load.
   const rateLimit = new RateLimiter(
     Number(process.env.BRIDGE_RATE_LIMIT_BURST ?? 30),
     Number(process.env.BRIDGE_RATE_LIMIT_REFILL_PER_SEC ?? 12 / 60),
   );
-  return { evm, solanaChainId, signingKey, agentBindings, authTokens, rateLimit };
+  return {
+    evm,
+    solanaChainId,
+    signingKey,
+    agentBindings,
+    authTokens,
+    rateLimit,
+    evmCreditWorkerToken,
+  };
 }
 
 /**
@@ -348,6 +357,8 @@ async function main() {
     solanaWsUrl: process.env.SOLANA_WS_URL!,
     escrowProgramId: solAddr(process.env.SOLANA_ESCROW_PROGRAM_ID!),
     evmCreditWorkerUrl: process.env.EVM_CREDIT_WORKER_URL ?? null,
+    agentBindings: cfg.agentBindings,
+    evmCreditWorkerToken: cfg.evmCreditWorkerToken,
   }).catch((err) => {
     console.error("[event-tail] fatal:", err);
     // Exit so the supervisor restarts us — the alternative is a silent

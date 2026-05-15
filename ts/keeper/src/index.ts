@@ -122,6 +122,7 @@ interface LiquidateAccounts {
   cranker: Address;
   advance: Address;
   consumed: Address;
+  issuanceLedger: Address;
   tombstone: Address;
   pool: Address;
   systemProgram: Address;
@@ -141,6 +142,7 @@ async function buildLiquidateIx(
       { address: accounts.cranker, role: AccountRole.WRITABLE_SIGNER },
       { address: accounts.advance, role: AccountRole.WRITABLE },
       { address: accounts.consumed, role: AccountRole.READONLY },
+      { address: accounts.issuanceLedger, role: AccountRole.WRITABLE },
       { address: accounts.tombstone, role: AccountRole.WRITABLE },
       { address: accounts.pool, role: AccountRole.WRITABLE },
       { address: accounts.systemProgram, role: AccountRole.READONLY },
@@ -198,6 +200,22 @@ async function deriveTombstonePda(
       getAddressEncoder().encode(pool),
       agent,
       receivableId,
+    ],
+  });
+  return pda;
+}
+
+async function deriveIssuanceLedgerPda(
+  pool: Address,
+  agent: Uint8Array,
+): Promise<Address> {
+  const ISSUANCE_LEDGER_SEED = new TextEncoder().encode("issuance_ledger");
+  const [pda] = await getProgramDerivedAddress({
+    programAddress: ESCROW_PROGRAM_ID,
+    seeds: [
+      ISSUANCE_LEDGER_SEED,
+      getAddressEncoder().encode(pool),
+      agent,
     ],
   });
   return pda;
@@ -283,8 +301,9 @@ async function tick(deps: {
   // we cap at the batch size since liquidation events are rare per-tick.
   const results = await Promise.allSettled(
     liquidatable.map(async (adv) => {
-      const [consumedPda, tombstonePda] = await Promise.all([
+      const [consumedPda, issuanceLedgerPda, tombstonePda] = await Promise.all([
         deriveConsumedPda(pool, adv.agent, adv.receivableId),
+        deriveIssuanceLedgerPda(pool, adv.agent),
         deriveTombstonePda(pool, adv.agent, adv.receivableId),
       ]);
       const ix = await buildLiquidateIx(
@@ -293,6 +312,7 @@ async function tick(deps: {
           cranker: signer.address,
           advance: adv.pubkey,
           consumed: consumedPda,
+          issuanceLedger: issuanceLedgerPda,
           tombstone: tombstonePda,
           pool,
           systemProgram: address("11111111111111111111111111111111"),

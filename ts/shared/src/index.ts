@@ -16,6 +16,7 @@ export const ATOMS_PER_USDC = 1_000_000n;
 export const POOL_SEED = "pool";
 export const ADVANCE_SEED = "advance";
 export const CONSUMED_SEED = "consumed";
+export const ISSUANCE_LEDGER_SEED = "issuance_ledger";
 export const ALLOWED_SIGNER_SEED = "allowed_signer";
 export const ATTESTOR_CONFIG_SEED = "attestor_config";
 export const LIQUIDATION_TOMBSTONE_SEED = "liq_tombstone";

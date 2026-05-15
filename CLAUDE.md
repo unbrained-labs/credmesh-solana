@@ -95,11 +95,12 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
 
 ### EVM lane (single source of truth)
 
-- **EVM `ReputationCreditOracle.maxExposure(agent)`** — agent's current credit
-  limit in USDC atoms.
-- **EVM `TrustlessEscrow.exposure(agent)`** — current outstanding balance
-  across all chains where CredMesh runs (the bridge replays Solana settle/
-  liquidate events back so this stays accurate).
+- **EVM `ReputationCreditOracle.getCredit(agent)` / `maxExposure(agent)`** — agent's current credit
+  limit in USDC atoms. `getCredit` is preferred; `maxExposure` is the legacy fallback.
+- **EVM `TrustlessEscrow.exposure(agent)`** — EVM-lane outstanding balance
+  used in the signed Solana attestation. Solana-local outstanding is tracked
+  separately by `AgentIssuanceLedger.live_principal` and added on-chain; do
+  not sign replayed Solana exposure into `outstanding` or it is double-counted.
 - **EVM `IdentityRegistry`** — agent identity, attestation count, trust score.
 
 ## Conventions specific to this repo
@@ -123,8 +124,7 @@ NB: `credmesh-shared` lives in `crates/`, not `programs/`. Anchor traverses ever
   Handler verifies via instructions-sysvar introspection: prior ix is the
   ed25519 program, signer is in the registry, attestation is fresh
   (≤ 15 min), agent + pool match, version = 1. **Underwriting enforces**
-  `available = attested_credit_limit - attested_outstanding` (mirrors EVM
-  `availableCredit`).
+  `available = attested_credit_limit - (attested_evm_outstanding + live_principal)`.
 - **`claim_and_settle` is single-mode** (post-pivot): agent self-settles.
   `agent: Signer` with `agent.key() == advance.agent`; two transfers
   (protocol cut to treasury, LP cut to vault); agent net stays in the agent

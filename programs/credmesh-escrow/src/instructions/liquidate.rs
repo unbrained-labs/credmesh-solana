@@ -3,8 +3,9 @@ use anchor_lang::prelude::*;
 use crate::errors::CredmeshError;
 use crate::events::AdvanceLiquidated;
 use crate::state::{
-    Advance, AdvanceState, ConsumedPayment, LiquidationTombstone, Pool, ADVANCE_SEED,
-    CONSUMED_SEED, LIQUIDATION_GRACE_SECONDS, LIQUIDATION_TOMBSTONE_SEED, POOL_SEED,
+    Advance, AdvanceState, AgentIssuanceLedger, ConsumedPayment, LiquidationTombstone, Pool,
+    ADVANCE_SEED, CONSUMED_SEED, ISSUANCE_LEDGER_SEED, LIQUIDATION_GRACE_SECONDS,
+    LIQUIDATION_TOMBSTONE_SEED, POOL_SEED,
 };
 
 #[derive(Accounts)]
@@ -37,6 +38,15 @@ pub struct Liquidate<'info> {
     )]
     pub consumed: Account<'info, ConsumedPayment>,
 
+    #[account(
+        mut,
+        seeds = [ISSUANCE_LEDGER_SEED, pool.key().as_ref(), advance.agent.as_ref()],
+        bump = issuance_ledger.bump,
+        constraint = issuance_ledger.agent == advance.agent @ CredmeshError::ReplayDetected,
+        constraint = issuance_ledger.pool == pool.key() @ CredmeshError::ReplayDetected
+    )]
+    pub issuance_ledger: Account<'info, AgentIssuanceLedger>,
+
     /// Permanent audit-trail PDA. `init` (not `init_if_needed`) — a second
     /// `liquidate` against the same `(pool, agent, receivable_id)` is
     /// already blocked by `Advance.state` being terminal after the first
@@ -65,12 +75,21 @@ pub fn handler(ctx: Context<Liquidate>) -> Result<()> {
         .expires_at
         .checked_add(LIQUIDATION_GRACE_SECONDS)
         .ok_or(CredmeshError::MathOverflow)?;
-    require!(now >= liquidation_window_start, CredmeshError::NotLiquidatable);
+    require!(
+        now >= liquidation_window_start,
+        CredmeshError::NotLiquidatable
+    );
 
     let principal = ctx.accounts.advance.principal;
     let agent = ctx.accounts.advance.agent;
     let expires_at = ctx.accounts.advance.expires_at;
     let advance_key = ctx.accounts.advance.key();
+
+    let ledger = &mut ctx.accounts.issuance_ledger;
+    ledger.live_principal = ledger
+        .live_principal
+        .checked_sub(principal)
+        .ok_or(CredmeshError::MathOverflow)?;
 
     // LPs eat the loss via share-price drop. Total assets decrease by the
     // unrecovered principal; total_shares is unchanged.

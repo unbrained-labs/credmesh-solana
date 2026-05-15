@@ -1,9 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::CredmeshError;
-use crate::state::{
-    FeeCurve, Pool, BPS_DENOMINATOR, VIRTUAL_ASSETS_OFFSET, VIRTUAL_SHARES_OFFSET,
-};
+use crate::state::{FeeCurve, Pool, BPS_DENOMINATOR, VIRTUAL_ASSETS_OFFSET, VIRTUAL_SHARES_OFFSET};
 
 /// Virtual-shares math (OZ ERC-4626 `_decimalsOffset` pattern, ported to u128
 /// to avoid intermediate overflow). With the offsets set in `state.rs`, a 1-atom
@@ -176,12 +174,7 @@ mod tests {
         let c = curve();
         let f = compute_fee_amount(principal, 86_400 * 365, 10_000, 99, &c).unwrap();
         let upper = (principal as u128) * (c.max_rate_bps as u128) / (BPS_DENOMINATOR as u128);
-        assert!(
-            (f as u128) <= upper,
-            "fee {} exceeded ceiling {}",
-            f,
-            upper
-        );
+        assert!((f as u128) <= upper, "fee {} exceeded ceiling {}", f, upper);
     }
 
     #[test]
@@ -268,7 +261,8 @@ mod tests {
         let attacker_shares = preview_deposit(1, 0, 0).unwrap();
         // Attacker pumps assets without minting shares (direct transfer).
         let total_assets = 1_000_000_000_000u64; // $1M
-        let attacker_redeem = preview_redeem(attacker_shares, total_assets, attacker_shares).unwrap();
+        let attacker_redeem =
+            preview_redeem(attacker_shares, total_assets, attacker_shares).unwrap();
         // The attacker's 1-atom contribution should NOT extract anywhere
         // close to the inflated $1M because of the virtual-shares offset.
         // Expect: redeem << total_assets.
