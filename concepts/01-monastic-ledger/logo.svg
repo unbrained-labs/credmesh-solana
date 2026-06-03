@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="CredMesh — illuminated CM monogram">
+  <title>CredMesh</title>
+  <desc>An illuminated capital C in lamp-black, enclosing a hairline M, with a vermillion chi-rho cross-stroke. Drawn after the manner of 12th-century Cistercian initials.</desc>
+
+  <!-- Parchment ground (transparent so it inherits the page) -->
+  <rect width="200" height="200" fill="none"/>
+
+  <!--
+    VERSAL C
+    Outer circle:  cx=100, cy=100, r=82
+    Inner circle:  cx=110, cy=100, r=52  (offset right → broad-pen contrast on the spine)
+    Opening:       ±28° from horizontal right
+  -->
+  <path
+    d="
+      M 172.39 61.51
+      A 82 82 0 1 0 172.39 138.49
+      L 155.91 124.41
+      A 52 52 0 1 1 155.91 75.59
+      Z
+    "
+    fill="#15110A"
+  />
+
+  <!-- Top opening serif (terminal flourish) -->
+  <path
+    d="M 172.39 61.51 L 184 56 L 178 70 Z"
+    fill="#15110A"
+  />
+  <!-- Bottom opening serif -->
+  <path
+    d="M 172.39 138.49 L 184 144 L 178 130 Z"
+    fill="#15110A"
+  />
+
+  <!--
+    HAIRLINE M, nested inside the bowl of the C.
+    Five-vertex stroke: bl → tl → mid → tr → br
+    The middle V dips just below center to read at small sizes.
+  -->
+  <path
+    d="M 78 132 L 78 78 L 110 116 L 142 78 L 142 132"
+    stroke="#15110A"
+    stroke-width="4.5"
+    stroke-linejoin="miter"
+    stroke-linecap="butt"
+    fill="none"
+  />
+
+  <!-- Tiny serifs at the four feet of the M -->
+  <path
+    d="M 73 132 L 83 132 M 137 132 L 147 132 M 73 78 L 83 78 M 137 78 L 147 78"
+    stroke="#15110A"
+    stroke-width="2.4"
+    stroke-linecap="butt"
+  />
+
+  <!--
+    CHI-RHO CROSS-STROKE in vermillion.
+    A horizontal rubric bar across the apex of the M's central V, terminating
+    in a small upward serif on each end (a Cistercian flourish, not a halo).
+  -->
+  <path
+    d="M 92 116 L 128 116"
+    stroke="#A8261E"
+    stroke-width="3.4"
+    stroke-linecap="butt"
+  />
+  <path
+    d="M 92 116 L 92 110 M 128 116 L 128 110"
+    stroke="#A8261E"
+    stroke-width="3.4"
+    stroke-linecap="butt"
+  />
+
+  <!--
+    Rubric paragraph mark (¶) in the lower opening of the C.
+    Reads as a single illuminated dot at small sizes; resolves into a pilcrow at large sizes.
+  -->
+  <circle cx="178" cy="158" r="3.6" fill="#A8261E"/>
+</svg>

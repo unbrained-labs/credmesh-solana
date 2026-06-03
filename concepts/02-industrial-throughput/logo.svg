@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="CredMesh — relief valve mark">
+  <title>CredMesh</title>
+  <desc>Schematic relief-valve glyph: a P&amp;ID two-triangle valve body with spring-loaded stem.</desc>
+
+  <!-- adjustment cap (the screw at the top of a real spring-loaded relief valve) -->
+  <rect x="68" y="12" width="64" height="8" fill="#3A3530"/>
+
+  <!-- short stem from cap into the spring -->
+  <line x1="100" y1="20" x2="100" y2="34" stroke="#3A3530" stroke-width="2.5" stroke-linecap="square"/>
+
+  <!-- spring (single zig-zag polyline; reads at large sizes, simplifies to a smear at 32px which is fine) -->
+  <polyline points="86,36 114,44 86,52 114,60 86,68 114,76 86,84"
+            fill="none" stroke="#3A3530" stroke-width="1.5"/>
+
+  <!-- stem from spring into the valve body -->
+  <line x1="100" y1="84" x2="100" y2="92" stroke="#3A3530" stroke-width="2.5" stroke-linecap="square"/>
+
+  <!-- valve body: two opposed filled triangles meeting at the seat -->
+  <!-- this bowtie silhouette IS the universal relief-valve P&ID glyph -->
+  <polygon points="56,92 144,92 100,140" fill="#3A3530"/>
+  <polygon points="56,188 144,188 100,140" fill="#3A3530"/>
+
+  <!-- seat indicator line through the meeting vertex -->
+  <line x1="46" y1="140" x2="154" y2="140" stroke="#3A3530" stroke-width="2.5" stroke-linecap="square"/>
+
+  <!-- instrument tag bubble: small circle with mono caps "RV" — left of the valve, like a P&ID balloon -->
+  <circle cx="22" cy="140" r="14" fill="none" stroke="#3A3530" stroke-width="1.25"/>
+  <line x1="8" y1="140" x2="36" y2="140" stroke="#3A3530" stroke-width="0.75"/>
+  <text x="22" y="138" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, monospace"
+        font-size="9" font-weight="600" fill="#3A3530">RV</text>
+  <text x="22" y="148" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, monospace"
+        font-size="7" fill="#3A3530">001</text>
+</svg>
