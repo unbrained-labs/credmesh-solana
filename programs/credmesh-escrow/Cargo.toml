@@ -25,6 +25,12 @@ idl-build = [
     "anchor-spl/token",
     "anchor-spl/associated_token",
 ]
+# Issue #5 spike: dormant Token-2022 forward-compat code path. NOT enabled
+# in v1; the default build uses classic SPL Token via `anchor_spl::token`.
+# When activated, pulls in the `token_interface` types so handlers can
+# transact with classic SPL Token AND Token-2022 mints. See
+# `programs/credmesh-escrow/src/token_2022_spike.rs`.
+token-2022 = ["anchor-spl/token_2022", "anchor-spl/token_2022_extensions"]
 
 [dependencies]
 anchor-lang = { workspace = true }
