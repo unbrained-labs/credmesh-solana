@@ -14,7 +14,7 @@
     "registry:add-signer": "ts-node scripts/add_allowed_signer.ts"
   },
   "devDependencies": {
-    "@types/node": "^22.7.0",
+    "@types/node": "^26.6.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.0"
   }
