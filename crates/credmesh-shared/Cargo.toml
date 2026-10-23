@@ -34,4 +34,4 @@ blake3 = "=1.5.5"
 # to `local_file()`; anchor-syn 0.30.1 still calls the former during IDL
 # build, so the workspace will not compile against later proc-macro2.
 # Re-evaluate when bumping Anchor.
-proc-macro2 = "=1.0.86"
+proc-macro2 = "=1.0.107"
