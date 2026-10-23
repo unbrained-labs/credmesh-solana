@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="CredMesh benchmark disc">
+  <title>CredMesh — Triangulation Station mark</title>
+
+  <!-- Cream paper background tile (scoped to viewBox so the mark sits on its native field). -->
+  <rect x="0" y="0" width="200" height="200" fill="#EFE3CB"/>
+
+  <!-- Engraving rim path used by the textPath. Drawn from -90° (top), going clockwise full circle.
+       Radius 89 sits between the outer disc edge and the inner field. -->
+  <defs>
+    <path id="rim" d="M 100 11
+                      A 89 89 0 1 1 100 189
+                      A 89 89 0 1 1 100 11"/>
+  </defs>
+
+  <!-- Group: the brass disc, all stroke-only, color = ink sepia. -->
+  <g fill="none" stroke="#1A1612" stroke-linecap="square" stroke-linejoin="miter">
+
+    <!-- Outer disc edge (the brass rim). -->
+    <circle cx="100" cy="100" r="96" stroke-width="1.6"/>
+
+    <!-- Inner engraved channel (the recessed field where the triangulation symbol lives). -->
+    <circle cx="100" cy="100" r="82" stroke-width="0.6"/>
+
+    <!-- A second hairline ring just inside the outer rim — the second engraved groove. -->
+    <circle cx="100" cy="100" r="93" stroke-width="0.4"/>
+
+    <!-- Inscribed equilateral triangle (the triangulation station symbol).
+         Vertices on a circle r=66 from center, top vertex pointing up (toward true north).
+         top:           (100,        34)
+         bottom-left:   (42.83,     133)
+         bottom-right:  (157.17,    133)
+    -->
+    <polygon points="100,34 42.83,133 157.17,133" stroke-width="1.1"/>
+
+    <!-- Radial hachure ticks at each vertex (the surveyor's reference marks).
+         Each is a 10-unit line emanating outward from the vertex along the radial. -->
+    <!-- Top vertex (100,34) → outward = up: end (100,24) -->
+    <line x1="100" y1="34" x2="100" y2="24" stroke-width="1"/>
+    <!-- Bottom-left (42.83,133) → outward unit vector (-0.866, 0.5): end (34.17,138) -->
+    <line x1="42.83" y1="133" x2="34.17" y2="138" stroke-width="1"/>
+    <!-- Bottom-right (157.17,133) → outward (0.866,0.5): end (165.83,138) -->
+    <line x1="157.17" y1="133" x2="165.83" y2="138" stroke-width="1"/>
+
+    <!-- Three tiny crosshair pluses at each vertex — the precise control-point cross.
+         Each is a + made of two 4-unit lines. -->
+    <g stroke-width="0.7">
+      <line x1="98" y1="34" x2="102" y2="34"/><line x1="100" y1="32" x2="100" y2="36"/>
+      <line x1="40.83" y1="133" x2="44.83" y2="133"/><line x1="42.83" y1="131" x2="42.83" y2="135"/>
+      <line x1="155.17" y1="133" x2="159.17" y2="133"/><line x1="157.17" y1="131" x2="157.17" y2="135"/>
+    </g>
+  </g>
+
+  <!-- The "C" — drawn as a closed filled path so it has no font dependency.
+       Center 100,100; outer R=29, inner R=19; mouth gap ±42° from horizontal-right.
+       Approximate vertex coords precomputed:
+         top-outer-right    (121.55, 80.60)
+         bottom-outer-right (121.55, 119.40)
+         bottom-inner-right (114.12, 112.71)
+         top-inner-right    (114.12, 87.29)
+       Outer arc: long way CCW (sweep 0). Inner arc: long way CW (sweep 1). -->
+  <path d="M 121.55 80.60
+           A 29 29 0 1 0 121.55 119.40
+           L 114.12 112.71
+           A 19 19 0 1 1 114.12 87.29
+           Z"
+        fill="#1A1612"/>
+
+  <!-- Rim engraving text (only legible at ~200px+). All caps, letter-spaced. -->
+  <text font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="6.4"
+        font-weight="600"
+        letter-spacing="2.6"
+        fill="#1A1612">
+    <textPath href="#rim" startOffset="0%">
+      CREDMESH · TRIANGULATION STATION · POOL · NETWORK · CREDMESH · TRIANGULATION STATION · POOL · NETWORK ·
+    </textPath>
+  </text>
+
+  <!-- Edition stamp under the C (engraved into the field). -->
+  <text x="100" y="158"
+        font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="6"
+        font-weight="700"
+        letter-spacing="1.6"
+        text-anchor="middle"
+        fill="#1A1612">EDITION 2026</text>
+
+  <!-- Small "N" indicator above the top vertex, for true north. -->
+  <text x="100" y="20"
+        font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="6"
+        font-weight="700"
+        letter-spacing="0.4"
+        text-anchor="middle"
+        fill="#1A1612">N</text>
+</svg>

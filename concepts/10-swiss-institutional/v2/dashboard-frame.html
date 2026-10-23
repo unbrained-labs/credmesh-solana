@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CredMesh — Annex A · Pool Aggregates · Statistical Bulletin No. 1 / 2026</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* Local layout for the LP dashboard:
+     three-column action ledger row, two-column § grid, etc. */
+
+  .row-2col {
+    display: grid;
+    grid-template-columns: 1.75fr 1fr;
+    gap: var(--s-6);
+    margin-top: var(--s-2);
+  }
+  .row-2col-eq {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-6);
+    margin-top: var(--s-2);
+  }
+
+  .lp-hero-aside {
+    border-left: var(--rule-hair) solid var(--ink);
+    padding-left: var(--s-5);
+    font-size: var(--t-rule);
+    line-height: 1.65;
+  }
+  .lp-hero-aside .lab {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+    margin: 0 0 var(--s-2);
+  }
+  .lp-hero-aside dl { margin: 0; display: grid; grid-template-columns: 1fr auto; row-gap: 4px; column-gap: var(--s-4); }
+  .lp-hero-aside dt { color: var(--mute); font-size: var(--t-rule); }
+  .lp-hero-aside dd { margin: 0; font-weight: var(--w-bold); font-size: var(--t-rule); }
+  .lp-hero-aside hr { border: 0; border-top: var(--rule-hair) solid var(--ink); margin: var(--s-2) 0; }
+
+  /* Yield attribution stacked-bar */
+  .attrib-bar { display:flex; height: 22px; border: var(--rule-thin) solid var(--ink); margin-top: var(--s-3); }
+  .attrib-bar .seg {
+    border-right: var(--rule-thin) solid var(--ink);
+    font-size: 9px;
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--ink);
+    padding: 4px 6px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .attrib-bar .seg:last-child { border-right: 0; }
+  .attrib-bar .seg.fill-1 { background: var(--paper); }
+  .attrib-bar .seg.fill-2 { background: var(--paper-2); }
+  .attrib-bar .seg.fill-3 { background: var(--paper-3); }
+  .attrib-bar .seg.fill-r { background: var(--red); color: #fff; }
+
+  .attrib-table { width: 100%; }
+
+  /* Settlements status combinations */
+  .pill-stack { display: inline-flex; gap: 6px; align-items: baseline; }
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ============== MASTHEAD ============== -->
+  <header class="masthead">
+    <div class="swatch" aria-hidden="true"></div>
+    <div class="brand">
+      CREDMESH<span class="pipe">|</span><span class="sub">Statistical Bulletin · No. 1 / 2026</span>
+    </div>
+    <div class="stamp"><span class="lab">Issue</span>I · 2026</div>
+    <div class="stamp"><span class="lab">Annex</span>A</div>
+    <div class="stamp"><span class="lab">Compiled</span>03.05.2026 · 14:00 UTC</div>
+    <div class="stamp"><span class="lab">Page</span>01 / 05</div>
+  </header>
+
+  <div class="subhead">
+    <span>Vol. I, Issue 1 — Pool Aggregates · USDC · Solana mainnet-beta</span>
+    <em>Ed.: CredMesh · Frankfurt am Main · Compiled at slot 268 437 902 · Block 9F3a…71B2</em>
+  </div>
+  <div class="heavyrule"></div>
+
+  <!-- ============== ANNEX BAR ============== -->
+  <div class="annex-bar">
+    <div class="label">Bulletin Annexes</div>
+    <nav>
+      <a href="dashboard-frame.html" class="is-current">Annex A — Pool Aggregates</a>
+      <a href="agent-observatory.html">Annex B — Counterparty Dossier</a>
+      <a href="governance.html">Annex C — Resolutions Pending</a>
+      <a href="elements.html">Annex Z — Type Specimen</a>
+    </nav>
+    <div class="meta">Plate <b>A.0</b><br>Liquidity Provider</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- §1 POOL AGGREGATES (5-cell hero) -->
+  <!-- ============================================================ -->
+  <section class="section" id="s1">
+    <div class="section-head">
+      <div class="num">§1</div>
+      <h2>Pool aggregates
+        <small>Snapshot as at 03 May 2026, 14:00:00 UTC · USDC pool, Solana mainnet-beta · Pool PDA [P-1] cREdM…sH11</small>
+      </h2>
+      <div class="meta">Table 1.A<br><b>On-chain</b></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="lab">Total value locked<sup class="fn-ref">¹</sup></div>
+        <div class="unit">USD, vault + outstanding</div>
+        <div class="val">4 218 442<span class="dec">.18</span></div>
+        <div class="delta">
+          <span class="v up">+ 0.18 %</span><span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:var(--w-roman);">+ 1.92 %</span><span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Share price<sup class="fn-ref">²</sup></div>
+        <div class="unit">USDC per pool share</div>
+        <div class="val">1<span class="dec">.0234</span></div>
+        <div class="delta">
+          <span class="v up">+ 0.0011</span><span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:var(--w-roman);">+ 0.0089</span><span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Utilisation<sup class="fn-ref">³</sup></div>
+        <div class="unit">Per cent of TVL deployed</div>
+        <div class="val">67<span class="dec">.34</span></div>
+        <div class="delta">
+          <span class="v up">+ 1.20 pp</span><span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:var(--w-roman);">+ 4.81 pp</span><span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Active agents<sup class="fn-ref">⁴</sup></div>
+        <div class="unit">Squads vaults · ≥1 advance / 30 d</div>
+        <div class="val">47</div>
+        <div class="delta">
+          <span class="v up">+ 2</span><span>24 h</span>
+          <span class="v up" style="color:var(--mute);font-weight:var(--w-roman);">+ 11</span><span>30 d</span>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="lab">Pool status<sup class="fn-ref">⁵</sup></div>
+        <div class="unit">Open ↔ Frozen register</div>
+        <div class="val" style="font-size:36px;line-height:1.1;letter-spacing:-0.02em;margin-top:14px;">OPEN</div>
+        <div class="delta">
+          <span class="v">since 12.03.2026</span>
+          <span style="color:var(--mute);">slot 264 102 884</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <span class="fn"><sup>¹</sup>Sum of pool vault USDC balance and outstanding principal across active advances. Excludes accrued, undistributed protocol fees.</span>
+      <span class="fn"><sup>²</sup>Pool-share unit price, marked to fee accrual since deployment 12 Mar 2026. Shares are non-rebasing; movement reflects realised fee distribution only.</span>
+      <span class="fn"><sup>³</sup>Outstanding principal divided by TVL. Drives the piecewise-linear utilisation curve described in DESIGN §3.5.</span>
+      <span class="fn"><sup>⁴</sup>Active-agents includes only Squads-vault agents with at least one settled advance in the trailing 30 days. Dormant agents excluded.</span>
+      <span class="fn"><sup>⁵</sup>Pool status follows the binary <code>Open ↔ Frozen</code> register; transitions require a governance resolution and the 36-hour timelock — see Annex C.</span>
+      <span class="fn">Sources: <code>credmesh-escrow</code> pool PDA, advance state PDAs, share-mint supply, governance program account state. Compiled at slot 268 437 902 · block <code>9F3a…71B2</code>.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §2 SHARE-PRICE TIME SERIES + YIELD ATTRIBUTION -->
+  <!-- ============================================================ -->
+  <section class="section" id="s2">
+    <div class="section-head">
+      <div class="num">§2</div>
+      <h2>Share-price drift, 30 day &amp; yield attribution
+        <small>Daily close · USDC per share · Hover ticks for slot + timestamp + value</small>
+      </h2>
+      <div class="meta">Chart 2.A · Table 2.B<br><b>On-chain</b></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:var(--s-6);">
+
+      <div>
+        <svg viewBox="0 0 920 220" preserveAspectRatio="none" style="width:100%;height:220px;display:block;">
+          <rect x="40" y="8" width="860" height="180" fill="none" stroke="#0A0A0A" stroke-width="0.6"/>
+          <g stroke="#0A0A0A" stroke-width="0.3" stroke-dasharray="2 3" opacity="0.55">
+            <line x1="40" y1="44"  x2="900" y2="44"/>
+            <line x1="40" y1="80"  x2="900" y2="80"/>
+            <line x1="40" y1="116" x2="900" y2="116"/>
+            <line x1="40" y1="152" x2="900" y2="152"/>
+          </g>
+          <g font-family="'Helvetica Neue','Inter',sans-serif" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+            <text x="34" y="47"  text-anchor="end">1.0240</text>
+            <text x="34" y="83"  text-anchor="end">1.0220</text>
+            <text x="34" y="119" text-anchor="end">1.0200</text>
+            <text x="34" y="155" text-anchor="end">1.0180</text>
+            <text x="34" y="191" text-anchor="end">1.0160</text>
+          </g>
+          <g font-family="'Helvetica Neue','Inter',sans-serif" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+            <text x="40"  y="206" text-anchor="middle">04.04</text>
+            <text x="184" y="206" text-anchor="middle">10.04</text>
+            <text x="328" y="206" text-anchor="middle">16.04</text>
+            <text x="472" y="206" text-anchor="middle">22.04</text>
+            <text x="616" y="206" text-anchor="middle">28.04</text>
+            <text x="760" y="206" text-anchor="middle">02.05</text>
+            <text x="900" y="206" text-anchor="middle">03.05</text>
+          </g>
+          <!-- 31 daily points, gently rising 1.0145 -> 1.0234 -->
+          <polyline fill="none" stroke="#0A0A0A" stroke-width="1.2"
+            points="40,170 68.6,166 97.3,162 126,159 154.6,158 183.3,154 212,150 240.6,148 269.3,144 298,141 326.6,138 355.3,132 384,128 412.6,124 441.3,120 470,118 498.6,113 527.3,110 556,105 584.6,103 613.3,98 642,94 670.6,90 699.3,87 728,82 756.6,77 785.3,73 814,69 842.6,64 871.3,60 900,55"/>
+          <!-- pending tick markers — small dotted verticals at every 5th day -->
+          <g stroke="#A89E89" stroke-width="0.4" stroke-dasharray="1 2">
+            <line x1="184" y1="158" x2="184" y2="188"/>
+            <line x1="328" y1="138" x2="328" y2="188"/>
+            <line x1="472" y1="120" x2="472" y2="188"/>
+            <line x1="616" y1="98"  x2="616" y2="188"/>
+            <line x1="760" y1="73"  x2="760" y2="188"/>
+          </g>
+          <rect x="896.5" y="51.5" width="7" height="7" fill="#C8102E"/>
+          <line x1="900" y1="55" x2="900" y2="188" stroke="#C8102E" stroke-width="0.6" stroke-dasharray="2 2"/>
+          <text x="894" y="42" text-anchor="end" font-family="'Helvetica Neue','Inter',sans-serif" font-size="11" font-weight="700" fill="#C8102E">1.0234</text>
+        </svg>
+
+        <p class="" style="font-size:var(--t-fine);font-weight:var(--w-light);font-style:italic;color:var(--ink);padding-top:var(--s-2);border-top:var(--rule-hair) solid var(--ink);margin:var(--s-3) 0 0;">
+          <strong>Chart 2.A.</strong>&nbsp; Pool share price, daily close, USDC per share. <em>Last observation: 03 May 2026 — slot 268 437 902.</em>
+          Movement attributable to fee accrual; no inflation, no rebase. Dashed verticals mark weekly settlement breakpoints.
+        </p>
+      </div>
+
+      <aside class="lp-hero-aside">
+        <p class="lab">Period statistics</p>
+        <dl>
+          <dt>Open (04.04)</dt><dd>1.0145</dd>
+          <dt>Close (03.05)</dt><dd>1.0234</dd>
+          <dt>Period high</dt><dd>1.0234</dd>
+          <dt>Period low</dt><dd>1.0143</dd>
+          <dt>Cumulative drift</dt><dd>+ 0.88 %</dd>
+          <dt>Annualised</dt><dd>+ 10.71 %</dd>
+        </dl>
+        <hr>
+        <p class="lab">Curve regime</p>
+        <dl>
+          <dt>Optimum</dt><dd>80.00 %</dd>
+          <dt>Base fee</dt><dd>0.50 %</dd>
+          <dt>Slope below opt.</dt><dd>4.00 %</dd>
+          <dt>Slope above opt.</dt><dd>60.00 %</dd>
+        </dl>
+      </aside>
+    </div>
+
+    <!-- yield attribution table -->
+    <div style="margin-top:var(--s-6);">
+      <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin-bottom:var(--s-2);">
+        Table 2.B · Yield attribution · last 24 hours · share-price uptick of <b style="color:var(--ink);">+ 0.0011 USDC</b>
+      </div>
+
+      <table class="bul attrib-table" aria-label="Yield attribution last 24 h">
+        <thead>
+          <tr>
+            <th class="ix">Nº</th>
+            <th>Source</th>
+            <th class="num">Contribution (USDC)</th>
+            <th class="num">Share-price ∆</th>
+            <th class="num">% of uptick</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ix">1</td>
+            <td>Utilisation fee · piecewise curve below optimum</td>
+            <td class="num">3 412.4117</td>
+            <td class="num">+ 0.000812</td>
+            <td class="num">73.81 %</td>
+            <td><span class="pk"><span class="role">curve</span><span class="full mono">DESIGN §3.5</span></span></td>
+          </tr>
+          <tr>
+            <td class="ix">2</td>
+            <td>Receivable interest · accrued, settled</td>
+            <td class="num">718.0902</td>
+            <td class="num">+ 0.000171</td>
+            <td class="num">15.55 %</td>
+            <td><span class="pk"><span class="role">handler</span><span class="full mono">claim_and_settle</span></span></td>
+          </tr>
+          <tr>
+            <td class="ix">3</td>
+            <td>Liquidation surplus · 1 advance over-collected</td>
+            <td class="num">311.7008</td>
+            <td class="num">+ 0.000074</td>
+            <td class="num">6.74 %</td>
+            <td><span class="pk"><span class="role">advance</span><span class="full mono">#04 692</span></span></td>
+          </tr>
+          <tr>
+            <td class="ix">4</td>
+            <td>Other (rounding, dust)</td>
+            <td class="num">182.4391</td>
+            <td class="num">+ 0.000043</td>
+            <td class="num">3.90 %</td>
+            <td><span class="pk"><span class="role">vault</span><span class="full mono">[P-1]</span></span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="attrib-bar" aria-hidden="true">
+        <div class="seg fill-1" style="flex:73.81;">Utilisation 73.81 %</div>
+        <div class="seg fill-2" style="flex:15.55;">Recv. interest 15.55 %</div>
+        <div class="seg fill-3" style="flex:6.74;">Liq. 6.74 %</div>
+        <div class="seg fill-r" style="flex:3.90;">Other 3.90 %</div>
+      </div>
+
+      <div class="footnotes" style="border-bottom:0;column-count:1;padding-bottom:0;margin-top:var(--s-3);">
+        <span class="fn">Yield attribution is a sealed reconciliation of the share-price ∆ to its on-chain sources. Contributions sum to 4 624.6418 USDC; share-price ∆ contributions sum to <code>+0.001100</code> per share at supply 4 204 219 shares.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §3 ACTION PANEL + LIFECYCLE LEDGER -->
+  <!-- ============================================================ -->
+  <section class="section" id="s3">
+    <div class="section-head">
+      <div class="num">§3</div>
+      <h2>Liquidity actions
+        <small>Deposit · Withdraw · Each posts a three-state ledger entry — Sent → Pending → Finalized</small>
+      </h2>
+      <div class="meta">Form 3.A · Ledger 3.B<br><b>Off-chain → On-chain</b></div>
+    </div>
+
+    <div class="row-2col-eq">
+
+      <!-- DEPOSIT FORM -->
+      <div class="action-panel">
+        <div>
+          <div class="head">Form 3.A · Deposit</div>
+          <h3>Deposit USDC</h3>
+          <p>Mint <b>4 882.6913 share</b> against <b>5 000.0000 USDC</b> at the prevailing share price <b>1.0234</b>. Fee-payer covers the network fee; receipt posts to the ledger below.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4);font-size:var(--t-rule);margin-top:var(--s-3);">
+            <div>
+              <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);">Amount in</div>
+              <div style="font-family:var(--font-mono);font-size:var(--t-display-s);font-weight:var(--w-bold);">5 000.0000 <span style="font-size:var(--t-rule);font-weight:var(--w-roman);color:var(--mute);">USDC</span></div>
+            </div>
+            <div>
+              <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);">Shares out</div>
+              <div style="font-family:var(--font-mono);font-size:var(--t-display-s);font-weight:var(--w-bold);">4 882.6913 <span style="font-size:var(--t-rule);font-weight:var(--w-roman);color:var(--mute);">SHARE</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:var(--s-2);align-self:end;">
+          <button class="btn ghost">Cancel</button>
+          <button class="btn primary">Sign &amp; submit</button>
+        </div>
+      </div>
+
+      <!-- WITHDRAW FORM (destructive variant — funds leaving the pool) -->
+      <div class="action-panel is-destructive">
+        <div>
+          <div class="head">Form 3.A.b · Withdraw</div>
+          <h3>Withdraw USDC</h3>
+          <p>Burn <b>2 000.0000 share</b> for <b>2 046.8000 USDC</b> at share price <b>1.0234</b>. Withdrawal is gated by available vault liquidity (idle <b>1 380 211.42 USDC</b>); excess routes to a queued exit.<sup class="fn-ref red">¹</sup></p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4);font-size:var(--t-rule);margin-top:var(--s-3);">
+            <div>
+              <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);">Shares in</div>
+              <div style="font-family:var(--font-mono);font-size:var(--t-display-s);font-weight:var(--w-bold);">2 000.0000 <span style="font-size:var(--t-rule);font-weight:var(--w-roman);color:var(--mute);">SHARE</span></div>
+            </div>
+            <div>
+              <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);">USDC out</div>
+              <div style="font-family:var(--font-mono);font-size:var(--t-display-s);font-weight:var(--w-bold);color:var(--red);">2 046.8000 <span style="font-size:var(--t-rule);font-weight:var(--w-roman);color:var(--red-deep);">USDC</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:var(--s-3);align-items:center;align-self:end;">
+          <span class="stamp-engrossed">Engrossed</span>
+          <button class="btn destructive">Sign &amp; engross</button>
+        </div>
+        <div class="footrule">
+          ¹ Withdraw posts an irrevocable transaction to the canonical ledger. If pool utilisation
+          exceeds 95 % at submission, the request is queued and engrossed only when liquidity returns.
+        </div>
+      </div>
+    </div>
+
+    <!-- LEDGER 3.B  -->
+    <div style="margin-top:var(--s-5);">
+      <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin-bottom:var(--s-2);">
+        Ledger 3.B · Most recent action · deposit_lp · 5 000.0000 USDC · sig <span class="mono" style="font-size:var(--t-rule);">3aPmQc7nRzKx9wEeT4LdH2vF8sB3gM1pY6jQ…9rN1k</span>
+      </div>
+
+      <div class="ledger">
+        <div class="row">
+          <div class="state sent">▸ SENT</div>
+          <div class="desc">deposit_lp constructed by fee-payer · payload built · ix-1 of 1</div>
+          <div class="sig mono">3aPmQ…9rN1k</div>
+          <div class="slot">slot 268 437 901</div>
+        </div>
+        <div class="row">
+          <div class="state pending">○ PENDING</div>
+          <div class="desc">awaiting cluster confirmation · 17 / 32 slots</div>
+          <div class="sig mono">3aPmQ…9rN1k</div>
+          <div class="slot">+17 slots</div>
+        </div>
+        <div class="row is-current">
+          <div class="state finalized">✓ FINALIZED</div>
+          <div class="desc">deposit_lp finalized · share-mint <b>+4 882.6913</b> · pool vault <b>+5 000.0000 USDC</b></div>
+          <div class="sig mono">3aPmQ…9rN1k</div>
+          <div class="slot">slot 268 437 934</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §4 RECENT SETTLEMENTS (8 rows) + §5 RESERVE COMPOSITION -->
+  <!-- ============================================================ -->
+  <section class="section row-2col" style="padding-top:var(--s-7);">
+
+    <!-- §4 -->
+    <div>
+      <div class="section-head">
+        <div class="num">§4</div>
+        <h2>Recent settlements
+          <small>Last 8 settled · Sorted descending by slot · USDC pool</small>
+        </h2>
+        <div class="meta">Table 4.A<br><b>On-chain</b></div>
+      </div>
+
+      <table class="bul" aria-label="Recent settlements">
+        <thead>
+          <tr>
+            <th class="ix">Nº</th>
+            <th>Time (UTC)</th>
+            <th>Agent (Squads vault)</th>
+            <th>Recv. id</th>
+            <th class="num">Principal</th>
+            <th class="num">Fee</th>
+            <th class="num">Slot</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ix">08</td>
+            <td>14:02:11</td>
+            <td><span class="pk"><span class="role">[A-1]</span><span class="full mono">5tQp…m9wK</span></span></td>
+            <td class="mono">rcv_8841</td>
+            <td class="num">8 400.0000</td>
+            <td class="num">12.6000</td>
+            <td class="num">268 437 902</td>
+            <td><span class="mk ok"></span>Settled</td>
+          </tr>
+          <tr>
+            <td class="ix">07</td>
+            <td>13:58:40</td>
+            <td><span class="pk"><span class="role">[A-2]</span><span class="full mono">7Hn3…vK4r</span></span></td>
+            <td class="mono">rcv_8839</td>
+            <td class="num">12 750.0000</td>
+            <td class="num">19.1250</td>
+            <td class="num">268 437 581</td>
+            <td><span class="mk ok"></span>Settled</td>
+          </tr>
+          <tr>
+            <td class="ix">06</td>
+            <td>13:48:55</td>
+            <td><span class="pk"><span class="role">[A-3]</span><span class="full mono">aQ7w…vK2p</span></span></td>
+            <td class="mono">rcv_8835</td>
+            <td class="num">2 250.0000</td>
+            <td class="num">3.3750</td>
+            <td class="num">268 436 211</td>
+            <td><span class="mk ok"></span>Settled</td>
+          </tr>
+          <tr>
+            <td class="ix">05</td>
+            <td>13:42:18</td>
+            <td><span class="pk"><span class="role">[A-4]</span><span class="full mono">x2Px…rB9c</span></span></td>
+            <td class="mono">rcv_8830</td>
+            <td class="num">3 100.0000</td>
+            <td class="num">4.6500</td>
+            <td class="num">268 435 884</td>
+            <td><span class="mk ok"></span>Settled</td>
+          </tr>
+          <tr>
+            <td class="ix">04</td>
+            <td>13:31:02</td>
+            <td><span class="pk"><span class="role">[A-5]</span><span class="full mono">kM4n…tE1f</span></span></td>
+            <td class="mono">rcv_8821</td>
+            <td class="num">18 000.0000</td>
+            <td class="num">27.0000</td>
+            <td class="num">268 434 817</td>
+            <td><span class="mk pend"></span>Cranking <span class="pill" style="margin-left:6px;">+12 slots</span></td>
+          </tr>
+          <tr>
+            <td class="ix">03</td>
+            <td>13:18:44</td>
+            <td><span class="pk"><span class="role">[A-6]</span><span class="full mono">jD8s…hC5y</span></span></td>
+            <td class="mono">rcv_8814</td>
+            <td class="num">750.0000</td>
+            <td class="num">1.1250</td>
+            <td class="num">268 433 188</td>
+            <td><span class="mk ok"></span>Settled</td>
+          </tr>
+          <tr>
+            <td class="ix">02</td>
+            <td>12:59:44</td>
+            <td><span class="pk"><span class="role">[A-7]</span><span class="full mono">pR6q…nW3m</span></span></td>
+            <td class="mono">rcv_8801</td>
+            <td class="num">41 200.0000</td>
+            <td class="num">61.8000</td>
+            <td class="num">268 431 022</td>
+            <td><span class="mk ok"></span>Settled</td>
+          </tr>
+          <tr>
+            <td class="ix">01</td>
+            <td>12:14:08</td>
+            <td><span class="pk"><span class="role">[A-1]</span><span class="full mono">5tQp…m9wK</span></span></td>
+            <td class="mono">rcv_8772</td>
+            <td class="num">5 600.0000</td>
+            <td class="num">8.4000</td>
+            <td class="num">268 425 614</td>
+            <td><span class="mk ok"></span>Settled</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ERRATA block under settlements -->
+      <div class="errata">
+        <h4>Errata · last 1 h · failed advance attempts</h4>
+        <div class="item">
+          <div class="code">0x1771</div>
+          <div class="desc">request_advance — <code>CredmeshError::InvalidFeeCurve</code>. Piecewise inflection failed CU budget at 80 % util.; advance not issued.</div>
+          <div class="slot">slot 268 437 871</div>
+        </div>
+        <div class="item">
+          <div class="code">0x17A4</div>
+          <div class="desc">claim_and_settle — <code>CredmeshError::CrankerNotAdvanceAgent</code>. Cranker pubkey did not match <code>advance.agent</code> (v1 invariant).</div>
+          <div class="slot">slot 268 437 502</div>
+        </div>
+      </div>
+
+      <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+        <span class="fn">Source: <code>credmesh-escrow</code> advance state PDAs at slot 268 437 902 · 47 advances active. Fees computed at issuance per the utilisation regime in §2. Errata are surfaced from the <code>fee-payer</code> simulation log.</span>
+      </div>
+    </div>
+
+    <!-- §5 RESERVE -->
+    <div>
+      <div class="section-head">
+        <div class="num">§5</div>
+        <h2>Reserve composition
+          <small>Pool USDC · idle vs deployed · oracle &amp; key health</small>
+        </h2>
+        <div class="meta">Table 5.A<br><b>On-chain</b></div>
+      </div>
+
+      <table class="bul" aria-label="Reserve composition">
+        <thead>
+          <tr>
+            <th class="ix">Nº</th>
+            <th>Component</th>
+            <th class="num">Value (USDC)</th>
+            <th class="num">% of TVL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ix">1</td>
+            <td>Vault idle USDC</td>
+            <td class="num">1 380 211.4218</td>
+            <td class="num">32.72 %</td>
+          </tr>
+          <tr>
+            <td class="ix">2</td>
+            <td>Outstanding principal · 47 advances</td>
+            <td class="num">2 838 230.7642</td>
+            <td class="num">67.28 %</td>
+          </tr>
+          <tr>
+            <td class="ix">3</td>
+            <td>Accrued, undistributed fees<sup class="fn-ref">⁶</sup></td>
+            <td class="num">14 882.0911</td>
+            <td class="num">— excl.</td>
+          </tr>
+          <tr>
+            <td class="ix">4</td>
+            <td><b>Total value locked</b></td>
+            <td class="num"><b>4 218 442.1860</b></td>
+            <td class="num"><b>100.00 %</b></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:var(--s-4);">
+        <div style="font-size:var(--t-foot);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--mute);margin-bottom:var(--s-2);">
+          Health register · operational
+        </div>
+        <table class="bul">
+          <thead>
+            <tr><th>Indicator</th><th class="num">Value</th><th>State</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Oracle staleness <sup class="fn-ref">⁷</sup></td><td class="num">2 slots</td><td><span class="mk ok"></span>Within tolerance</td></tr>
+            <tr><td>Fee-payer authority rotation due</td><td class="num">14 d</td><td><span class="mk ok"></span>Scheduled</td></tr>
+            <tr><td>Reputation writer rotation due</td><td class="num">42 d</td><td><span class="mk ok"></span>Scheduled</td></tr>
+            <tr><td>Circuit breakers tripped</td><td class="num">0</td><td><span class="mk ok"></span>None</td></tr>
+            <tr><td>Active issuance</td><td class="num">unrestricted</td><td><span class="mk ok"></span>No pause path</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+        <span class="fn"><sup>⁶</sup>Accrued fees not yet swept to the share-mint price are excluded from TVL. They become principal at the next settlement crank.</span>
+        <span class="fn"><sup>⁷</sup>Oracle staleness is measured in slots since last <code>publish_receivable</code>; tolerance window is 96 slots. Per DESIGN §10, oracle key never shares with fee-payer.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== REGISTRY INDEX ============== -->
+  <div class="registry">
+    <h4>Registry of pubkeys cited in this annex</h4>
+    <table>
+      <tr><td class="ix">[P-1]</td><td class="role">Pool · USDC mainnet-beta</td><td class="full">cREdM3hPxKqW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvKiJsH11</td></tr>
+      <tr><td class="ix">[A-1]</td><td class="role">Agent · Squads vault</td><td class="full">5tQp7N3xBcK4mYz1WqL8Pf2vDhJ9sR6n4tBdLhCmVxYz3KqWm9wK</td></tr>
+      <tr><td class="ix">[A-2]</td><td class="role">Agent · Squads vault</td><td class="full">7Hn3jX9pK2mLcQrW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvK4r</td></tr>
+      <tr><td class="ix">[A-3]</td><td class="role">Agent · Squads vault</td><td class="full">aQ7wRtY8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiVK2p</td></tr>
+      <tr><td class="ix">[A-4]</td><td class="role">Agent · Squads vault</td><td class="full">x2PxR9kT3nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLirB9c</td></tr>
+      <tr><td class="ix">[A-5]</td><td class="role">Agent · Squads vault</td><td class="full">kM4nT3xBcK4mYz1WqL8Pf2vDhJ9sR6n4tBdLhCmVxYz3KqWtE1f</td></tr>
+      <tr><td class="ix">[A-6]</td><td class="role">Agent · Squads vault</td><td class="full">jD8sP9kT3nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLihC5y</td></tr>
+      <tr><td class="ix">[A-7]</td><td class="role">Agent · Squads vault</td><td class="full">pR6qN3xBcK4mYz1WqL8Pf2vDhJ9sR6n4tBdLhCmVxYz3KqWnW3m</td></tr>
+      <tr><td class="ix">[F-1]</td><td class="role">Fee-payer · server authority</td><td class="full">FeeP1yer8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiK7p9</td></tr>
+      <tr><td class="ix">[O-1]</td><td class="role">Oracle worker · receivable publisher</td><td class="full">orac1KvBxN3jPm9HrAcZqLyTvKiJsH11pK2mLcQrW4tFvB8sR2zR</td></tr>
+    </table>
+  </div>
+
+  <!-- ============== COLOPHON ============== -->
+  <footer class="colophon">
+    <div class="left">
+      Cred&shy;Mesh — Programmable&nbsp;credit&nbsp;registry · Annex&nbsp;A · LP&nbsp;Dashboard
+      <p class="blurb">A canonical, on-chain credit issuer for autonomous agents. Liquidity providers post USDC; agents take advances against verifiable receivables, governed by a piecewise-linear utilisation fee curve. This bulletin reproduces the live state of the protocol at the snapshot timestamp.</p>
+    </div>
+    <div class="right">
+      <span style="color:var(--mute);">Compiled</span><br>
+      <b>03.05.2026 · 14:00:00 UTC</b><br>
+      <span class="mono">slot 268 437 902</span><br>
+      <span class="mono">block 9F3a…71B2</span><br>
+      <span class="mono">programme cREdM…sH11</span>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>

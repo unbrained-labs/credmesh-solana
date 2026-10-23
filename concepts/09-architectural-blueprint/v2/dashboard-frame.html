@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440, initial-scale=1" />
+  <title>CREDMESH — SHEET 01 / LP DASHBOARD</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    body {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+    }
+
+    main.sheet {
+      position: relative;
+      width: 1440px;
+      height: 900px;
+      background: var(--paper);
+      overflow: hidden;
+      box-shadow: var(--shadow-sheet);
+      background-image:
+        radial-gradient(1200px 700px at 80% -10%, rgba(27,58,111,0.05), transparent 60%),
+        var(--grain-grid);
+    }
+
+    .frame { position: absolute; inset: 18px; border: 0.5px solid var(--ink-faint); pointer-events: none; }
+    .frame-inner { position: absolute; inset: 22px; border: 0.5px solid var(--ink-ghost); pointer-events: none; }
+
+    .reg { position: absolute; width: 14px; height: 14px; pointer-events: none; }
+    .reg::before, .reg::after { content: ''; position: absolute; background: var(--ink-soft); }
+    .reg::before { left: 6px; top: 0; bottom: 0; width: 1px; }
+    .reg::after  { top: 6px; left: 0; right: 0; height: 1px; }
+    .reg.tl { top: 8px; left: 8px; }
+    .reg.tr { top: 8px; right: 8px; }
+    .reg.bl { bottom: 8px; left: 8px; }
+    .reg.br { bottom: 8px; right: 8px; }
+
+    /* HEADER */
+    .header {
+      position: absolute;
+      top: 36px;
+      left: 36px;
+      right: 36px;
+      height: 56px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 0.5px solid var(--ink);
+      padding-bottom: 12px;
+    }
+    .header .left, .header .right { display: flex; gap: 30px; align-items: baseline; }
+    .header .meta { display: flex; flex-direction: column; gap: 2px; }
+    .header .meta .k {
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .header .meta .v {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+      letter-spacing: 0.04em;
+    }
+    .header .title-block {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+    }
+    .header .title {
+      font-size: var(--t-lg);
+      letter-spacing: 0.4em;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .header .subtitle {
+      font-size: var(--t-mini);
+      letter-spacing: 0.45em;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+    }
+
+    /* HERO TVL — the BLUEPRINT INSET (this is where the cyan returns) */
+    .tvl-hero {
+      position: absolute;
+      top: 122px;
+      left: 36px;
+      width: 760px;
+      height: 256px;
+      background: var(--blueprint);
+      color: var(--blueprint-ink);
+      padding: 26px 28px 22px;
+      overflow: hidden;
+    }
+    .tvl-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(0deg, rgba(242,237,224,0.04) 0 1px, transparent 1px 20px),
+        repeating-linear-gradient(90deg, rgba(242,237,224,0.04) 0 1px, transparent 1px 20px);
+      pointer-events: none;
+    }
+    .tvl-hero > .reg-corner {
+      position: absolute;
+      width: 12px; height: 12px;
+    }
+    .tvl-hero > .reg-corner::before, .tvl-hero > .reg-corner::after { content: ''; position: absolute; background: var(--blueprint-soft); }
+    .tvl-hero > .reg-corner::before { left: 5px; top: 0; bottom: 0; width: 1px; }
+    .tvl-hero > .reg-corner::after  { top: 5px; left: 0; right: 0; height: 1px; }
+    .tvl-hero .reg-corner.tl { top: 8px; left: 8px; }
+    .tvl-hero .reg-corner.tr { top: 8px; right: 8px; }
+    .tvl-hero .reg-corner.bl { bottom: 8px; left: 8px; }
+    .tvl-hero .reg-corner.br { bottom: 8px; right: 8px; }
+
+    .tvl-hero .lbl-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .tvl-hero .section-mark.invert-on-blue {
+      width: 22px; height: 22px;
+      border: 0.6px solid var(--blueprint-ink);
+      color: var(--blueprint-ink);
+      background: transparent;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--face-mono);
+      font-size: 10.5px;
+    }
+    .tvl-hero .lbl-on-blue {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--blueprint-soft);
+    }
+    .tvl-hero .lbl-on-blue b { color: var(--blueprint-ink); font-weight: 500; }
+
+    .tvl-hero .tvl-num {
+      font-family: var(--face-mono);
+      font-weight: 300;
+      font-size: 96px;
+      line-height: 0.92;
+      letter-spacing: -0.035em;
+      color: var(--blueprint-ink);
+      display: block;
+      white-space: nowrap;
+      margin-top: 22px;
+      position: relative;
+      z-index: 1;
+    }
+    .tvl-hero .tvl-num .currency {
+      font-size: 48px;
+      vertical-align: top;
+      margin-right: 4px;
+      letter-spacing: 0;
+      opacity: 0.85;
+      position: relative;
+      top: 4px;
+    }
+    .tvl-hero .tvl-num .cents {
+      font-size: 28px;
+      opacity: 0.5;
+      letter-spacing: 0;
+      vertical-align: baseline;
+      margin-left: 2px;
+    }
+    .tvl-hero .tvl-num .unit-after {
+      font-family: var(--face-sans);
+      font-size: 16px;
+      letter-spacing: 0.36em;
+      vertical-align: top;
+      margin-left: 14px;
+      color: var(--blueprint-soft);
+      position: relative;
+      top: 14px;
+    }
+
+    .tvl-hero .tvl-dim {
+      margin-top: 14px;
+      width: 100%;
+      position: relative;
+      height: 32px;
+      z-index: 1;
+    }
+    .tvl-hero .tvl-dim .rule { position: absolute; left: 6px; right: 6px; top: 14px; height: 1px; background: var(--blueprint-ink); }
+    .tvl-hero .tvl-dim .tick { position: absolute; top: 4px; width: 1px; height: 22px; background: var(--blueprint-ink); }
+    .tvl-hero .tvl-dim .tick.l { left: 6px; } .tvl-hero .tvl-dim .tick.r { right: 6px; }
+    .tvl-hero .tvl-dim .label-mid {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--blueprint);
+      padding: 0 10px;
+      font-size: var(--t-micro);
+      letter-spacing: 0.36em;
+      color: var(--blueprint-soft);
+      text-transform: uppercase;
+    }
+    .tvl-hero .delta {
+      position: absolute;
+      top: -2px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--blueprint);
+      padding: 0 10px;
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--blueprint-ink);
+      letter-spacing: 0.04em;
+    }
+    .tvl-hero .annotation {
+      position: absolute;
+      right: 28px;
+      top: 22px;
+      width: 200px;
+      font-family: var(--face-hand);
+      font-size: 13px;
+      color: var(--blueprint-ink);
+      transform: rotate(-2deg);
+      line-height: 1.3;
+      z-index: 1;
+    }
+    .tvl-hero .annotation .strike { text-decoration: line-through; opacity: 0.5; }
+    .tvl-hero .annotation::before {
+      content: '';
+      position: absolute;
+      left: -32px;
+      top: 8px;
+      width: 26px;
+      height: 1px;
+      background: var(--blueprint-soft);
+      transform: rotate(8deg);
+    }
+
+    /* SECONDARY METRICS — RIGHT OF HERO, 2x2 GRID */
+    .metrics {
+      position: absolute;
+      top: 122px;
+      right: 36px;
+      width: 580px;
+      height: 256px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 0;
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+    }
+    .metrics .cell {
+      padding: 18px 20px 16px;
+      position: relative;
+      border-right: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .metrics .cell:nth-child(2n) { border-right: none; }
+    .metrics .cell:nth-child(n+3) { border-bottom: none; }
+    .metrics .cell .lbl-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .metrics .cell .lbl-row .section-mark { width: 18px; height: 18px; font-size: 9.5px; }
+    .metrics .cell .lbl-row::after {
+      content: '';
+      flex: 1;
+      height: 0.5px;
+      background: var(--ink-faint);
+    }
+    .metrics .cell .v {
+      font-family: var(--face-mono);
+      font-weight: 300;
+      font-size: var(--t-2xl);
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .metrics .cell .v .unit {
+      font-family: var(--face-sans);
+      font-size: 13px;
+      letter-spacing: 0.32em;
+      color: var(--ink-soft);
+      vertical-align: 0.7em;
+      margin-left: 6px;
+    }
+    .metrics .cell .sub {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      margin-top: 8px;
+    }
+    .metrics .cell .stamp-row {
+      position: absolute;
+      bottom: 14px;
+      right: 18px;
+    }
+
+    /* TIME-SERIES — share price 30D */
+    .chart {
+      position: absolute;
+      top: 396px;
+      left: 36px;
+      width: 760px;
+      height: 220px;
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+      padding: 14px 18px 16px;
+    }
+    .chart .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .chart .head .t { display: flex; gap: 12px; align-items: center; }
+    .chart .head .t .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .chart .head .scale {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .chart svg { display: block; width: 100%; height: 158px; }
+    .chart .tooltip-row {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+    .chart .tooltip-row b { color: var(--ink); font-weight: 500; }
+
+    /* SETTLEMENTS SCHEDULE — bottom-left */
+    .settlements {
+      position: absolute;
+      top: 632px;
+      left: 36px;
+      width: 760px;
+      bottom: 36px;
+      padding-top: 30px;
+    }
+    .settlements .sched-head {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .settlements .sched-head .l {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .settlements .sched-head .title {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .settlements .sched-head .tag {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+
+    .settlements table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    .settlements thead th {
+      font-family: var(--face-sans);
+      font-weight: 400;
+      font-size: var(--t-micro);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      text-align: left;
+      padding: 6px 8px 6px 0;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .settlements tbody td {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      padding: 7px 8px 7px 0;
+      letter-spacing: 0.02em;
+      border-bottom: 0.5px solid var(--ink-ghost);
+    }
+    .settlements tbody tr:last-child td { border-bottom: 0.5px solid var(--ink-faint); }
+    .settlements .right { text-align: right; padding-right: 0; }
+    .settlements .stamp {
+      font-family: var(--face-sans);
+      font-size: 8.5px;
+      font-weight: 500;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border: 0.6px solid var(--ink);
+      color: var(--ink);
+      background: var(--paper);
+      white-space: nowrap;
+    }
+    .settlements .stamp.amber { color: var(--amber); border-color: var(--amber); }
+    .settlements .stamp.danger { color: var(--stamp); border-color: var(--stamp); }
+    .settlements .stamp.dim { color: var(--ink-soft); border-color: var(--ink-faint); }
+
+    /* RIGHT PANEL — yield attribution + action lifecycle */
+    .right-panel {
+      position: absolute;
+      top: 396px;
+      right: 36px;
+      width: 580px;
+      bottom: 36px;
+      display: grid;
+      grid-template-rows: 220px 1fr;
+      gap: 16px;
+    }
+
+    .yield-attr {
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+      padding: 14px 18px 16px;
+      position: relative;
+    }
+    .yield-attr .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .yield-attr .head .t {
+      display: flex; gap: 10px; align-items: center;
+    }
+    .yield-attr .head .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .yield-attr .head .total {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+    }
+    .yield-attr .rows {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .yield-attr .yrow {
+      display: grid;
+      grid-template-columns: 24px 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+    }
+    .yield-attr .yrow .num {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.18em;
+    }
+    .yield-attr .yrow .name {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .yield-attr .yrow .bar {
+      width: 130px;
+      height: 8px;
+      border-top: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+      position: relative;
+    }
+    .yield-attr .yrow .bar > i {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: var(--hatch-mid);
+    }
+    .yield-attr .yrow .v {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      text-align: right;
+    }
+    .yield-attr .footnote {
+      margin-top: 12px;
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    /* ACTION LIFECYCLE */
+    .action {
+      border: 0.5px solid var(--ink);
+      background: var(--paper);
+      padding: 14px 18px 16px;
+      position: relative;
+    }
+    .action .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      border-bottom: 0.5px solid var(--ink-faint);
+      margin-bottom: 12px;
+    }
+    .action .head .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .action .head .form-id {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .action .toggle {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+      border: 0.5px solid var(--ink);
+    }
+    .action .toggle button {
+      flex: 1;
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      padding: 8px 0;
+      background: transparent;
+      border: none;
+      border-right: 0.5px solid var(--ink);
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .action .toggle button:last-child { border-right: none; }
+    .action .toggle button.active {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .action .input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: end;
+      padding-bottom: 12px;
+      border-bottom: 0.5px solid var(--ink-faint);
+      margin-bottom: 12px;
+    }
+    .action .input-row .lbl {
+      display: block;
+      margin-bottom: 4px;
+    }
+    .action .input-row .val {
+      font-family: var(--face-mono);
+      font-size: var(--t-2xl);
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+    .action .input-row .val .unit {
+      font-family: var(--face-sans);
+      font-size: 13px;
+      letter-spacing: 0.32em;
+      color: var(--ink-soft);
+      vertical-align: 0.4em;
+      margin-left: 6px;
+    }
+    .action .input-row .max {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      border: 0.5px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .action .lifecycle {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      border: 0.5px solid var(--ink-faint);
+      margin-bottom: 12px;
+    }
+    .action .lifecycle .stage {
+      padding: 8px 10px;
+      border-right: 0.5px solid var(--ink-faint);
+      position: relative;
+    }
+    .action .lifecycle .stage:last-child { border-right: none; }
+    .action .lifecycle .stage.done::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--hatch-sparse); opacity: 0.45; pointer-events: none;
+    }
+    .action .lifecycle .stage.active { background: var(--paper-warm); }
+    .action .lifecycle .stage > * { position: relative; z-index: 1; }
+    .action .lifecycle .stage .head-row {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 4px;
+    }
+    .action .lifecycle .stage .step-no {
+      font-family: var(--face-mono); font-size: var(--t-micro); color: var(--ink-soft);
+    }
+    .action .lifecycle .stage .step-name {
+      font-family: var(--face-sans); font-size: var(--t-mini);
+      letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink);
+      font-weight: 500;
+    }
+    .action .lifecycle .stage .slot {
+      font-family: var(--face-mono); font-size: var(--t-tiny); color: var(--ink);
+    }
+    .action .lifecycle .stage .meta {
+      font-family: var(--face-mono); font-size: var(--t-micro); color: var(--ink-soft);
+    }
+    .action .submit-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .action .submit-row .receipt {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .action .submit-row .receipt b { color: var(--ink); font-weight: 500; }
+    .action .submit-row button.primary {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      font-weight: 500;
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      padding: 11px 22px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper);
+      cursor: pointer;
+    }
+
+    /* TITLE BLOCK */
+    .titleblock-wrap {
+      display: none;
+    }
+
+    /* MARGIN annotation strip on left edge */
+    .margin-strip {
+      position: absolute;
+      left: 8px;
+      top: 110px;
+      bottom: 110px;
+      width: 18px;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.45em;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .margin-strip-r {
+      position: absolute;
+      right: 8px;
+      top: 110px;
+      bottom: 110px;
+      width: 18px;
+      writing-mode: vertical-rl;
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.45em;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+<main class="sheet">
+  <div class="frame"></div>
+  <div class="frame-inner"></div>
+
+  <span class="reg tl"></span>
+  <span class="reg tr"></span>
+  <span class="reg bl"></span>
+  <span class="reg br"></span>
+
+  <span class="margin-strip">SHEET 01 — LP DASHBOARD — REV. D — DRAWN BY PROTOCOL</span>
+  <span class="margin-strip-r">CHECKED BY ORACLE — N: CONSENSUS — SCALE 1:1</span>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="left">
+      <div class="meta"><div class="k">Project</div><div class="v">CREDMESH / SOLANA</div></div>
+      <div class="meta"><div class="k">Cluster</div><div class="v">MAINNET-BETA</div></div>
+      <div class="meta"><div class="k">Sheet</div><div class="v">01 OF 12</div></div>
+    </div>
+    <div class="title-block">
+      <span class="title">LP DASHBOARD</span>
+      <span class="subtitle">— SECTION A‑A · POOL 001 / USDC</span>
+    </div>
+    <div class="right">
+      <div class="meta"><div class="k">Drawn by</div><div class="v">PROTOCOL</div></div>
+      <div class="meta"><div class="k">Checked</div><div class="v">ORACLE</div></div>
+      <div class="meta"><div class="k">Rev.</div><div class="v">D / 2026‑05‑03</div></div>
+    </div>
+  </header>
+
+  <!-- HERO TVL — INVERTED BLUEPRINT INSET -->
+  <section class="tvl-hero">
+    <span class="reg-corner tl"></span>
+    <span class="reg-corner tr"></span>
+    <span class="reg-corner bl"></span>
+    <span class="reg-corner br"></span>
+
+    <div class="lbl-row">
+      <span class="section-mark invert-on-blue">A</span>
+      <span class="lbl-on-blue"><b>Total Value Locked</b> · Pool 001 / USDC · Vessel capacity</span>
+    </div>
+
+    <span class="tvl-num">
+      <span class="currency">$</span>4,247,200<span class="cents">.18</span><span class="unit-after">USDC</span>
+    </span>
+
+    <div class="tvl-dim">
+      <span class="tick l"></span>
+      <span class="rule"></span>
+      <span class="tick r"></span>
+      <span class="delta">+ $84,612.40 / 24H · +2.03%</span>
+      <span class="label-mid">MEASURED 2026‑05‑03 · 14:08:22 UTC · SLOT 268,402,184</span>
+    </div>
+
+    <div class="annotation">
+      cap target $5.0M ⇢<br>
+      <span class="strike">freeze at 90%</span><br>
+      currently 84.9%
+    </div>
+  </section>
+
+  <!-- METRICS GRID -->
+  <section class="metrics">
+    <div class="cell">
+      <div class="lbl-row"><span class="section-mark">B</span><span class="lbl">Share Price</span></div>
+      <div class="v">1.0234<span class="unit">USDC/SH</span></div>
+      <div class="sub">+0.0011 · 24H · t₀ 1.0000 · slot 268,402,184</div>
+      <div class="stamp-row"><span class="stamp">Healthy</span></div>
+    </div>
+    <div class="cell">
+      <div class="lbl-row"><span class="section-mark">C</span><span class="lbl">Utilization</span></div>
+      <div class="v">68.4<span class="unit">%</span></div>
+      <div class="sub">$2.85M / $4.18M · KINK 80%</div>
+      <div class="stamp-row"><span class="stamp">Below kink</span></div>
+    </div>
+    <div class="cell">
+      <div class="lbl-row"><span class="section-mark">D</span><span class="lbl">Active Agents</span></div>
+      <div class="v">47<span class="unit">/ 52</span></div>
+      <div class="sub">5 IDLE · 0 SUSPENDED · 0 FROZEN</div>
+      <div class="stamp-row"><span class="stamp dim">Pool open</span></div>
+    </div>
+    <div class="cell">
+      <div class="lbl-row"><span class="section-mark">E</span><span class="lbl">Default Rate 30D</span></div>
+      <div class="v">0.42<span class="unit">%</span></div>
+      <div class="sub">2 OF 487 · TARGET ≤1.5%</div>
+      <div class="stamp-row"><span class="stamp">Within tol.</span></div>
+    </div>
+  </section>
+
+  <!-- TIME-SERIES (share price 30D, hairline + hatch fill) -->
+  <section class="chart">
+    <div class="head">
+      <div class="t">
+        <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">F</span>
+        <span class="label">Share Price · 30 Day Section</span>
+      </div>
+      <span class="scale">SCALE 1D : 24 PX · Y 1.0000 → 1.0250 · 4 DP</span>
+    </div>
+    <svg viewBox="0 0 720 158" preserveAspectRatio="none">
+      <defs>
+        <pattern id="cf-h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke="#1B3A6F" stroke-width="0.5" opacity="0.40"/>
+        </pattern>
+      </defs>
+      <!-- horizontal grid -->
+      <g stroke="#1B3A6F" stroke-width="0.4" opacity="0.22">
+        <line x1="0" y1="0" x2="720" y2="0"/>
+        <line x1="0" y1="40" x2="720" y2="40"/>
+        <line x1="0" y1="79" x2="720" y2="79"/>
+        <line x1="0" y1="118" x2="720" y2="118"/>
+        <line x1="0" y1="158" x2="720" y2="158"/>
+      </g>
+      <!-- y axis labels -->
+      <g font-family="JetBrains Mono" font-size="9" fill="#1B3A6F" opacity="0.55" letter-spacing="0.5">
+        <text x="2" y="9">1.0250</text>
+        <text x="2" y="46">1.0188</text>
+        <text x="2" y="85">1.0125</text>
+        <text x="2" y="124">1.0063</text>
+        <text x="2" y="156">1.0000</text>
+      </g>
+      <!-- vertical day ticks -->
+      <g stroke="#1B3A6F" stroke-width="0.4" opacity="0.18" stroke-dasharray="2 3">
+        <line x1="120" y1="0" x2="120" y2="158"/>
+        <line x1="240" y1="0" x2="240" y2="158"/>
+        <line x1="360" y1="0" x2="360" y2="158"/>
+        <line x1="480" y1="0" x2="480" y2="158"/>
+        <line x1="600" y1="0" x2="600" y2="158"/>
+      </g>
+      <!-- x axis labels -->
+      <g font-family="JetBrains Mono" font-size="9" fill="#1B3A6F" opacity="0.55" letter-spacing="0.5">
+        <text x="120" y="156">D-25</text>
+        <text x="240" y="156">D-20</text>
+        <text x="360" y="156">D-15</text>
+        <text x="480" y="156">D-10</text>
+        <text x="600" y="156">D-05</text>
+      </g>
+      <!-- hatch under curve -->
+      <path d="M 0 132 L 24 130 L 48 128 L 72 124 L 96 122 L 120 118 L 144 116 L 168 110 L 192 108 L 216 102 L 240 98 L 264 92 L 288 86 L 312 84 L 336 80 L 360 76 L 384 72 L 408 70 L 432 64 L 456 62 L 480 58 L 504 54 L 528 50 L 552 48 L 576 44 L 600 40 L 624 38 L 648 34 L 672 30 L 696 26 L 720 22 L 720 158 L 0 158 Z"
+        fill="url(#cf-h)" stroke="none"/>
+      <!-- curve -->
+      <path d="M 0 132 L 24 130 L 48 128 L 72 124 L 96 122 L 120 118 L 144 116 L 168 110 L 192 108 L 216 102 L 240 98 L 264 92 L 288 86 L 312 84 L 336 80 L 360 76 L 384 72 L 408 70 L 432 64 L 456 62 L 480 58 L 504 54 L 528 50 L 552 48 L 576 44 L 600 40 L 624 38 L 648 34 L 672 30 L 696 26 L 720 22"
+        fill="none" stroke="#1B3A6F" stroke-width="1.0"/>
+      <!-- hover marker (witness line) at slot 268,402,184 -->
+      <line x1="600" y1="0" x2="600" y2="158" stroke="#1B3A6F" stroke-width="0.7" stroke-dasharray="3 2"/>
+      <circle cx="600" cy="40" r="3" fill="#ECE3CD" stroke="#1B3A6F" stroke-width="1.0"/>
+      <text x="606" y="36" font-family="JetBrains Mono" font-size="9.5" fill="#1B3A6F" letter-spacing="0.5">slot 268,402,184 · 1.0234</text>
+      <text x="606" y="48" font-family="JetBrains Mono" font-size="9" fill="#1B3A6F" opacity="0.6" letter-spacing="0.5">2026‑05‑03 14:08:22 UTC · Δ +0.0011</text>
+    </svg>
+    <div class="tooltip-row">
+      <span>cursor · slot <b>268,402,184</b> · price <b>1.0234 USDC/SH</b></span>
+      <span>30D Δ <b>+0.0234</b> · 30D APY <b>+8.42%</b></span>
+    </div>
+  </section>
+
+  <!-- RIGHT PANEL: Yield attribution + Action -->
+  <aside class="right-panel">
+    <div class="yield-attr">
+      <div class="head">
+        <div class="t">
+          <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">G</span>
+          <span class="label">Yield Attribution · 24H</span>
+        </div>
+        <span class="total mono">+ $84,612.40 USDC</span>
+      </div>
+      <div class="rows">
+        <div class="yrow">
+          <span class="num">¹</span>
+          <span class="name">Utilization fee</span>
+          <span class="bar"><i style="width: 78%;"></i></span>
+          <span class="v">$66,011.74 · 78.0%</span>
+        </div>
+        <div class="yrow">
+          <span class="num">²</span>
+          <span class="name">Receivable interest</span>
+          <span class="bar"><i style="width: 17%;"></i></span>
+          <span class="v">$14,384.10 · 17.0%</span>
+        </div>
+        <div class="yrow">
+          <span class="num">³</span>
+          <span class="name">Liquidation surplus</span>
+          <span class="bar"><i style="width: 4%;"></i></span>
+          <span class="v">$3,384.50 ·  4.0%</span>
+        </div>
+        <div class="yrow">
+          <span class="num">⁴</span>
+          <span class="name">Idle USDC return</span>
+          <span class="bar"><i style="width: 1%;"></i></span>
+          <span class="v">$832.06 ·  1.0%</span>
+        </div>
+      </div>
+      <div class="footnote">¹⁻⁴ SOURCE BREAKDOWN · 24H ENDING SLOT 268,402,184 · ROUNDED TO 4DP</div>
+    </div>
+
+    <div class="action">
+      <div class="head">
+        <div class="t" style="display:flex; gap:10px; align-items:center;">
+          <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">H</span>
+          <span class="label">Action · Pool 001</span>
+        </div>
+        <span class="form-id">SHEET R-01 · LP-IO</span>
+      </div>
+
+      <div class="toggle">
+        <button class="active">Deposit</button>
+        <button>Withdraw</button>
+      </div>
+
+      <div class="input-row">
+        <div>
+          <span class="lbl" style="display:block; margin-bottom: 4px;">Amount</span>
+          <span class="val">25,000.0000<span class="unit">USDC</span></span>
+        </div>
+        <button class="max">Max · 142,038.5012</button>
+      </div>
+
+      <div class="lifecycle">
+        <div class="stage done">
+          <div class="head-row"><span class="step-no">01</span><span class="step-name">Sent</span></div>
+          <div class="slot">slot 268,402,184</div>
+          <div class="meta">simulated · OK · 38,420 CU</div>
+        </div>
+        <div class="stage active">
+          <div class="head-row"><span class="step-no">02</span><span class="step-name">Pending</span></div>
+          <div class="slot">slot 268,402,206 · 22 ahead</div>
+          <div class="meta">conf 18 / 32</div>
+        </div>
+        <div class="stage">
+          <div class="head-row"><span class="step-no">03</span><span class="step-name">Finalized</span></div>
+          <div class="slot">— · awaiting</div>
+          <div class="meta">target ≈ +32 slots</div>
+        </div>
+      </div>
+
+      <div class="submit-row">
+        <span class="receipt">
+          fee-payer <b>5tQp…m9wK</b> · prio 0.000005 SOL · sig <b>3Hdj…tQ8x</b>
+        </span>
+        <button class="primary">Sign &amp; Submit</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- SETTLEMENTS SCHEDULE (8 rows) -->
+  <section class="settlements">
+    <div class="sched-head">
+      <div class="l">
+        <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">J</span>
+        <span class="title">Recent Settlements · Pool 001</span>
+        <span class="tag">— SCHEDULE J · 8 LATEST CLOSED ADVANCES</span>
+      </div>
+      <span class="tag">SLOT WINDOW 268,396,000 → 268,402,184 · 24H</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 9%;">Receivable</th>
+          <th style="width: 14%;">Agent</th>
+          <th style="width: 9%;">Source</th>
+          <th class="right" style="width: 12%;">Principal</th>
+          <th class="right" style="width: 11%;">Fee</th>
+          <th style="width: 14%;">Slot · Δ</th>
+          <th style="width: 18%;">Tx Sig</th>
+          <th style="width: 13%;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>R-04812</td>
+          <td><span class="pk">5tQp<span class="pk-mid">…</span>m9wK</span></td>
+          <td>STRIPE</td>
+          <td class="right">12,400.0000</td>
+          <td class="right">204.5612</td>
+          <td>268,402,184 · 12s</td>
+          <td><span class="pk">3Hdj<span class="pk-mid">…</span>tQ8x</span></td>
+          <td><span class="stamp">Settled</span></td>
+        </tr>
+        <tr>
+          <td>R-04811</td>
+          <td><span class="pk">9p3k<span class="pk-mid">…</span>N8cV</span></td>
+          <td>WIRE</td>
+          <td class="right">3,200.0000</td>
+          <td class="right">52.8412</td>
+          <td>268,401,907 · 1m 06s</td>
+          <td><span class="pk">7nFq<span class="pk-mid">…</span>K2mR</span></td>
+          <td><span class="stamp amber">Pending</span></td>
+        </tr>
+        <tr>
+          <td>R-04810</td>
+          <td><span class="pk">2Bvy<span class="pk-mid">…</span>rM4j</span></td>
+          <td>STRIPE</td>
+          <td class="right">42,800.0000</td>
+          <td class="right">816.0440</td>
+          <td>268,401,432 · 3m 02s</td>
+          <td><span class="pk">aQ4f<span class="pk-mid">…</span>p8Lm</span></td>
+          <td><span class="stamp">Settled</span></td>
+        </tr>
+        <tr>
+          <td>R-04809</td>
+          <td><span class="pk">7ZxF<span class="pk-mid">…</span>aP2K</span></td>
+          <td>STRIPE</td>
+          <td class="right">9,640.0000</td>
+          <td class="right">158.6912</td>
+          <td>268,400,888 · 5m 22s</td>
+          <td><span class="pk">bN2x<span class="pk-mid">…</span>r4Tk</span></td>
+          <td><span class="stamp danger">Voided</span></td>
+        </tr>
+        <tr>
+          <td>R-04808</td>
+          <td><span class="pk">kQz1<span class="pk-mid">…</span>F9pT</span></td>
+          <td>WIRE</td>
+          <td class="right">88,200.0000</td>
+          <td class="right">1,612.4400</td>
+          <td>268,400,224 · 7m 51s</td>
+          <td><span class="pk">m8jY<span class="pk-mid">…</span>3wXn</span></td>
+          <td><span class="stamp">Settled</span></td>
+        </tr>
+        <tr>
+          <td>R-04807</td>
+          <td><span class="pk">5tQp<span class="pk-mid">…</span>m9wK</span></td>
+          <td>STRIPE</td>
+          <td class="right">2,140.0000</td>
+          <td class="right">35.4940</td>
+          <td>268,399,401 · 11m 04s</td>
+          <td><span class="pk">vL3p<span class="pk-mid">…</span>tH7q</span></td>
+          <td><span class="stamp">Settled</span></td>
+        </tr>
+        <tr>
+          <td>R-04806</td>
+          <td><span class="pk">jR2c<span class="pk-mid">…</span>bH8s</span></td>
+          <td>ACH</td>
+          <td class="right">17,840.0000</td>
+          <td class="right">298.0240</td>
+          <td>268,398,914 · 13m 28s</td>
+          <td><span class="pk">d6Vt<span class="pk-mid">…</span>aB4r</span></td>
+          <td><span class="stamp">Settled</span></td>
+        </tr>
+        <tr>
+          <td>R-04805</td>
+          <td><span class="pk">9p3k<span class="pk-mid">…</span>N8cV</span></td>
+          <td>STRIPE</td>
+          <td class="right">5,400.0000</td>
+          <td class="right">88.7200</td>
+          <td>268,397,712 · 17m 12s</td>
+          <td><span class="pk">eP1k<span class="pk-mid">…</span>n2Xj</span></td>
+          <td><span class="stamp">Settled</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+</body>
+</html>

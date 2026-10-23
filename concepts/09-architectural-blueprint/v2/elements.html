@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440, initial-scale=1" />
+  <title>CREDMESH — SHEET 00 / ELEMENTS</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    main.sheet {
+      width: 1440px;
+      margin: 24px auto;
+      background: var(--paper);
+      box-shadow: var(--shadow-sheet);
+      position: relative;
+      padding: 36px 36px 36px 36px;
+    }
+
+    /* sheet outer frame + corner registration */
+    .sheet > .outer-frame {
+      position: absolute;
+      inset: 18px;
+      border: 0.5px solid var(--ink-faint);
+      pointer-events: none;
+    }
+    .sheet > .inner-frame {
+      position: absolute;
+      inset: 22px;
+      border: 0.5px solid var(--ink-ghost);
+      pointer-events: none;
+    }
+    .sheet > .reg-tl, .sheet > .reg-tr, .sheet > .reg-bl, .sheet > .reg-br {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+    }
+    .sheet > .reg-tl::before, .sheet > .reg-tr::before, .sheet > .reg-bl::before, .sheet > .reg-br::before,
+    .sheet > .reg-tl::after,  .sheet > .reg-tr::after,  .sheet > .reg-bl::after,  .sheet > .reg-br::after {
+      content: '';
+      position: absolute;
+      background: var(--ink-soft);
+    }
+    .sheet > [class^="reg-"]::before { left: 6px; top: 0; bottom: 0; width: 1px; }
+    .sheet > [class^="reg-"]::after  { top: 6px; left: 0; right: 0; height: 1px; }
+    .sheet > .reg-tl { top: 8px; left: 8px; }
+    .sheet > .reg-tr { top: 8px; right: 8px; }
+    .sheet > .reg-bl { bottom: 8px; left: 8px; }
+    .sheet > .reg-br { bottom: 8px; right: 8px; }
+
+    /* sheet header — same on every page */
+    .sheet-header {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: end;
+      gap: 32px;
+      padding: 14px 18px 10px;
+      border-bottom: 0.5px solid var(--ink);
+      margin-bottom: 28px;
+    }
+    .sheet-header .meta-row {
+      display: flex;
+      gap: 28px;
+      align-items: baseline;
+    }
+    .sheet-header .meta { display: flex; flex-direction: column; gap: 2px; }
+    .sheet-header .meta .k {
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .sheet-header .meta .v {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+      letter-spacing: 0.04em;
+    }
+    .sheet-header .title {
+      text-align: center;
+      font-family: var(--face-sans);
+      font-size: var(--t-lg);
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: var(--ink);
+    }
+    .sheet-header .title small {
+      display: block;
+      font-size: var(--t-mini);
+      letter-spacing: 0.45em;
+      color: var(--ink-soft);
+      font-weight: 400;
+      margin-top: 4px;
+    }
+
+    /* section divisions */
+    section.row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 32px;
+      padding: 28px 18px;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    section.row:last-of-type { border-bottom: none; }
+
+    .row-title {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .row-title .num-tag {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink-soft);
+    }
+    .row-title h2 {
+      font-family: var(--face-sans);
+      font-weight: 500;
+      font-size: var(--t-md);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .row-title p {
+      font-family: var(--face-hand);
+      font-size: 12px;
+      color: var(--ink-soft);
+      line-height: 1.45;
+      margin-top: 4px;
+    }
+
+    .row-body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 28px;
+      align-items: flex-start;
+    }
+    .specimen {
+      position: relative;
+      padding: 20px 18px 22px;
+      min-width: 220px;
+      background: var(--paper);
+      border: 0.5px solid var(--ink-faint);
+    }
+    .specimen .spec-tag {
+      position: absolute;
+      top: -8px;
+      left: 12px;
+      background: var(--paper);
+      padding: 0 6px;
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    /* type ladder display */
+    .ladder {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      row-gap: 10px;
+      column-gap: 18px;
+      align-items: baseline;
+    }
+    .ladder dt {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .ladder dd { font-family: var(--face-mono); color: var(--ink); }
+    .ladder dd small {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.28em;
+      color: var(--ink-soft);
+      margin-left: 14px;
+      text-transform: uppercase;
+    }
+
+    /* color swatches */
+    .swatch-row { display: flex; flex-wrap: wrap; gap: 14px; }
+    .swatch {
+      width: 130px;
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+    }
+    .swatch .chip {
+      height: 80px;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .swatch .chip.hatched { background: var(--hatch-mid); }
+    .swatch dl {
+      padding: 8px 10px 10px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+    .swatch dt {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .swatch dd {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink);
+    }
+
+    /* spacing scale */
+    .spacing-scale { display: flex; flex-direction: column; gap: 8px; }
+    .spacing-scale .step {
+      display: grid;
+      grid-template-columns: 60px 100px 1fr;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+    }
+    .spacing-scale .step .key {
+      font-family: var(--face-sans);
+      letter-spacing: 0.3em;
+      font-size: var(--t-mini);
+      color: var(--ink-soft);
+      text-transform: uppercase;
+    }
+    .spacing-scale .step .bar {
+      height: 14px;
+      background: var(--hatch-mid);
+      border-left: 1px solid var(--ink);
+      border-right: 1px solid var(--ink);
+    }
+
+    /* identity strip specimen */
+    .id-strip {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 14px 16px;
+      border: 0.6px solid var(--ink);
+      background: var(--paper-warm);
+      width: 100%;
+      max-width: 720px;
+    }
+    .id-strip .pk-block {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .id-strip .pk-block .role {
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    /* stat card specimen */
+    .stat-card {
+      width: 240px;
+      padding: 16px 18px 18px;
+      border: 0.6px solid var(--ink);
+      background: var(--paper);
+      position: relative;
+    }
+    .stat-card .corner {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+    }
+    .stat-card .corner::before, .stat-card .corner::after {
+      content: '';
+      position: absolute;
+      background: var(--ink-soft);
+    }
+    .stat-card .corner::before { left: 4px; top: 0; bottom: 0; width: 0.5px; }
+    .stat-card .corner::after { top: 4px; left: 0; right: 0; height: 0.5px; }
+    .stat-card .corner.tl { top: -4px; left: -4px; }
+    .stat-card .corner.tr { top: -4px; right: -4px; }
+    .stat-card .corner.bl { bottom: -4px; left: -4px; }
+    .stat-card .corner.br { bottom: -4px; right: -4px; }
+    .stat-card .stat-lbl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .stat-card .stat-lbl::after {
+      content: '';
+      flex: 1;
+      height: 0.5px;
+      background: var(--ink-faint);
+    }
+    .stat-card .stat-num {
+      font-family: var(--face-mono);
+      font-size: var(--t-xl);
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .stat-card .stat-sub {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      margin-top: 6px;
+    }
+
+    /* lifecycle timeline specimen */
+    .lifecycle {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      align-items: stretch;
+      width: 720px;
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+    }
+    .lifecycle .stage {
+      padding: 14px 16px;
+      border-right: 0.5px solid var(--ink-faint);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .lifecycle .stage:last-child { border-right: none; }
+    .lifecycle .stage.active { background: var(--paper-warm); }
+    .lifecycle .stage.done {
+      background: var(--paper);
+    }
+    .lifecycle .stage.done::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--hatch-sparse);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .lifecycle .stage > * { position: relative; z-index: 1; }
+    .lifecycle .stage .head {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .lifecycle .stage .step-no {
+      font-family: var(--face-mono);
+      font-size: var(--t-mini);
+      color: var(--ink-soft);
+    }
+    .lifecycle .stage .step-name {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .lifecycle .stage .meta {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+    .lifecycle .stage .slot {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+    }
+
+    /* tx-state stages */
+    .tx-states {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      width: 720px;
+    }
+    .tx-states .pillar {
+      border: 0.6px solid var(--ink);
+      padding: 10px 12px;
+      background: var(--paper);
+      position: relative;
+    }
+    .tx-states .pillar.pending {
+      background: var(--paper-warm);
+    }
+    .tx-states .pillar.pending::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--hatch-amber);
+      opacity: 0.45;
+      pointer-events: none;
+    }
+    .tx-states .pillar > * { position: relative; }
+    .tx-states .pillar .state {
+      font-family: var(--face-sans);
+      font-size: var(--t-tiny);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .tx-states .pillar .slot {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink-deep);
+    }
+    .tx-states .pillar .age {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+    }
+
+    /* destructive gate specimen — the strongest chrome */
+    .gate {
+      width: 480px;
+      border: 1.5px solid var(--stamp);
+      background: var(--paper);
+      padding: 18px 20px;
+      position: relative;
+    }
+    .gate::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--hatch-stamp);
+      opacity: 0.10;
+      pointer-events: none;
+    }
+    .gate > * { position: relative; }
+    .gate .gate-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .gate .gate-title {
+      font-family: var(--face-sans);
+      font-weight: 600;
+      font-size: var(--t-md);
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      color: var(--stamp);
+    }
+    .gate .gate-stamp {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      border: 1px solid var(--stamp);
+      color: var(--stamp);
+      padding: 3px 8px;
+    }
+    .gate .check-rubric {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      gap: 6px 24px;
+      font-family: var(--face-sans);
+      font-size: var(--t-tiny);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-deep);
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 0.5px solid var(--stamp);
+    }
+    .gate .check-rubric .item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .gate .check-rubric .box {
+      width: 12px;
+      height: 12px;
+      border: 1px solid var(--stamp);
+      display: inline-block;
+    }
+    .gate .check-rubric .box.checked {
+      background: var(--hatch-stamp);
+    }
+    .gate .gate-detail {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      letter-spacing: 0.02em;
+      line-height: 1.5;
+    }
+
+    /* north arrow */
+    .north {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 0.5px solid var(--ink-faint);
+      width: 220px;
+      background: var(--paper);
+    }
+    .north svg { width: 44px; height: 44px; }
+    .north .lbl {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      line-height: 1.4;
+    }
+    .north .lbl b { color: var(--ink); font-weight: 500; }
+
+    /* mini chart */
+    .chart-card {
+      width: 480px;
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+      padding: 14px 16px;
+    }
+    .chart-card .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .chart-card .head .l { font-family: var(--face-sans); font-size: var(--t-mini); letter-spacing: 0.28em; text-transform: uppercase; color: var(--ink); }
+    .chart-card .head .scale { font-family: var(--face-mono); font-size: var(--t-micro); color: var(--ink-soft); }
+
+    /* footnote/callout style */
+    .footnote {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      max-width: 480px;
+    }
+    .footnote .ref {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+      line-height: 1;
+    }
+    .footnote .body {
+      font-family: var(--face-sans);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      line-height: 1.5;
+      letter-spacing: 0.02em;
+    }
+
+    /* big leader callout */
+    .leader-callout {
+      position: relative;
+      width: 280px;
+      padding: 18px 0 0 0;
+    }
+    .leader-callout svg { display: block; width: 100%; height: 90px; }
+    .leader-callout .body {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 160px;
+      padding: 8px 10px;
+      border: 0.6px solid var(--ink);
+      background: var(--paper);
+    }
+    .leader-callout .body .h {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .leader-callout .body .v {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      margin-top: 4px;
+    }
+
+    /* footer / titleblock */
+    .titleblock {
+      width: 460px;
+      border: 0.6px solid var(--ink);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--paper);
+    }
+    .titleblock .cell {
+      padding: 6px 12px 8px;
+      border-right: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .titleblock .cell:nth-child(2n) { border-right: none; }
+    .titleblock .cell .k {
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .titleblock .cell .v {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+      letter-spacing: 0.04em;
+    }
+    .titleblock .full {
+      grid-column: 1 / -1;
+      border-right: none;
+      padding: 8px 12px 10px;
+    }
+    .titleblock .full .v {
+      font-family: var(--face-sans);
+      font-size: var(--t-md);
+      letter-spacing: 0.36em;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+  </style>
+</head>
+<body>
+
+<main class="sheet">
+  <div class="outer-frame"></div>
+  <div class="inner-frame"></div>
+  <span class="reg-tl"></span>
+  <span class="reg-tr"></span>
+  <span class="reg-bl"></span>
+  <span class="reg-br"></span>
+
+  <header class="sheet-header">
+    <div class="meta-row">
+      <div class="meta"><div class="k">Project</div><div class="v">CREDMESH / SOLANA</div></div>
+      <div class="meta"><div class="k">Sheet</div><div class="v">00 OF 12</div></div>
+      <div class="meta"><div class="k">Cluster</div><div class="v">MAINNET-BETA</div></div>
+    </div>
+    <div class="title">ELEMENT SCHEDULE<small>— PRIMITIVE INVENTORY · DESIGNER HANDOFF</small></div>
+    <div class="meta-row">
+      <div class="meta"><div class="k">Drawn</div><div class="v">PROTOCOL</div></div>
+      <div class="meta"><div class="k">Checked</div><div class="v">ORACLE</div></div>
+      <div class="meta"><div class="k">Rev.</div><div class="v">D / 2026‑05‑03</div></div>
+    </div>
+  </header>
+
+  <!-- TYPE LADDER -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">01</div>
+      <h2>Type Ladder</h2>
+      <p>9 named sizes. Mono for every number, condensed sans (caps) for labels, hand for marginalia only.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="min-width: 460px;">
+        <span class="spec-tag">Sizes (px)</span>
+        <dl class="ladder">
+          <dt>--t-micro</dt><dd style="font-size: var(--t-micro);">8.5 · WITNESS LABEL <small>Barlow</small></dd>
+          <dt>--t-mini</dt><dd style="font-size: var(--t-mini);">9.5 · COL HEAD <small>Barlow</small></dd>
+          <dt>--t-tiny</dt><dd style="font-size: var(--t-tiny);">10.5 · 268,403,221 <small>Mono · row data</small></dd>
+          <dt>--t-fine</dt><dd style="font-size: var(--t-fine);">11.5 · 5tQp…m9wK <small>Mono · pubkey</small></dd>
+          <dt>--t-base</dt><dd style="font-size: var(--t-base); font-family: var(--face-hand);">13 · margin note <small>Hand</small></dd>
+          <dt>--t-md</dt><dd style="font-size: var(--t-md);">16 · METRIC LBL <small>Barlow</small></dd>
+          <dt>--t-lg</dt><dd style="font-size: var(--t-lg);">22 · SHEET TITLE <small>Barlow caps</small></dd>
+          <dt>--t-xl</dt><dd style="font-size: var(--t-xl);">28 · 1.0234 <small>Mono · stat hero</small></dd>
+          <dt>--t-2xl</dt><dd style="font-size: var(--t-2xl);">42 · 4,247K <small>Mono · sub-hero</small></dd>
+          <dt>--t-3xl</dt><dd style="font-size: var(--t-3xl); line-height: 1; letter-spacing: -0.02em;">$4.24M <small>Mono · TVL hero</small></dd>
+        </dl>
+      </div>
+      <div class="specimen" style="min-width: 360px;">
+        <span class="spec-tag">Type rules</span>
+        <p class="margin-note">
+          mono <span class="strike">everywhere</span> only on numbers,<br>
+          addresses, slots, signatures.<br>
+          condensed caps for labels.<br>
+          hand-script <em>only</em> in margins.
+        </p>
+        <hr style="margin: 14px 0; border: none; border-top: 0.5px solid var(--ink-faint);" />
+        <div style="font-family: var(--face-mono); font-size: var(--t-fine); color: var(--ink); letter-spacing: 0.04em;">
+          0123456789<br>
+          - + . , ' " :<br>
+          5tQp7HxN3aLfBkR2m9wK
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLOR TOKENS -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">02</div>
+      <h2>Color Tokens</h2>
+      <p>Cream paper is the canvas. Cyan-navy is the drawing layer. Stamp red is reserved for destructive chrome. Two amber tones for pending. Nothing else.</p>
+    </div>
+    <div class="row-body">
+      <div class="swatch">
+        <div class="chip" style="background: var(--paper);"></div>
+        <dl><dt>--paper</dt><dd>#ECE3CD</dd></dl>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--paper-warm);"></div>
+        <dl><dt>--paper-warm</dt><dd>#E2D7BC</dd></dl>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--paper-deep);"></div>
+        <dl><dt>--paper-deep</dt><dd>#D7C9A6</dd></dl>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--ink);"></div>
+        <dl><dt>--ink</dt><dd>#1B3A6F</dd></dl>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--ink-deep);"></div>
+        <dl><dt>--ink-deep</dt><dd>#0F2347</dd></dl>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--stamp);"></div>
+        <dl><dt>--stamp</dt><dd>#A8342B</dd></dl>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background: var(--amber);"></div>
+        <dl><dt>--amber</dt><dd>#B26A1F</dd></dl>
+      </div>
+      <div class="swatch">
+        <div class="chip hatched"></div>
+        <dl><dt>--hatch-mid</dt><dd>45° ink hatch</dd></dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPACING -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">03</div>
+      <h2>Spacing Scale</h2>
+      <p>4px base. Layouts snap to this grid; the hatched bars show the increments at full scale.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="min-width: 460px;">
+        <span class="spec-tag">Module (px)</span>
+        <div class="spacing-scale">
+          <div class="step"><span class="key">--s-1</span><span class="bar" style="width: 4px;"></span><span>04 · row gap, hairline pad</span></div>
+          <div class="step"><span class="key">--s-2</span><span class="bar" style="width: 8px;"></span><span>08 · table cell pad</span></div>
+          <div class="step"><span class="key">--s-3</span><span class="bar" style="width: 12px;"></span><span>12 · primitive inner pad</span></div>
+          <div class="step"><span class="key">--s-4</span><span class="bar" style="width: 16px;"></span><span>16 · stat-card body pad</span></div>
+          <div class="step"><span class="key">--s-5</span><span class="bar" style="width: 24px;"></span><span>24 · panel separation</span></div>
+          <div class="step"><span class="key">--s-6</span><span class="bar" style="width: 32px;"></span><span>32 · section break</span></div>
+          <div class="step"><span class="key">--s-7</span><span class="bar" style="width: 48px;"></span><span>48 · sheet margin</span></div>
+          <div class="step"><span class="key">--s-8</span><span class="bar" style="width: 64px;"></span><span>64 · hero offset</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IDENTITY STRIP -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">04</div>
+      <h2>Identity Strip</h2>
+      <p>A pubkey is a load-bearing element. Role on the left, hex first-class, copy box at the right edge.</p>
+    </div>
+    <div class="row-body">
+      <div class="id-strip">
+        <span class="section-mark invert">Σ</span>
+        <div class="pk-block">
+          <div class="role">Squads vault · agent</div>
+          <span class="pk">5tQp7HxN3aLf<span class="pk-mid">…</span>BkR2m9wK · <span style="color: var(--ink-soft);">since slot</span> 268,401,012</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="stamp">Active</span>
+          <span class="pk-copy" title="copy"></span>
+        </div>
+      </div>
+      <div class="id-strip">
+        <span class="section-mark">M</span>
+        <div class="pk-block">
+          <div class="role">MPL Agent registry</div>
+          <span class="pk">9p3kT7hRJ2mQ<span class="pk-mid">…</span>x4LDvN8c · <span style="color: var(--ink-soft);">delegate</span> ExecuteV1</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="stamp amber">Stale 4d</span>
+          <span class="pk-copy" title="copy"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAT CARD -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">05</div>
+      <h2>Stat Card</h2>
+      <p>One number, dimensioned, with delta sub-line and corner registration crosses. Number is bigger than label.</p>
+    </div>
+    <div class="row-body">
+      <div class="stat-card">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <div class="stat-lbl"><span class="section-mark">A</span><span class="lbl">Share Price</span></div>
+        <div class="stat-num">1.0234<span class="unit">USDC/SH</span></div>
+        <div class="stat-sub">+0.0011 · 24H · t₀ 1.0000</div>
+      </div>
+      <div class="stat-card">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <div class="stat-lbl"><span class="section-mark">B</span><span class="lbl">Outstanding</span></div>
+        <div class="stat-num">2,845,624<span class="unit">USDC</span></div>
+        <div class="stat-sub">14 OPEN · AVG 18.4 D</div>
+      </div>
+      <div class="stat-card" style="border-color: var(--stamp);">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <div class="stat-lbl"><span class="section-mark" style="border-color: var(--stamp); color: var(--stamp);">C</span><span class="lbl" style="color: var(--stamp);">Default Rate 30D</span></div>
+        <div class="stat-num" style="color: var(--stamp);">0.42<span class="unit" style="color: var(--stamp);">%</span></div>
+        <div class="stat-sub">2 OF 487 · TARGET ≤1.5%</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DIMENSION LINE -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">06</div>
+      <h2>Dimension Line</h2>
+      <p>Every quantity earns a witness rule. Witness ticks at start &amp; end, value floats above the rule, label below.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="min-width: 380px;">
+        <span class="spec-tag">Single-axis dimension</span>
+        <div style="position: relative; height: 64px; padding-top: 18px;">
+          <div style="position: relative; height: 22px;">
+            <span style="position:absolute; left:0; top: 0; width: 1px; height: 22px; background: var(--ink);"></span>
+            <span style="position:absolute; left:0; right:0; top: 11px; height: 1px; background: var(--ink);"></span>
+            <span style="position:absolute; right:0; top: 0; width: 1px; height: 22px; background: var(--ink);"></span>
+            <span style="position:absolute; left: 50%; top: -3px; transform: translateX(-50%); background: var(--paper); padding: 0 8px; font-family: var(--face-mono); font-size: var(--t-tiny); color: var(--ink);">$4,247,200.18 USDC</span>
+            <span style="position:absolute; left: 50%; top: 26px; transform: translateX(-50%); background: var(--paper); padding: 0 8px; font-family: var(--face-sans); font-size: var(--t-micro); letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-soft);">VESSEL CAPACITY</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="specimen" style="min-width: 380px;">
+        <span class="spec-tag">Dimension with delta</span>
+        <div style="position: relative; height: 64px; padding-top: 18px;">
+          <div style="position: relative; height: 22px;">
+            <span style="position:absolute; left:0; top: 0; width: 1px; height: 22px; background: var(--ink);"></span>
+            <span style="position:absolute; left:0; right:0; top: 11px; height: 1px; background: var(--ink);"></span>
+            <span style="position:absolute; right:0; top: 0; width: 1px; height: 22px; background: var(--ink);"></span>
+            <span style="position:absolute; left: 50%; top: 4px; transform: translateX(-50%); background: var(--paper); padding: 0 8px; font-family: var(--face-mono); font-size: var(--t-tiny); color: var(--ink); letter-spacing: 0.04em;">+ $84,612.40 / 24H · +2.03%</span>
+            <span style="position:absolute; left: 50%; top: 26px; transform: translateX(-50%); background: var(--paper); padding: 0 8px; font-family: var(--face-sans); font-size: var(--t-micro); letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-soft);">Δ MEASURED 14:08:22 UTC</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIFECYCLE TIMELINE -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">07</div>
+      <h2>Lifecycle Timeline · Tx States</h2>
+      <p>Three stages, never collapsed to a single check. Hatched = done, warm fill = active, blank = pending.</p>
+    </div>
+    <div class="row-body">
+      <div class="lifecycle">
+        <div class="stage done">
+          <div class="head"><span class="step-no">01</span><span class="step-name">Sent</span></div>
+          <div class="slot">slot 268,402,184</div>
+          <div class="meta">2m 14s ago · simulated OK</div>
+        </div>
+        <div class="stage active">
+          <div class="head"><span class="step-no">02</span><span class="step-name">Pending</span></div>
+          <div class="slot">slot 268,402,206 · 22 ahead</div>
+          <div class="meta">awaiting 32 confirmations · 18 / 32</div>
+        </div>
+        <div class="stage">
+          <div class="head"><span class="step-no">03</span><span class="step-name">Finalized</span></div>
+          <div class="slot">— · awaiting</div>
+          <div class="meta">target slot ≈ 268,402,238</div>
+        </div>
+      </div>
+      <div class="tx-states">
+        <div class="pillar">
+          <div class="state">Sent</div>
+          <div class="slot">268,402,184</div>
+          <div class="age">— LANDED, 1 SLOT —</div>
+        </div>
+        <div class="pillar pending">
+          <div class="state">Pending</div>
+          <div class="slot">268,402,206</div>
+          <div class="age">— 22 SLOTS ELAPSED —</div>
+        </div>
+        <div class="pillar">
+          <div class="state">Finalized</div>
+          <div class="slot">— · awaiting</div>
+          <div class="age">— TARGET +32 —</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCHEDULE TABLE -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">08</div>
+      <h2>Schedule (Table)</h2>
+      <p>Tables are schedules. Caps headers, mono body, hairline rules between rows. No zebra. No hover fills.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="min-width: 720px; padding: 22px 18px 22px;">
+        <span class="spec-tag">Recent Settlements · Pool 001</span>
+        <table class="schedule-table">
+          <thead><tr>
+            <th>ID</th>
+            <th>Agent</th>
+            <th class="right">Principal</th>
+            <th class="right">Fee</th>
+            <th>Slot</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>R-04812</td>
+              <td><span class="pk">5tQp…m9wK</span></td>
+              <td class="right">12,400.0000</td>
+              <td class="right">204.5612</td>
+              <td>268,402,184</td>
+              <td><span class="stamp">Settled</span></td>
+            </tr>
+            <tr>
+              <td>R-04811</td>
+              <td><span class="pk">9p3k…N8cV</span></td>
+              <td class="right">3,200.0000</td>
+              <td class="right">52.8412</td>
+              <td>268,401,907</td>
+              <td><span class="stamp amber">Pending</span></td>
+            </tr>
+            <tr>
+              <td>R-04810</td>
+              <td><span class="pk">2Bvy…rM4j</span></td>
+              <td class="right">42,800.0000</td>
+              <td class="right">816.0440</td>
+              <td>268,401,432</td>
+              <td><span class="stamp">Settled</span></td>
+            </tr>
+            <tr>
+              <td>R-04809</td>
+              <td><span class="pk">7ZxF…aP2K</span></td>
+              <td class="right">9,640.0000</td>
+              <td class="right">158.6912</td>
+              <td>268,400,888</td>
+              <td><span class="stamp danger">Voided</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATUS PILL / STAMP -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">09</div>
+      <h2>Status Stamp · Pill</h2>
+      <p>Status is a stamped callout, not a colored dot. Three intensities + invert. Red &amp; amber are reserved.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="display: flex; flex-direction: column; gap: 12px; min-width: 360px;">
+        <span class="spec-tag">Stamp variants</span>
+        <div style="display:flex; gap: 10px; flex-wrap: wrap;">
+          <span class="stamp">Active</span>
+          <span class="stamp">Settled</span>
+          <span class="stamp invert">Drawn</span>
+          <span class="stamp amber">Pending 14s</span>
+          <span class="stamp amber">Timelock 3d 4h</span>
+          <span class="stamp danger">Voided</span>
+          <span class="stamp danger">Frozen</span>
+          <span class="stamp danger shouted">Irreversible</span>
+        </div>
+      </div>
+      <div class="specimen" style="min-width: 360px;">
+        <span class="spec-tag">Numbered callout</span>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <span class="callout"><span class="num-tag">1</span>Oracle staleness · 4d 2h</span>
+          <span class="callout"><span class="num-tag">2</span>Key rotation due · 11d</span>
+          <span class="callout" style="border-color: var(--stamp); color: var(--stamp);"><span class="num-tag" style="border-color: var(--stamp);">3</span>Circuit breaker · armed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIME-SERIES CHART (mini) -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">10</div>
+      <h2>Time-Series Chart</h2>
+      <p>Hairlines + 45° hatch fill. Hover marker = vertical witness + slot label, never a tooltip balloon.</p>
+    </div>
+    <div class="row-body">
+      <div class="chart-card">
+        <div class="head">
+          <span class="l">Share Price · 30D Section</span>
+          <span class="scale">SCALE 1D : 16 PX · Y 1.000 → 1.030</span>
+        </div>
+        <svg viewBox="0 0 460 140" preserveAspectRatio="none" style="display:block; width: 100%; height: 140px;">
+          <defs>
+            <pattern id="el-h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="6" stroke="#1B3A6F" stroke-width="0.5" opacity="0.55"/>
+            </pattern>
+          </defs>
+          <g stroke="#1B3A6F" stroke-width="0.4" opacity="0.25">
+            <line x1="0" y1="0" x2="460" y2="0"/>
+            <line x1="0" y1="35" x2="460" y2="35"/>
+            <line x1="0" y1="70" x2="460" y2="70"/>
+            <line x1="0" y1="105" x2="460" y2="105"/>
+            <line x1="0" y1="140" x2="460" y2="140"/>
+          </g>
+          <path d="M 0 110 L 30 108 L 60 102 L 90 96 L 120 92 L 150 84 L 180 80 L 210 74 L 240 70 L 270 64 L 300 60 L 330 56 L 360 50 L 390 46 L 420 44 L 460 38 L 460 140 L 0 140 Z" fill="url(#el-h)" stroke="none"/>
+          <path d="M 0 110 L 30 108 L 60 102 L 90 96 L 120 92 L 150 84 L 180 80 L 210 74 L 240 70 L 270 64 L 300 60 L 330 56 L 360 50 L 390 46 L 420 44 L 460 38" fill="none" stroke="#1B3A6F" stroke-width="0.9"/>
+          <line x1="330" y1="0" x2="330" y2="140" stroke="#1B3A6F" stroke-width="0.6" stroke-dasharray="2 2"/>
+          <circle cx="330" cy="56" r="3" stroke="#1B3A6F" stroke-width="0.8" fill="#ECE3CD"/>
+          <text x="334" y="50" font-family="JetBrains Mono" font-size="9" fill="#1B3A6F" letter-spacing="0.5">slot 268,402,184 · 1.0234</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- DESTRUCTIVE GATE -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">11</div>
+      <h2>Destructive Action Gate</h2>
+      <p>Strongest chrome on the sheet. Hatch overlay, stamp red border, CHECKED ☐ APPROVED ☐ rubric. Never a bare modal.</p>
+    </div>
+    <div class="row-body">
+      <div class="gate">
+        <div class="gate-head">
+          <span class="gate-title">Emergency Exit</span>
+          <span class="gate-stamp">Sheet R-09 / Rev. C</span>
+        </div>
+        <div class="gate-detail">
+          Posts <span class="mono" style="color: var(--ink);">CredmeshError::EmergencyExitRequested(0x1A04)</span> against
+          vault <span class="mono" style="color: var(--ink);">5tQp…m9wK</span>. All open advances move to liquidation queue
+          at slot <span class="mono" style="color: var(--ink);">268,402,206</span>. Reversal requires governance proposal.
+        </div>
+        <div class="check-rubric">
+          <div class="item"><span class="box checked"></span>Operator signed (3 of 5)</div>
+          <div class="item"><span class="box checked"></span>Oracle confirmed health</div>
+          <div class="item"><span class="box"></span>Checker initials</div>
+          <div class="item"><span class="box"></span>Approved by reviewer</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALLOUT WITH LEADER -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">12</div>
+      <h2>Leader Callout · Footnote</h2>
+      <p>Leader line + numbered note. Two grammars: page-corner footnote (compact) and ranged leader (visual).</p>
+    </div>
+    <div class="row-body">
+      <div class="leader-callout">
+        <svg viewBox="0 0 280 90" preserveAspectRatio="none">
+          <line x1="6" y1="84" x2="120" y2="20" stroke="#1B3A6F" stroke-width="0.8"/>
+          <circle cx="6" cy="84" r="2.5" fill="#1B3A6F"/>
+          <circle cx="120" cy="20" r="3" fill="#ECE3CD" stroke="#1B3A6F" stroke-width="0.8"/>
+        </svg>
+        <div class="body">
+          <div class="h">¹ Bolt &mdash; advance</div>
+          <div class="v">connects vessel ↔ beam · principal &gt; threshold</div>
+        </div>
+      </div>
+      <div class="footnote">
+        <span class="ref">¹</span>
+        <span class="body">
+          Principal posted to advance PDA seeded with <span class="mono" style="color: var(--ink);">[b"advance", agent, slot]</span>;
+          replay-protected by ConsumedPayment singleton. Closing this account reopens close-then-reinit replay — see AUDIT P0-5.
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- HATCHING / FILL ZONES -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">13</div>
+      <h2>Hatch Fills</h2>
+      <p>No solid fills, ever. Three densities of 45° hairline. Stamp + amber hatching are reserved for danger / pending.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="background: var(--hatch-sparse); min-width: 200px; min-height: 100px;">
+        <span class="spec-tag">--hatch-sparse</span>
+      </div>
+      <div class="specimen" style="background: var(--hatch-mid); min-width: 200px; min-height: 100px;">
+        <span class="spec-tag">--hatch-mid</span>
+      </div>
+      <div class="specimen" style="background: var(--hatch-dense); min-width: 200px; min-height: 100px;">
+        <span class="spec-tag">--hatch-dense</span>
+      </div>
+      <div class="specimen" style="background: var(--hatch-stamp); min-width: 200px; min-height: 100px; border-color: var(--stamp);">
+        <span class="spec-tag" style="color: var(--stamp);">--hatch-stamp</span>
+      </div>
+      <div class="specimen" style="background: var(--hatch-amber); min-width: 200px; min-height: 100px; border-color: var(--amber);">
+        <span class="spec-tag" style="color: var(--amber);">--hatch-amber</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPASS / TITLE BLOCK -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">14</div>
+      <h2>North Arrow · Title Block</h2>
+      <p>Page grammar. North = consensus (always up). Title block lives bottom-right; never resized, never decorated.</p>
+    </div>
+    <div class="row-body">
+      <div class="north">
+        <svg viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="20" fill="none" stroke="#1B3A6F" stroke-width="0.6"/>
+          <line x1="22" y1="2" x2="22" y2="42" stroke="#1B3A6F" stroke-width="0.5" opacity="0.5"/>
+          <line x1="2" y1="22" x2="42" y2="22" stroke="#1B3A6F" stroke-width="0.5" opacity="0.5"/>
+          <polygon points="22,4 18,24 22,20 26,24" fill="#1B3A6F"/>
+          <polygon points="22,40 18,20 22,24 26,20" fill="none" stroke="#1B3A6F" stroke-width="0.6"/>
+          <text x="22" y="14" font-family="JetBrains Mono" font-size="6" text-anchor="middle" fill="#ECE3CD">N</text>
+        </svg>
+        <div class="lbl">North<br><b>Consensus</b></div>
+      </div>
+
+      <div class="titleblock">
+        <div class="cell full">
+          <div class="k">Project</div>
+          <div class="v">CREDMESH / SOLANA</div>
+        </div>
+        <div class="cell"><div class="k">Sheet</div><div class="v">00 / 12</div></div>
+        <div class="cell"><div class="k">Scale</div><div class="v">1 : 1</div></div>
+        <div class="cell"><div class="k">Drawn</div><div class="v">PROTOCOL</div></div>
+        <div class="cell"><div class="k">Checked</div><div class="v">ORACLE</div></div>
+        <div class="cell"><div class="k">Date</div><div class="v">2026‑05‑03</div></div>
+        <div class="cell"><div class="k">Rev.</div><div class="v">D</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTION PANEL -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">15</div>
+      <h2>Action Panel</h2>
+      <p>Primary CTA is dimensioned. Destructive action sits inside its own gated zone. No purple, no glow, no shadow.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="min-width: 360px;">
+        <span class="spec-tag">Primary action</span>
+        <div style="display:flex; gap: 12px;">
+          <button style="
+            font-family: var(--face-sans);
+            font-size: var(--t-mini);
+            font-weight: 500;
+            letter-spacing: 0.36em;
+            text-transform: uppercase;
+            padding: 12px 22px;
+            border: 1px solid var(--ink);
+            background: var(--ink);
+            color: var(--paper);
+            cursor: pointer;
+          ">Sign &amp; Submit</button>
+          <button style="
+            font-family: var(--face-sans);
+            font-size: var(--t-mini);
+            font-weight: 500;
+            letter-spacing: 0.36em;
+            text-transform: uppercase;
+            padding: 12px 22px;
+            border: 1px solid var(--ink);
+            background: var(--paper);
+            color: var(--ink);
+            cursor: pointer;
+          ">Cancel</button>
+        </div>
+        <div style="margin-top: 14px; font-family: var(--face-mono); font-size: var(--t-tiny); color: var(--ink-soft);">
+          fee-payer · 5tQp…m9wK · prio 0.000005 SOL
+        </div>
+      </div>
+
+      <div class="specimen" style="min-width: 360px; border-color: var(--stamp);">
+        <span class="spec-tag" style="color: var(--stamp);">Destructive action</span>
+        <div style="display:flex; gap: 12px; margin-top: 4px;">
+          <button style="
+            font-family: var(--face-sans);
+            font-size: var(--t-mini);
+            font-weight: 600;
+            letter-spacing: 0.36em;
+            text-transform: uppercase;
+            padding: 12px 22px;
+            border: 1.5px solid var(--stamp);
+            background: var(--paper);
+            color: var(--stamp);
+            cursor: pointer;
+          ">Emergency Exit</button>
+        </div>
+        <div style="margin-top: 14px; font-family: var(--face-sans); font-size: var(--t-micro); color: var(--stamp); letter-spacing: 0.32em; text-transform: uppercase;">
+          Requires sheet R-09 stamp · checker + reviewer
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HEX ADDRESS / PUBKEY -->
+  <section class="row">
+    <div class="row-title">
+      <div class="num-tag">16</div>
+      <h2>Pubkey · Slot · Sig</h2>
+      <p>Hex addresses, slot numbers, signatures are first-class data. Mono, full visibility, click-to-copy box.</p>
+    </div>
+    <div class="row-body">
+      <div class="specimen" style="min-width: 480px; font-family: var(--face-mono);">
+        <span class="spec-tag">Truncation rule · 4 + … + 4</span>
+        <table class="schedule-table" style="margin-top: 4px;">
+          <thead><tr>
+            <th>Kind</th><th>Display</th><th>Full (hover)</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td>pubkey</td>
+              <td><span class="pk">5tQp<span class="pk-mid">…</span>m9wK<span class="pk-copy"></span></span></td>
+              <td><span style="color: var(--ink-soft); font-size: var(--t-tiny);">5tQp7HxN3aLfBkR2m9wK</span></td>
+            </tr>
+            <tr>
+              <td>slot</td>
+              <td>268,402,184</td>
+              <td><span style="color: var(--ink-soft); font-size: var(--t-tiny);">— always full —</span></td>
+            </tr>
+            <tr>
+              <td>tx sig</td>
+              <td><span class="pk">3Hdj<span class="pk-mid">…</span>tQ8x<span class="pk-copy"></span></span></td>
+              <td><span style="color: var(--ink-soft); font-size: var(--t-tiny);">3HdjTbN8…87 chars…tQ8x</span></td>
+            </tr>
+            <tr>
+              <td>digest</td>
+              <td><span class="pk">a4f1c0d8e9b62731</span></td>
+              <td><span style="color: var(--ink-soft); font-size: var(--t-tiny);">— 16-hex full —</span></td>
+            </tr>
+            <tr>
+              <td>error</td>
+              <td><span class="pk" style="color: var(--stamp);">CredmeshError::InvalidFeeCurve</span></td>
+              <td><span style="color: var(--ink-soft); font-size: var(--t-tiny);">0x1771</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

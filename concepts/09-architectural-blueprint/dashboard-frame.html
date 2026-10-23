@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440, initial-scale=1" />
+  <title>CREDMESH — SHEET 01 / LP DASHBOARD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Barlow+Condensed:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" />
+  <style>
+    :root {
+      --paper: #1B3A6F;
+      --paper-deep: #143057;
+      --paper-light: #234780;
+      --ink: #F2EDE0;
+      --ink-dim: rgba(242, 237, 224, 0.55);
+      --ink-faint: rgba(242, 237, 224, 0.28);
+      --ink-ghost: rgba(242, 237, 224, 0.14);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+      background:
+        radial-gradient(1200px 800px at 70% 20%, rgba(255,255,255,0.025), transparent 60%),
+        radial-gradient(900px 700px at 20% 90%, rgba(0,0,0,0.18), transparent 70%),
+        var(--paper);
+    }
+
+    /* the sheet */
+    .sheet {
+      position: relative;
+      width: 1440px;
+      height: 900px;
+      background: var(--paper);
+      overflow: hidden;
+      /* paper grain via stacked subtle gradients */
+      background-image:
+        repeating-linear-gradient(0deg, rgba(242,237,224,0.025) 0px, rgba(242,237,224,0.025) 1px, transparent 1px, transparent 24px),
+        repeating-linear-gradient(90deg, rgba(242,237,224,0.025) 0px, rgba(242,237,224,0.025) 1px, transparent 1px, transparent 24px);
+    }
+
+    /* hairline outer frame */
+    .frame {
+      position: absolute;
+      inset: 18px;
+      border: 0.5px solid var(--ink);
+      pointer-events: none;
+    }
+    .frame-inner {
+      position: absolute;
+      inset: 22px;
+      border: 0.5px solid var(--ink-dim);
+      pointer-events: none;
+    }
+
+    /* registration crosses at every corner */
+    .reg {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      pointer-events: none;
+    }
+    .reg::before, .reg::after {
+      content: '';
+      position: absolute;
+      background: var(--ink-dim);
+    }
+    .reg::before { left: 6px; top: 0; bottom: 0; width: 1px; }
+    .reg::after { top: 6px; left: 0; right: 0; height: 1px; }
+    .reg.tl { top: 8px; left: 8px; }
+    .reg.tr { top: 8px; right: 8px; }
+    .reg.bl { bottom: 8px; left: 8px; }
+    .reg.br { bottom: 8px; right: 8px; }
+
+    /* HEADER */
+    .header {
+      position: absolute;
+      top: 36px;
+      left: 36px;
+      right: 36px;
+      height: 56px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 0.5px solid var(--ink-dim);
+      padding-bottom: 12px;
+    }
+    .header .left, .header .right { display: flex; gap: 32px; align-items: baseline; }
+    .header .label {
+      font-size: 9.5px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      font-weight: 400;
+    }
+    .header .value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      letter-spacing: 0.05em;
+      color: var(--ink);
+      font-weight: 400;
+    }
+    .header .title {
+      font-size: 22px;
+      letter-spacing: 0.32em;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .header .subtitle {
+      font-size: 10px;
+      letter-spacing: 0.4em;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      margin-left: 14px;
+    }
+
+    /* shared atoms */
+    .lbl {
+      font-size: 9.5px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      font-weight: 400;
+    }
+    .num { font-family: 'JetBrains Mono', monospace; font-weight: 400; }
+    .hand {
+      font-family: 'Architects Daughter', cursive;
+      letter-spacing: 0;
+      color: var(--ink);
+    }
+
+    /* dimension line atom */
+    .dim {
+      position: relative;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .dim .rule {
+      position: relative;
+      height: 1px;
+      background: var(--ink);
+    }
+    .dim .rule::before, .dim .rule::after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      width: 1px;
+      height: 11px;
+      background: var(--ink);
+    }
+    .dim .rule::before { left: 0; }
+    .dim .rule::after { right: 0; }
+    .dim .arr-l, .dim .arr-r {
+      position: absolute;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      transform: translateY(-50%);
+    }
+    .dim .arr-l { left: 0; border-left: 1px solid var(--ink); border-top: 1px solid var(--ink); transform: translateY(-50%) rotate(-45deg); }
+
+    /* HERO TVL block */
+    .hero {
+      position: absolute;
+      top: 122px;
+      left: 36px;
+      width: 760px;
+    }
+    .hero .lbl-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .hero .section-mark {
+      width: 22px;
+      height: 22px;
+      border: 0.5px solid var(--ink);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      color: var(--ink);
+    }
+    .hero .tvl-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 300;
+      font-size: 112px;
+      line-height: 0.92;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+      display: block;
+      white-space: nowrap;
+    }
+    .hero .tvl-num .currency {
+      font-size: 56px;
+      vertical-align: top;
+      margin-right: 4px;
+      letter-spacing: 0;
+      opacity: 0.85;
+      position: relative;
+      top: 4px;
+    }
+    .hero .tvl-num .cents {
+      font-size: 32px;
+      opacity: 0.5;
+      letter-spacing: 0;
+      vertical-align: baseline;
+      margin-left: 2px;
+    }
+    .hero .tvl-dim {
+      margin-top: 14px;
+      width: 100%;
+      position: relative;
+      height: 18px;
+    }
+    .hero .tvl-dim .rule {
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      top: 9px;
+      height: 1px;
+      background: var(--ink);
+    }
+    .hero .tvl-dim .tick {
+      position: absolute;
+      top: 0;
+      width: 1px;
+      height: 18px;
+      background: var(--ink);
+    }
+    .hero .tvl-dim .tick.l { left: 6px; }
+    .hero .tvl-dim .tick.r { right: 6px; }
+    .hero .tvl-dim .label-mid {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9.5px;
+      letter-spacing: 0.32em;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      background: var(--paper);
+      padding: 0 10px;
+    }
+    .hero .delta {
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--paper);
+      padding: 0 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--ink);
+      letter-spacing: 0.04em;
+    }
+
+    .hero .annotation {
+      position: absolute;
+      top: 8px;
+      right: -130px;
+      width: 200px;
+      font-family: 'Architects Daughter', cursive;
+      font-size: 13px;
+      color: var(--ink);
+      transform: rotate(-3deg);
+      line-height: 1.3;
+    }
+    .hero .annotation::before {
+      content: '';
+      position: absolute;
+      left: -28px;
+      top: 6px;
+      width: 24px;
+      height: 1px;
+      background: var(--ink-dim);
+      transform: rotate(8deg);
+    }
+
+    /* secondary metrics row */
+    .metrics {
+      position: absolute;
+      top: 410px;
+      left: 36px;
+      display: flex;
+      gap: 56px;
+    }
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .metric .lbl-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .metric .lbl-line::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--ink-faint);
+      min-width: 24px;
+    }
+    .metric .v {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .metric .sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-dim);
+      letter-spacing: 0.04em;
+    }
+
+    /* utilization curve */
+    .util {
+      position: absolute;
+      top: 122px;
+      right: 36px;
+      width: 540px;
+      height: 280px;
+    }
+    .util .util-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+    .util .util-title { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-dim); }
+    .util .util-detail { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-dim); letter-spacing: 0.04em; }
+    .util-svg { display: block; width: 100%; height: 224px; }
+
+    /* schedules row */
+    .schedules {
+      position: absolute;
+      top: 530px;
+      left: 36px;
+      width: calc(1440px - 72px - 420px - 28px);
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 28px;
+    }
+
+    /* right column: key diagram (top) — title block is positioned independently */
+    .right-col {
+      position: absolute;
+      top: 408px;
+      right: 36px;
+      width: 420px;
+      height: 230px;
+    }
+    .right-col .key-diagram { padding-top: 26px; }
+    .right-col .key-svg { max-height: 168px !important; }
+    .right-col .marginalia-block {
+      padding: 8px 0 0 0;
+      border-top: 0.5px solid var(--ink-faint);
+      font-family: 'Architects Daughter', cursive;
+      font-size: 11.5px;
+      color: var(--ink);
+      line-height: 1.35;
+    }
+    .right-col .marginalia-block .strike { text-decoration: line-through; color: var(--ink-dim); }
+    /* sheet-anchored title block, bottom-right */
+    .sheet > .titleblock {
+      position: absolute;
+      right: 36px;
+      bottom: 36px;
+      width: 420px;
+    }
+
+    .schedule {
+      position: relative;
+      padding-top: 42px;
+    }
+    .schedule .sched-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding-bottom: 8px;
+      border-bottom: 0.5px solid var(--ink);
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .schedule .sched-title { white-space: nowrap; }
+    .schedule .sched-tag { white-space: nowrap; }
+    .schedule .sched-title {
+      font-size: 11.5px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .schedule .sched-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--ink-dim);
+      letter-spacing: 0.08em;
+    }
+    .schedule table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+    }
+    .schedule thead th {
+      font-size: 8.5px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      font-weight: 400;
+      text-align: left;
+      padding: 10px 8px 8px 0;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .schedule tbody td {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--ink);
+      padding: 11px 8px 11px 0;
+      letter-spacing: 0.02em;
+      border-bottom: 0.5px solid var(--ink-ghost);
+      vertical-align: middle;
+    }
+    .schedule tbody tr:last-child td { border-bottom: 0.5px solid var(--ink-faint); }
+    .schedule .right { text-align: right; padding-right: 0; }
+    .schedule .status-open { color: var(--ink); }
+    .schedule .status-settled { color: var(--ink-dim); }
+    .schedule .status-pill {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      padding: 2px 6px;
+      border: 0.5px solid var(--ink);
+      text-transform: uppercase;
+    }
+    .schedule .status-pill.dim { border-color: var(--ink-dim); color: var(--ink-dim); }
+
+    .schedule .agent-id { font-weight: 500; color: var(--ink); }
+    .schedule .mini-bar {
+      position: relative;
+      height: 4px;
+      width: 56px;
+      background: transparent;
+      border-top: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .schedule .mini-bar > i {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      background:
+        repeating-linear-gradient(
+          45deg,
+          var(--ink) 0,
+          var(--ink) 0.6px,
+          transparent 0.6px,
+          transparent 5px
+        );
+    }
+
+    /* key diagram (exploded axon of escrow / reputation / oracle) */
+    .key-diagram {
+      position: relative;
+      padding-top: 42px;
+    }
+    .key-diagram .sched-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding-bottom: 8px;
+      border-bottom: 0.5px solid var(--ink);
+    }
+    .key-svg { display: block; width: 100%; height: 264px; }
+
+    /* footer */
+    .footer {
+      position: absolute;
+      bottom: 36px;
+      left: 36px;
+      width: calc(1440px - 72px - 420px - 28px);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 40px;
+    }
+    .scale-block {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .scalebar {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .scalebar .bar {
+      width: 200px;
+      height: 8px;
+      position: relative;
+      border: 0.5px solid var(--ink);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .scalebar .bar > span:nth-child(odd) {
+      background: repeating-linear-gradient(45deg, var(--ink) 0 0.6px, transparent 0.6px 4px);
+    }
+    .scalebar .bar > span { border-right: 0.5px solid var(--ink); }
+    .scalebar .bar > span:last-child { border-right: none; }
+    .scalebar .ticks {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      width: 200px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--ink-dim);
+      letter-spacing: 0.04em;
+    }
+    .scalebar .ticks span {
+      transform: translateX(-50%);
+    }
+    .scalebar .ticks span:first-child { transform: translateX(-2px); }
+    .scalebar .ticks span:last-child { transform: translateX(-90%); }
+
+    .compass {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .compass svg { width: 44px; height: 44px; }
+    .compass .compass-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.32em;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      line-height: 1.4;
+    }
+    .compass .compass-label b { color: var(--ink); font-weight: 500; }
+
+    .marginalia {
+      flex: 1;
+      align-self: flex-end;
+      padding: 0 50px;
+      max-width: 540px;
+    }
+    .marginalia .note {
+      font-family: 'Architects Daughter', cursive;
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .marginalia .note .strike {
+      text-decoration: line-through;
+      color: var(--ink-dim);
+    }
+
+    /* TITLE BLOCK */
+    .titleblock {
+      width: 380px;
+      border: 0.5px solid var(--ink);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto auto auto;
+    }
+    .titleblock .cell {
+      padding: 4px 10px 5px;
+      border-right: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 22px;
+      line-height: 1.15;
+    }
+    .titleblock .cell .k { font-size: 7px; line-height: 1.2; }
+    .titleblock .cell .v { font-size: 10px; line-height: 1.15; }
+    .titleblock .cell:nth-child(2n) { border-right: none; }
+    .titleblock .cell .k {
+      font-size: 8px;
+      letter-spacing: 0.28em;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+    }
+    .titleblock .cell .v {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--ink);
+      letter-spacing: 0.04em;
+    }
+    .titleblock .full {
+      grid-column: 1 / -1;
+      border-right: none;
+      padding: 6px 10px 8px;
+      gap: 0;
+    }
+    .titleblock .full .v {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.32em;
+      font-weight: 500;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+    .titleblock .full .k { letter-spacing: 0.32em; }
+
+    /* sheet-level callout markers (small + crosses near content corners) */
+    .corner-marker {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+    }
+    .corner-marker::before, .corner-marker::after {
+      content: '';
+      position: absolute;
+      background: var(--ink-faint);
+    }
+    .corner-marker::before { left: 4px; top: 0; bottom: 0; width: 0.5px; }
+    .corner-marker::after { top: 4px; left: 0; right: 0; height: 0.5px; }
+
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <div class="frame"></div>
+    <div class="frame-inner"></div>
+
+    <span class="reg tl"></span>
+    <span class="reg tr"></span>
+    <span class="reg bl"></span>
+    <span class="reg br"></span>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="left">
+        <div>
+          <div class="label">Project</div>
+          <div class="value">CREDMESH / SOLANA</div>
+        </div>
+        <div>
+          <div class="label">Cluster</div>
+          <div class="value">MAINNET-BETA</div>
+        </div>
+        <div>
+          <div class="label">Sheet</div>
+          <div class="value">01 OF 12</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items: baseline;">
+        <span class="title">LP DASHBOARD</span>
+        <span class="subtitle">— SECTION A‑A</span>
+      </div>
+      <div class="right">
+        <div>
+          <div class="label">Drawn by</div>
+          <div class="value">PROTOCOL</div>
+        </div>
+        <div>
+          <div class="label">Checked</div>
+          <div class="value">ORACLE</div>
+        </div>
+        <div>
+          <div class="label">Rev.</div>
+          <div class="value">C / 2026‑05‑03</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO TVL -->
+    <section class="hero">
+      <div class="lbl-row">
+        <span class="section-mark">A</span>
+        <span class="lbl">Total Value Locked — Pool 001 / USDC</span>
+      </div>
+      <span class="tvl-num"><span class="currency">$</span>4,247,200<span class="cents">.18</span></span>
+      <div class="tvl-dim">
+        <span class="tick l"></span>
+        <span class="rule"></span>
+        <span class="tick r"></span>
+        <span class="delta">+ $84,612.40 / 24H&nbsp;&nbsp;•&nbsp;&nbsp;+2.03%</span>
+        <span class="label-mid" style="top: 22px;">VESSEL CAPACITY ▸ MEASURED 2026‑05‑03 14:08:22 UTC</span>
+      </div>
+    </section>
+
+    <!-- SECONDARY METRICS -->
+    <section class="metrics">
+      <div class="metric">
+        <div class="lbl-line"><span class="lbl">Share Price</span></div>
+        <div class="v">1.0234</div>
+        <div class="sub">+0.0011 / 24H&nbsp;&nbsp;•&nbsp;&nbsp;t₀ 1.0000</div>
+      </div>
+      <div class="metric">
+        <div class="lbl-line"><span class="lbl">Advances Outstanding</span></div>
+        <div class="v">$2,845,624</div>
+        <div class="sub">14 OPEN&nbsp;&nbsp;•&nbsp;&nbsp;AVG 18.4 D</div>
+      </div>
+      <div class="metric">
+        <div class="lbl-line"><span class="lbl">Fee Curve</span></div>
+        <div class="v">3.18%</div>
+        <div class="sub">UTIL→FEE / kink at 80%</div>
+      </div>
+      <div class="metric">
+        <div class="lbl-line"><span class="lbl">Active Agents</span></div>
+        <div class="v">47 / 52</div>
+        <div class="sub">5 IDLE&nbsp;&nbsp;•&nbsp;&nbsp;0 SUSPENDED</div>
+      </div>
+    </section>
+
+    <!-- UTILIZATION CURVE -->
+    <section class="util">
+      <div class="util-head">
+        <div style="display:flex; gap:14px; align-items:center;">
+          <span class="section-mark">B</span>
+          <span class="util-title">Utilization Curve — 24H Section</span>
+        </div>
+        <span class="util-detail">SCALE 1H : 22.5 PX&nbsp;&nbsp;•&nbsp;&nbsp;Y AXIS 0–100%</span>
+      </div>
+      <svg class="util-svg" viewBox="0 0 540 224" preserveAspectRatio="none" stroke="#F2EDE0" fill="none" stroke-linecap="square">
+        <!-- grid lines (horizontal) -->
+        <g stroke="rgba(242,237,224,0.18)" stroke-width="0.5">
+          <line x1="0" y1="0" x2="540" y2="0"/>
+          <line x1="0" y1="56" x2="540" y2="56"/>
+          <line x1="0" y1="112" x2="540" y2="112"/>
+          <line x1="0" y1="168" x2="540" y2="168"/>
+          <line x1="0" y1="224" x2="540" y2="224"/>
+        </g>
+        <!-- grid lines (vertical, 4 hour ticks) -->
+        <g stroke="rgba(242,237,224,0.12)" stroke-width="0.5" stroke-dasharray="2 3">
+          <line x1="90" y1="0" x2="90" y2="224"/>
+          <line x1="180" y1="0" x2="180" y2="224"/>
+          <line x1="270" y1="0" x2="270" y2="224"/>
+          <line x1="360" y1="0" x2="360" y2="224"/>
+          <line x1="450" y1="0" x2="450" y2="224"/>
+        </g>
+        <!-- 80% kink line (target threshold) -->
+        <line x1="0" y1="44.8" x2="540" y2="44.8" stroke="rgba(242,237,224,0.55)" stroke-width="0.6" stroke-dasharray="6 3"/>
+        <text x="538" y="40" font-family="JetBrains Mono" font-size="9" fill="#F2EDE0" text-anchor="end" opacity="0.7" letter-spacing="0.5">KINK 80%</text>
+
+        <!-- y axis labels -->
+        <g font-family="JetBrains Mono" font-size="9" fill="rgba(242,237,224,0.55)" letter-spacing="0.5">
+          <text x="2" y="9">100</text>
+          <text x="2" y="60">75</text>
+          <text x="2" y="116">50</text>
+          <text x="2" y="172">25</text>
+          <text x="2" y="222">0</text>
+        </g>
+
+        <!-- hatched fill UNDER curve, then curve on top -->
+        <defs>
+          <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#F2EDE0" stroke-width="0.5" opacity="0.45"/>
+          </pattern>
+          <pattern id="hatch-faint" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="#F2EDE0" stroke-width="0.5" opacity="0.16"/>
+          </pattern>
+        </defs>
+
+        <!-- curve area filled with hatching -->
+        <path d="
+          M 22 130
+          C 60 124, 88 112, 118 108
+          C 148 104, 178 96, 208 90
+          C 236 84, 264 78, 292 76
+          C 318 74, 344 78, 372 80
+          C 398 82, 422 78, 448 74
+          C 470 70, 492 78, 518 74
+          L 518 224 L 22 224 Z"
+          fill="url(#hatch-faint)"
+          stroke="none" />
+
+        <!-- the curve itself -->
+        <path d="
+          M 22 130
+          C 60 124, 88 112, 118 108
+          C 148 104, 178 96, 208 90
+          C 236 84, 264 78, 292 76
+          C 318 74, 344 78, 372 80
+          C 398 82, 422 78, 448 74
+          C 470 70, 492 78, 518 74"
+          stroke="#F2EDE0"
+          stroke-width="1.1" />
+
+        <!-- current value annotation -->
+        <g>
+          <line x1="518" y1="0" x2="518" y2="224" stroke="#F2EDE0" stroke-width="0.6" stroke-dasharray="2 2" opacity="0.6"/>
+          <circle cx="518" cy="74" r="3" fill="#1B3A6F" stroke="#F2EDE0" stroke-width="1"/>
+          <line x1="518" y1="74" x2="538" y2="50" stroke="#F2EDE0" stroke-width="0.6"/>
+          <text x="540" y="48" font-family="Barlow Condensed" font-size="11" fill="#F2EDE0" text-anchor="end" letter-spacing="3" font-weight="500" opacity="0">CURRENT</text>
+        </g>
+
+        <!-- x axis labels -->
+        <g font-family="JetBrains Mono" font-size="9" fill="rgba(242,237,224,0.55)" letter-spacing="0.5">
+          <text x="20" y="240" style="display:none"></text>
+        </g>
+      </svg>
+      <div style="display: flex; justify-content: space-between; margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--ink-dim); letter-spacing: 0.04em;">
+        <span>‑24H</span><span>‑20</span><span>‑16</span><span>‑12</span><span>‑08</span><span>‑04</span><span>NOW</span>
+      </div>
+
+      <!-- current util callout, inside util block -->
+      <div style="position: absolute; right: 0; top: 36px; padding: 8px 14px; border-left: 0.5px solid var(--ink-faint); text-align: right;">
+        <div style="display:flex; align-items: baseline; gap: 6px; justify-content: flex-end;">
+          <span class="num" style="font-size: 36px; letter-spacing: -0.01em; line-height: 1;">67</span>
+          <span class="num" style="font-size: 16px; opacity:.6;">%</span>
+        </div>
+        <div class="lbl" style="font-size: 8.5px; letter-spacing: 0.32em; margin-top: 4px;">UTIL · NOW</div>
+      </div>
+    </section>
+
+    <!-- SCHEDULES -->
+    <section class="schedules">
+      <!-- RECENT ADVANCES -->
+      <div class="schedule">
+        <div class="sched-header">
+          <div style="display:flex; align-items: center; gap: 10px;">
+            <span class="section-mark" style="width:18px;height:18px;font-size:9px;">C</span>
+            <span class="sched-title">Recent Advances — Schedule 04 / A</span>
+          </div>
+          <span class="sched-tag">FASTENERS · 5 OF 1,247 SHOWN</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>AGENT</th>
+              <th class="right">PRINCIPAL · USDC</th>
+              <th class="right">FEE BPS</th>
+              <th class="right">MAT.</th>
+              <th class="right">STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>#04891</td>
+              <td><span class="agent-id">AGENT‑014</span></td>
+              <td class="right">12,500.00</td>
+              <td class="right">318</td>
+              <td class="right">+18 D</td>
+              <td class="right"><span class="status-pill">OPEN</span></td>
+            </tr>
+            <tr>
+              <td>#04890</td>
+              <td><span class="agent-id">AGENT‑031</span></td>
+              <td class="right">4,250.00</td>
+              <td class="right">298</td>
+              <td class="right">+24 D</td>
+              <td class="right"><span class="status-pill">OPEN</span></td>
+            </tr>
+            <tr>
+              <td>#04889</td>
+              <td><span class="agent-id">AGENT‑008</span></td>
+              <td class="right">28,000.00</td>
+              <td class="right">344</td>
+              <td class="right">+09 D</td>
+              <td class="right"><span class="status-pill">OPEN</span></td>
+            </tr>
+            <tr>
+              <td>#04888</td>
+              <td><span class="agent-id">AGENT‑022</span></td>
+              <td class="right">1,800.00</td>
+              <td class="right">266</td>
+              <td class="right">SETT.</td>
+              <td class="right"><span class="status-pill dim">CLOSED</span></td>
+            </tr>
+            <tr>
+              <td>#04887</td>
+              <td><span class="agent-id">AGENT‑014</span></td>
+              <td class="right">6,400.00</td>
+              <td class="right">312</td>
+              <td class="right">SETT.</td>
+              <td class="right"><span class="status-pill dim">CLOSED</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TOP AGENTS -->
+      <div class="schedule">
+        <div class="sched-header">
+          <div style="display:flex; align-items: center; gap: 10px;">
+            <span class="section-mark" style="width:18px;height:18px;font-size:9px;">D</span>
+            <span class="sched-title">Top Agents — Schedule 05 / B</span>
+          </div>
+          <span class="sched-tag">RANKED BY ROLLING REPUTATION</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>RK</th>
+              <th>AGENT</th>
+              <th class="right">REP.</th>
+              <th class="right">N · ADV</th>
+              <th class="right">DEF.</th>
+              <th>STAMP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>01</td>
+              <td><span class="agent-id">AGENT‑008</span></td>
+              <td class="right">0.94</td>
+              <td class="right">412</td>
+              <td class="right">0</td>
+              <td>
+                <div class="mini-bar"><i style="width:94%"></i></div>
+              </td>
+            </tr>
+            <tr>
+              <td>02</td>
+              <td><span class="agent-id">AGENT‑014</span></td>
+              <td class="right">0.91</td>
+              <td class="right">287</td>
+              <td class="right">0</td>
+              <td>
+                <div class="mini-bar"><i style="width:91%"></i></div>
+              </td>
+            </tr>
+            <tr>
+              <td>03</td>
+              <td><span class="agent-id">AGENT‑031</span></td>
+              <td class="right">0.88</td>
+              <td class="right">156</td>
+              <td class="right">1</td>
+              <td>
+                <div class="mini-bar"><i style="width:88%"></i></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: KEY DIAGRAM + MARGIN NOTE + TITLE BLOCK -->
+    <section class="right-col">
+      <div class="key-diagram">
+        <div class="sched-header">
+          <div style="display:flex; align-items: center; gap: 10px;">
+            <span class="section-mark" style="width:18px;height:18px;font-size:9px;">E</span>
+            <span class="sched-title">Key Diagram</span>
+          </div>
+          <span class="sched-tag">EXPLODED AXON · NTS</span>
+        </div>
+        <svg class="key-svg" viewBox="0 0 460 280" stroke="#F2EDE0" fill="none" preserveAspectRatio="xMidYMid meet" style="width:100%; height:auto;">
+          <!-- vertical bolt axis -->
+          <line x1="170" y1="14" x2="170" y2="266" stroke-width="0.6" stroke-dasharray="3 2" opacity="0.7"/>
+
+          <!-- plate 1: ESCROW -->
+          <g stroke-width="1">
+            <polygon points="100,42 240,42 262,28 122,28"/>
+            <line x1="100" y1="42" x2="100" y2="50"/>
+            <line x1="240" y1="42" x2="240" y2="50"/>
+            <line x1="262" y1="28" x2="262" y2="36"/>
+            <line x1="122" y1="28" x2="122" y2="36"/>
+            <polygon points="100,50 240,50 262,36 122,36"/>
+            <ellipse cx="170" cy="40" rx="7" ry="2.2"/>
+          </g>
+          <line x1="262" y1="32" x2="294" y2="22" stroke-width="0.6"/>
+          <text x="298" y="20" font-family="Barlow Condensed" font-size="11" fill="#F2EDE0" letter-spacing="2.4" font-weight="500">ESCROW</text>
+          <text x="298" y="33" font-family="JetBrains Mono" font-size="8.5" fill="rgba(242,237,224,0.55)" letter-spacing="0.5">P‑01 · VAULT</text>
+
+          <!-- plate 2: REPUTATION -->
+          <g stroke-width="1">
+            <polygon points="100,128 240,128 262,114 122,114"/>
+            <line x1="100" y1="128" x2="100" y2="136"/>
+            <line x1="240" y1="128" x2="240" y2="136"/>
+            <line x1="262" y1="114" x2="262" y2="122"/>
+            <line x1="122" y1="114" x2="122" y2="122"/>
+            <polygon points="100,136 240,136 262,122 122,122"/>
+            <ellipse cx="170" cy="126" rx="7" ry="2.2"/>
+          </g>
+          <line x1="262" y1="118" x2="294" y2="108" stroke-width="0.6"/>
+          <text x="298" y="106" font-family="Barlow Condensed" font-size="11" fill="#F2EDE0" letter-spacing="2.4" font-weight="500">REPUTATION</text>
+          <text x="298" y="119" font-family="JetBrains Mono" font-size="8.5" fill="rgba(242,237,224,0.55)" letter-spacing="0.5">P‑02 · BEAM</text>
+
+          <!-- plate 3: ORACLE -->
+          <g stroke-width="1">
+            <polygon points="100,214 240,214 262,200 122,200"/>
+            <line x1="100" y1="214" x2="100" y2="222"/>
+            <line x1="240" y1="214" x2="240" y2="222"/>
+            <line x1="262" y1="200" x2="262" y2="208"/>
+            <line x1="122" y1="200" x2="122" y2="208"/>
+            <polygon points="100,222 240,222 262,208 122,208"/>
+            <ellipse cx="170" cy="212" rx="7" ry="2.2"/>
+          </g>
+          <line x1="262" y1="204" x2="294" y2="194" stroke-width="0.6"/>
+          <text x="298" y="192" font-family="Barlow Condensed" font-size="11" fill="#F2EDE0" letter-spacing="2.4" font-weight="500">ORACLE</text>
+          <text x="298" y="205" font-family="JetBrains Mono" font-size="8.5" fill="rgba(242,237,224,0.55)" letter-spacing="0.5">P‑03 · WORKER</text>
+
+          <!-- left leader to dimension column -->
+          <g stroke-width="0.5" opacity="0.7">
+            <line x1="76" y1="32" x2="84" y2="32"/>
+            <line x1="76" y1="118" x2="84" y2="118"/>
+            <line x1="76" y1="204" x2="84" y2="204"/>
+            <line x1="80" y1="32" x2="80" y2="204"/>
+            <line x1="80" y1="32" x2="78" y2="36"/>
+            <line x1="80" y1="32" x2="82" y2="36"/>
+            <line x1="80" y1="204" x2="78" y2="200"/>
+            <line x1="80" y1="204" x2="82" y2="200"/>
+          </g>
+          <text x="60" y="120" font-family="JetBrains Mono" font-size="9" fill="rgba(242,237,224,0.7)" letter-spacing="0.5" transform="rotate(-90,60,120)">172 mm</text>
+
+          <!-- bottom: schematic note -->
+          <line x1="14" y1="248" x2="446" y2="248" stroke-width="0.5" opacity="0.6"/>
+          <text x="14" y="266" font-family="Barlow Condensed" font-size="9.5" fill="rgba(242,237,224,0.6)" letter-spacing="2.6">PROTOCOL ASSEMBLY · 4 PROGRAMS · BOLTED ON CONSENSUS AXIS</text>
+        </svg>
+      </div>
+
+    </section>
+
+    <!-- TITLE BLOCK (sheet-anchored, bottom-right) -->
+    <div class="titleblock">
+      <div class="cell full">
+        <div class="k">Project</div>
+        <div class="v">CREDMESH · SOLANA</div>
+      </div>
+      <div class="cell">
+        <div class="k">Sheet</div>
+        <div class="v">01 / 12</div>
+      </div>
+      <div class="cell">
+        <div class="k">Title</div>
+        <div class="v">LP DASHBOARD</div>
+      </div>
+      <div class="cell">
+        <div class="k">Scale</div>
+        <div class="v">1 : 1</div>
+      </div>
+      <div class="cell">
+        <div class="k">Date</div>
+        <div class="v">2026‑05‑03</div>
+      </div>
+      <div class="cell">
+        <div class="k">Drawn / Rev.</div>
+        <div class="v">PROTOCOL · C</div>
+      </div>
+      <div class="cell">
+        <div class="k">Checked / ID</div>
+        <div class="v">ORACLE · CM‑LP‑01‑C</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="scale-block">
+        <div class="scalebar">
+          <div class="bar">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="ticks">
+            <span>0</span><span>500K</span><span>1M</span><span>2M</span><span>4M</span>
+          </div>
+        </div>
+        <div class="compass">
+          <svg viewBox="0 0 44 44" fill="none" stroke="#F2EDE0">
+            <circle cx="22" cy="22" r="20" stroke-width="0.6" opacity="0.5"/>
+            <circle cx="22" cy="22" r="14" stroke-width="0.6" opacity="0.5"/>
+            <line x1="22" y1="2" x2="22" y2="42" stroke-width="0.5" opacity="0.4"/>
+            <line x1="2" y1="22" x2="42" y2="22" stroke-width="0.5" opacity="0.4"/>
+            <polygon points="22,4 18,28 22,24 26,28" fill="#F2EDE0" stroke="none"/>
+            <text x="22" y="40.5" font-family="Barlow Condensed" font-size="6" fill="#F2EDE0" letter-spacing="1.5" text-anchor="middle">CONSENSUS</text>
+          </svg>
+          <div class="compass-label">
+            N: <b>CONSENSUS</b><br/>
+            FROM SLOT 318,442,019
+          </div>
+        </div>
+      </div>
+
+      <div class="marginalia">
+        <div class="note">
+          <span class="strike">verify oracle pubkey before close</span> &nbsp;✓ 2026‑04‑22<br/>
+          rev. C — kink moved 75 → <b>80%</b>; share price re‑gauged from t₀.<br/>
+          drawn 1:1 against on-chain state · tolerances <b>±0.0001 USDC</b>.
+        </div>
+      </div>
+    </footer>
+
+  </main>
+</body>
+</html>

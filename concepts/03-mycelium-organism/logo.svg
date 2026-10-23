@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="CredMesh — hyphal node specimen mark">
+  <title>CredMesh hyphal node</title>
+  <desc>Specimen-plate mark: a radial mycelial cluster with annotation tics, in the manner of Haeckel's Kunstformen der Natur.</desc>
+
+  <!-- parchment field -->
+  <rect x="0" y="0" width="200" height="200" fill="#F2EBDA"/>
+
+  <!-- herbarium plate frame: a hairline outer rule and a slightly inset inner rule -->
+  <g fill="none" stroke="#3F4A2A" stroke-opacity="0.55">
+    <rect x="10" y="10" width="180" height="180" stroke-width="0.8"/>
+    <rect x="14" y="14" width="172" height="172" stroke-width="0.4"/>
+  </g>
+
+  <!-- plate number, top-right, set in roman numerals like a 19th c. tafel -->
+  <g font-family="'Source Serif Pro', 'Lyon Text', 'Adobe Caslon Pro', Georgia, serif" fill="#1B1812">
+    <text x="180" y="22" font-size="6.2" letter-spacing="1.4" text-anchor="end" font-style="italic" fill-opacity="0.75">Tab. III</text>
+    <text x="20" y="22" font-size="6.2" letter-spacing="1.4" fill-opacity="0.75" font-style="italic">Credimycetes</text>
+  </g>
+
+  <!-- spore drift: scattered dots, "spores adrift" — secondary forms -->
+  <g fill="#1B1812" fill-opacity="0.55">
+    <circle cx="38"  cy="48"  r="0.9"/>
+    <circle cx="52"  cy="34"  r="0.6"/>
+    <circle cx="168" cy="58"  r="0.8"/>
+    <circle cx="155" cy="38"  r="0.55"/>
+    <circle cx="32"  cy="160" r="0.7"/>
+    <circle cx="174" cy="170" r="0.55"/>
+    <circle cx="86"  cy="30"  r="0.45"/>
+    <circle cx="120" cy="34"  r="0.6"/>
+    <circle cx="46"  cy="92"  r="0.55"/>
+    <circle cx="160" cy="100" r="0.5"/>
+    <circle cx="58"  cy="178" r="0.45"/>
+    <circle cx="142" cy="184" r="0.55"/>
+  </g>
+
+  <!-- substrate line — the soil horizon the colony sits on -->
+  <line x1="22" y1="138" x2="178" y2="138" stroke="#1B1812" stroke-width="0.35" stroke-dasharray="0.4 1.6"/>
+
+  <!-- hyphal node: drawn in peat ink, all curves, varying weight like a steel-engraving -->
+  <g fill="none" stroke="#1B1812" stroke-linecap="round" stroke-linejoin="round">
+
+    <!-- main stipe: a slightly thickened upward stem from the substrate -->
+    <path d="M100,138 C 99,128 101,118 100,108" stroke-width="2.2"/>
+
+    <!-- principal hyphae fanning upward from the node at (100,108) -->
+    <path d="M100,108 C 92,98 78,92 64,82  C 58,78 54,72 50,64"  stroke-width="1.6"/>
+    <path d="M100,108 C 108,98 122,92 136,82 C 142,78 146,72 150,64" stroke-width="1.6"/>
+    <path d="M100,108 C 96,94 94,80 92,64 C 91,56 92,50 90,42"   stroke-width="1.6"/>
+    <path d="M100,108 C 104,94 106,80 108,64 C 109,56 108,50 110,42" stroke-width="1.6"/>
+    <path d="M100,108 C 86,102 72,104 58,108 C 48,112 42,118 36,122" stroke-width="1.4"/>
+    <path d="M100,108 C 114,102 128,104 142,108 C 152,112 158,118 164,122" stroke-width="1.4"/>
+
+    <!-- secondary branches off the principals (the hypha forks once, then again) -->
+    <path d="M64,82  C 58,78  52,80 46,76"  stroke-width="0.9"/>
+    <path d="M64,82  C 60,86  54,88 48,90"  stroke-width="0.9"/>
+    <path d="M136,82 C 142,78 148,80 154,76" stroke-width="0.9"/>
+    <path d="M136,82 C 140,86 146,88 152,90" stroke-width="0.9"/>
+    <path d="M92,64  C 86,58  82,52 80,46"  stroke-width="0.9"/>
+    <path d="M108,64 C 114,58 118,52 120,46" stroke-width="0.9"/>
+    <path d="M58,108 C 50,104 44,102 38,98" stroke-width="0.9"/>
+    <path d="M142,108 C 150,104 156,102 162,98" stroke-width="0.9"/>
+
+    <!-- root descent: rhizomorph below the substrate line — drawn lighter, like underground -->
+    <path d="M100,138 C 96,148 90,156 84,166 C 80,172 76,176 72,180" stroke-width="1.1" stroke-opacity="0.85"/>
+    <path d="M100,138 C 104,148 110,156 116,166 C 120,172 124,176 128,180" stroke-width="1.1" stroke-opacity="0.85"/>
+    <path d="M100,138 C 100,150 100,162 100,176" stroke-width="1.0" stroke-opacity="0.85"/>
+    <path d="M84,166  C 78,168 72,168 66,166" stroke-width="0.6" stroke-opacity="0.7"/>
+    <path d="M116,166 C 122,168 128,168 134,166" stroke-width="0.6" stroke-opacity="0.7"/>
+
+    <!-- tiny terminal sporangia at the tips of principal hyphae -->
+  </g>
+
+  <!-- terminal sporangia (filled little nodes — round forms allowed only as spores, see Rule 3) -->
+  <g fill="#1B1812">
+    <circle cx="50"  cy="64"  r="1.6"/>
+    <circle cx="150" cy="64"  r="1.6"/>
+    <circle cx="90"  cy="42"  r="1.4"/>
+    <circle cx="110" cy="42"  r="1.4"/>
+    <circle cx="36"  cy="122" r="1.4"/>
+    <circle cx="164" cy="122" r="1.4"/>
+  </g>
+  <!-- a chartreuse-lichen accent only on the central node — the living point of growth -->
+  <circle cx="100" cy="108" r="2.6" fill="#A8B560"/>
+  <circle cx="100" cy="108" r="2.6" fill="none" stroke="#1B1812" stroke-width="0.6"/>
+
+  <!-- annotation tics: thin leader lines + tiny numerals in serif (the Haeckel plate convention) -->
+  <g stroke="#1B1812" stroke-width="0.35" fill="none">
+    <path d="M50,64  L 30,58"/>
+    <path d="M150,64 L 170,58"/>
+    <path d="M100,108 L 100,98 L 116,98"/>
+  </g>
+  <g font-family="'Source Serif Pro', 'Lyon Text', 'Adobe Caslon Pro', Georgia, serif" font-size="5" fill="#1B1812" font-style="italic" fill-opacity="0.85">
+    <text x="28" y="58" text-anchor="end">1.</text>
+    <text x="172" y="58">2.</text>
+    <text x="118" y="98">3.</text>
+  </g>
+
+</svg>
