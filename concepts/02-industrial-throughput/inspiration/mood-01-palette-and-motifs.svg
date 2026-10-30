@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" font-family="'IBM Plex Mono', ui-monospace, monospace">
+  <!-- bone vellum + grid -->
+  <rect width="1000" height="560" fill="#EDE6D3"/>
+  <defs>
+    <pattern id="g" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M 8 0 L 0 0 0 8" fill="none" stroke="rgba(46,42,38,0.07)" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="560" fill="url(#g)"/>
+  <rect x="20" y="20" width="960" height="520" fill="none" stroke="#2E2A26" stroke-width="1"/>
+
+  <text x="40" y="58" font-size="18" font-weight="600" fill="#2E2A26" letter-spacing="0.06em">CREDMESH · 02-INDUSTRIAL-THROUGHPUT — MOOD SHEET 01 / PALETTE + MOTIFS</text>
+  <text x="40" y="80" font-size="10" fill="#6B635A" letter-spacing="0.12em">PALETTE LIFTED FROM HONEYWELL TDC-2000 CABINETRY · APOLLO FLIGHT PLAN PAPER · OBNINSK CONTROL ROOM 1954</text>
+
+  <!-- palette -->
+  <g transform="translate(40,110)">
+    <g>
+      <rect width="120" height="120" fill="#EDE6D3" stroke="#2E2A26"/>
+      <text x="10" y="138" font-size="9" fill="#2E2A26" letter-spacing="0.1em">BONE  #EDE6D3</text>
+    </g>
+    <g transform="translate(140,0)">
+      <rect width="120" height="120" fill="#2E2A26"/>
+      <text x="10" y="138" font-size="9" fill="#2E2A26" letter-spacing="0.1em">IRON  #2E2A26</text>
+    </g>
+    <g transform="translate(280,0)">
+      <rect width="120" height="120" fill="#B8965A" stroke="#8C6F3F"/>
+      <text x="10" y="138" font-size="9" fill="#2E2A26" letter-spacing="0.1em">BRASS #B8965A</text>
+    </g>
+    <g transform="translate(420,0)">
+      <rect width="120" height="120" fill="#E8C547" stroke="#B0941F"/>
+      <text x="10" y="138" font-size="9" fill="#2E2A26" letter-spacing="0.1em">FUME  #E8C547</text>
+    </g>
+    <g transform="translate(560,0)">
+      <rect width="120" height="120" fill="#C2362B"/>
+      <text x="10" y="138" font-size="9" fill="#2E2A26" letter-spacing="0.1em">ALARM #C2362B</text>
+    </g>
+    <g transform="translate(700,0)">
+      <rect width="220" height="120" fill="#15110D"/>
+      <text x="110" y="62" text-anchor="middle" font-size="32" fill="#E8C547" font-weight="600">0428.7</text>
+      <text x="10" y="138" font-size="9" fill="#2E2A26" letter-spacing="0.1em">COUNTER FACE — fume on iron, the “gas-pump readout”</text>
+    </g>
+  </g>
+
+  <!-- motifs row -->
+  <g transform="translate(40,300)" font-size="10" fill="#2E2A26">
+    <text y="-12" font-size="11" font-weight="600" letter-spacing="0.08em">P&amp;ID MOTIFS — what the protocol is BUILT FROM</text>
+
+    <!-- relief valve -->
+    <g transform="translate(0,0)" stroke="#2E2A26" stroke-width="1.5" fill="none">
+      <rect x="50" y="10" width="40" height="6" fill="#2E2A26"/>
+      <line x1="70" y1="16" x2="70" y2="28" stroke-width="2"/>
+      <polyline points="60,30 80,36 60,42 80,48 60,54 80,60 60,66" stroke-width="1.25"/>
+      <line x1="70" y1="66" x2="70" y2="72"/>
+      <polygon points="42,72 98,72 70,108" fill="#2E2A26" stroke="none"/>
+      <polygon points="42,140 98,140 70,108" fill="#2E2A26" stroke="none"/>
+      <line x1="36" y1="108" x2="104" y2="108" stroke-width="2"/>
+    </g>
+    <text x="70" y="172" text-anchor="middle" letter-spacing="0.1em">RELIEF VALVE</text>
+    <text x="70" y="184" text-anchor="middle" font-size="9" fill="#6B635A">&gt; 95% util triggers</text>
+
+    <!-- gauge -->
+    <g transform="translate(180,40)" fill="none" stroke="#2E2A26" stroke-width="1.5">
+      <circle cx="60" cy="60" r="56"/>
+      <line x1="60" y1="60" x2="92" y2="34" stroke="#C2362B" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="5" fill="#2E2A26"/>
+      <line x1="6" y1="60" x2="14" y2="60" stroke-width="2"/>
+      <line x1="106" y1="60" x2="114" y2="60" stroke-width="2"/>
+      <line x1="60" y1="6" x2="60" y2="14" stroke-width="2"/>
+    </g>
+    <text x="240" y="172" text-anchor="middle" letter-spacing="0.1em">PRESSURE GAUGE</text>
+    <text x="240" y="184" text-anchor="middle" font-size="9" fill="#6B635A">utilization manometer</text>
+
+    <!-- flange / pipe -->
+    <g transform="translate(360,40)" stroke="#2E2A26" fill="none" stroke-width="1.5">
+      <line x1="20" y1="50" x2="220" y2="50" stroke-width="2"/>
+      <line x1="20" y1="70" x2="220" y2="70" stroke-width="2"/>
+      <rect x="14" y="42" width="14" height="36" fill="#2E2A26"/>
+      <rect x="212" y="42" width="14" height="36" fill="#2E2A26"/>
+      <circle cx="21" cy="48" r="1.5" fill="#EDE6D3" stroke="none"/>
+      <circle cx="21" cy="60" r="1.5" fill="#EDE6D3" stroke="none"/>
+      <circle cx="21" cy="72" r="1.5" fill="#EDE6D3" stroke="none"/>
+      <circle cx="219" cy="48" r="1.5" fill="#EDE6D3" stroke="none"/>
+      <circle cx="219" cy="60" r="1.5" fill="#EDE6D3" stroke="none"/>
+      <circle cx="219" cy="72" r="1.5" fill="#EDE6D3" stroke="none"/>
+      <!-- tee branch up -->
+      <line x1="120" y1="50" x2="120" y2="20" stroke-width="2"/>
+      <!-- tag bubble -->
+      <circle cx="170" cy="20" r="14" stroke-width="1"/>
+      <line x1="156" y1="20" x2="184" y2="20" stroke-width="0.5"/>
+      <text x="170" y="18" text-anchor="middle" font-size="8" fill="#2E2A26" stroke="none" font-weight="600">FT</text>
+      <text x="170" y="27" text-anchor="middle" font-size="7" fill="#2E2A26" stroke="none">204</text>
+    </g>
+    <text x="480" y="172" text-anchor="middle" letter-spacing="0.1em">FLANGED PIPE + INSTRUMENT TAG</text>
+    <text x="480" y="184" text-anchor="middle" font-size="9" fill="#6B635A">how every label gets attached</text>
+
+    <!-- strip chart fragment -->
+    <g transform="translate(660,30)">
+      <rect x="0" y="0" width="280" height="120" fill="#F5EFDD" stroke="#2E2A26" stroke-width="0.75"/>
+      <line x1="0" y1="80" x2="280" y2="80" stroke="#2E2A26" stroke-width="0.3" opacity="0.4"/>
+      <line x1="0" y1="40" x2="280" y2="40" stroke="#2E2A26" stroke-width="0.3" opacity="0.4"/>
+      <g fill="#B8965A" stroke="#8C6F3F" stroke-width="0.5">
+        <rect x="10" y="80" width="14" height="40"/>
+        <rect x="30" y="64" width="14" height="56"/>
+        <rect x="50" y="50" width="14" height="70"/>
+        <rect x="70" y="78" width="14" height="42"/>
+        <rect x="90" y="40" width="14" height="80"/>
+        <rect x="110" y="22" width="14" height="98" fill="#E8C547"/>
+        <rect x="130" y="55" width="14" height="65"/>
+        <rect x="150" y="82" width="14" height="38"/>
+        <rect x="170" y="60" width="14" height="60"/>
+        <rect x="190" y="42" width="14" height="78"/>
+        <rect x="210" y="20" width="14" height="100" fill="#E8C547"/>
+        <rect x="230" y="48" width="14" height="72"/>
+        <rect x="250" y="68" width="14" height="52"/>
+      </g>
+      <line x1="0" y1="20" x2="280" y2="20" stroke="#C2362B" stroke-width="0.5" stroke-dasharray="3 3"/>
+    </g>
+    <text x="800" y="172" text-anchor="middle" letter-spacing="0.1em">STRIP CHART</text>
+    <text x="800" y="184" text-anchor="middle" font-size="9" fill="#6B635A">throughput, paper-fed left → right</text>
+  </g>
+
+  <!-- footer -->
+  <text x="40" y="525" font-size="9" fill="#6B635A" letter-spacing="0.12em">REFS · HONEYWELL INSTRUMENTATION HANDBOOK 1970 · APOLLO 11 FINAL FLIGHT PLAN JUL-1969 · GOST 21.404-85 · ISA S5.1 · VIGNELLI/KNOLL 1971</text>
+</svg>

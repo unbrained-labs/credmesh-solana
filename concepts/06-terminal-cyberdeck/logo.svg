@@ -1,0 +1,100 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="logo-title logo-desc">
+  <title id="logo-title">CRED.MESH</title>
+  <desc id="logo-desc">A soldered PCB pad-and-trace pattern that reads "CM" in copper, with silkscreen markings.</desc>
+
+  <defs>
+    <!-- pad: copper ring + drilled through-hole. Origin = pad center. -->
+    <g id="pad">
+      <circle r="6.5" fill="#B87333"/>
+      <circle r="3.6" fill="#0a1410"/>
+    </g>
+    <!-- via: smaller through-hole -->
+    <g id="via">
+      <circle r="3.2" fill="#B87333"/>
+      <circle r="1.6" fill="#0a1410"/>
+    </g>
+  </defs>
+
+  <!-- 1. PCB substrate (board green-black, slightly tobacco-stained) -->
+  <rect x="0" y="0" width="200" height="200" fill="#0a1410"/>
+
+  <!-- 2. Silkscreen reference grid (very faint) -->
+  <g stroke="#142016" stroke-width="0.5" fill="none">
+    <path d="M0 50 H200 M0 100 H200 M0 150 H200 M50 0 V200 M100 0 V200 M150 0 V200"/>
+  </g>
+
+  <!-- 3. Silkscreen corner fiducials (white-bone) -->
+  <g fill="none" stroke="#DDD7C0" stroke-width="1.1" stroke-linecap="square">
+    <path d="M6 14 V6 H14"/>
+    <path d="M186 6 H194 V14"/>
+    <path d="M194 186 V194 H186"/>
+    <path d="M14 194 H6 V186"/>
+  </g>
+
+  <!-- 4. Silkscreen polarity dot (top-left, marks pin-1 of the C) -->
+  <circle cx="22" cy="22" r="1.6" fill="#DDD7C0"/>
+
+  <!-- 5. Copper traces — routing layer (under pads) -->
+  <g stroke="#B87333" stroke-width="4" stroke-linecap="round" stroke-linejoin="miter" fill="none">
+    <!-- C glyph: top span, top-left 45°, left vertical, bottom-left 45°, bottom span -->
+    <path d="M52 36 L100 36"/>
+    <path d="M52 36 L36 52"/>
+    <path d="M36 52 L36 148"/>
+    <path d="M36 148 L52 164"/>
+    <path d="M52 164 L100 164"/>
+
+    <!-- M glyph: left leg, peak→valley, valley→peak, right leg -->
+    <path d="M120 164 L120 36"/>
+    <path d="M120 36 L150 96"/>
+    <path d="M150 96 L180 36"/>
+    <path d="M180 36 L180 164"/>
+  </g>
+
+  <!-- 6. Secondary copper trace — the "ground plane" stitch (subtle, decorative) -->
+  <g stroke="#7A4D22" stroke-width="1.2" fill="none" stroke-linecap="round">
+    <path d="M36 100 L20 100 L20 180 L100 180"/>
+    <path d="M180 100 L196 100 L196 20 L120 20"/>
+  </g>
+
+  <!-- 7. Decorative vias (small holes near traces) -->
+  <use href="#via" x="20" y="100"/>
+  <use href="#via" x="20" y="180"/>
+  <use href="#via" x="196" y="100"/>
+  <use href="#via" x="196" y="20"/>
+
+  <!-- 8. Solder pads — placement layer (over traces) -->
+  <!-- C pads -->
+  <use href="#pad" x="36" y="52"/>
+  <use href="#pad" x="36" y="100"/>
+  <use href="#pad" x="36" y="148"/>
+  <use href="#pad" x="52" y="36"/>
+  <use href="#pad" x="100" y="36"/>
+  <use href="#pad" x="52" y="164"/>
+  <use href="#pad" x="100" y="164"/>
+
+  <!-- M pads -->
+  <use href="#pad" x="120" y="36"/>
+  <use href="#pad" x="120" y="100"/>
+  <use href="#pad" x="120" y="164"/>
+  <use href="#pad" x="150" y="96"/>
+  <use href="#pad" x="180" y="36"/>
+  <use href="#pad" x="180" y="100"/>
+  <use href="#pad" x="180" y="164"/>
+
+  <!-- 9. SMD chip nestled between C and M (gives the board scale) -->
+  <g>
+    <rect x="105" y="92" width="10" height="16" fill="#0d0a08" stroke="#1f1812" stroke-width="0.4"/>
+    <rect x="103" y="94" width="2" height="3" fill="#C0BFB8"/>
+    <rect x="103" y="103" width="2" height="3" fill="#C0BFB8"/>
+    <rect x="115" y="94" width="2" height="3" fill="#C0BFB8"/>
+    <rect x="115" y="103" width="2" height="3" fill="#C0BFB8"/>
+    <text x="110" y="103" text-anchor="middle" font-family="ui-monospace, 'JetBrains Mono', Menlo, monospace" font-size="3.2" fill="#DDD7C0" letter-spacing="0.2">U1</text>
+  </g>
+
+  <!-- 10. Silkscreen text — board markings -->
+  <g fill="#DDD7C0" font-family="ui-monospace, 'JetBrains Mono', Menlo, monospace" letter-spacing="0.6">
+    <text x="6" y="14" font-size="5.4">CRED.MESH/v1</text>
+    <text x="194" y="14" font-size="5.4" text-anchor="end">PCB-001</text>
+    <text x="100" y="194" font-size="4.2" text-anchor="middle" opacity="0.75">// CREDIT FOR AUTONOMOUS PROCESSES — REV.A —</text>
+  </g>
+</svg>

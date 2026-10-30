@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="CREDMESH wordmark">
+  <title>CREDMESH</title>
+  <desc>Per Rule 1: no logomark. The wordmark IS the identity. CRED / MESH set in a custom geometric all-caps cut on a 5x7 grid, tracked tight, with one violent red rule under the second row.</desc>
+
+  <!-- paper -->
+  <rect x="0" y="0" width="200" height="200" fill="#F2EFE7"/>
+
+  <!-- frame counter, micro-cap (kept legible at 800px, invisible at 32px — that's intentional) -->
+  <g fill="#0A0A0A" font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-weight="700">
+    <text x="19.5" y="32" font-size="6.5" letter-spacing="1.4">FRAME 01 / 47 — A CREDIT PROTOCOL</text>
+  </g>
+
+  <!-- C R E D, row 1 (y=44, letter 35x49, stroke 7) -->
+  <g fill="#0A0A0A">
+    <!-- C  at x=19.5 -->
+    <g transform="translate(19.5,44)">
+      <rect x="0" y="0" width="35" height="7"/>
+      <rect x="0" y="0" width="7" height="49"/>
+      <rect x="0" y="42" width="35" height="7"/>
+    </g>
+    <!-- R  at x=61.5 -->
+    <g transform="translate(61.5,44)">
+      <rect x="0" y="0" width="35" height="7"/>
+      <rect x="0" y="0" width="7" height="49"/>
+      <rect x="28" y="0" width="7" height="21"/>
+      <rect x="0" y="21" width="35" height="7"/>
+      <rect x="28" y="28" width="7" height="21"/>
+    </g>
+    <!-- E  at x=103.5 -->
+    <g transform="translate(103.5,44)">
+      <rect x="0" y="0" width="35" height="7"/>
+      <rect x="0" y="0" width="7" height="49"/>
+      <rect x="0" y="21" width="35" height="7"/>
+      <rect x="0" y="42" width="35" height="7"/>
+    </g>
+    <!-- D  at x=145.5 -->
+    <g transform="translate(145.5,44)">
+      <rect x="0" y="0" width="35" height="7"/>
+      <rect x="0" y="0" width="7" height="49"/>
+      <rect x="0" y="42" width="35" height="7"/>
+      <rect x="28" y="7" width="7" height="35"/>
+    </g>
+
+    <!-- M E S H, row 2 (y=107) -->
+    <!-- M  at x=19.5 -->
+    <g transform="translate(19.5,107)">
+      <rect x="0" y="0" width="7" height="49"/>
+      <rect x="28" y="0" width="7" height="49"/>
+      <rect x="0" y="0" width="35" height="7"/>
+      <rect x="14" y="7" width="7" height="21"/>
+    </g>
+    <!-- E  at x=61.5 -->
+    <g transform="translate(61.5,107)">
+      <rect x="0" y="0" width="35" height="7"/>
+      <rect x="0" y="0" width="7" height="49"/>
+      <rect x="0" y="21" width="35" height="7"/>
+      <rect x="0" y="42" width="35" height="7"/>
+    </g>
+    <!-- S  at x=103.5 -->
+    <g transform="translate(103.5,107)">
+      <rect x="0" y="0" width="35" height="7"/>
+      <rect x="0" y="0" width="7" height="28"/>
+      <rect x="0" y="21" width="35" height="7"/>
+      <rect x="28" y="21" width="7" height="28"/>
+      <rect x="0" y="42" width="35" height="7"/>
+    </g>
+    <!-- H  at x=145.5 -->
+    <g transform="translate(145.5,107)">
+      <rect x="0" y="0" width="7" height="49"/>
+      <rect x="28" y="0" width="7" height="49"/>
+      <rect x="0" y="21" width="35" height="7"/>
+    </g>
+  </g>
+
+  <!-- the one red mark: a credit-line under the wordmark. Per Rule 3, this is the only red element. -->
+  <rect x="19.5" y="166" width="161" height="6" fill="#E2231A"/>
+
+  <!-- end-frame meta -->
+  <g fill="#0A0A0A" font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-weight="700">
+    <text x="19.5" y="184" font-size="6.5" letter-spacing="1.4">CREDIT, COMPOSED.</text>
+    <text x="180.5" y="184" font-size="6.5" letter-spacing="1.4" text-anchor="end">FIN.</text>
+  </g>
+</svg>
