@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440, initial-scale=1" />
+<title>CredMesh · Tab. CCXIV — Credimycetes substrati</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --parchment:        #F2EBDA;
+    --parchment-deep:   #E8DEC4;
+    --peat:             #1B1812;
+    --peat-soft:        rgba(27, 24, 18, 0.78);
+    --peat-mute:        rgba(27, 24, 18, 0.55);
+    --moss:             #3F4A2A;
+    --ochre:            #B5832A;
+    --lichen:           #A8B560;
+    --oxblood:          #7A2A1F;
+    --rule:             rgba(63, 74, 42, 0.45);
+    --rule-faint:       rgba(63, 74, 42, 0.22);
+    --rule-hair:        rgba(27, 24, 18, 0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--parchment);
+    color: var(--peat);
+  }
+
+  body {
+    /* faint paper grain — barely perceptible */
+    background-color: var(--parchment);
+    background-image:
+      radial-gradient(1200px 800px at 30% 20%, rgba(181,131,42,0.05), transparent 60%),
+      radial-gradient(900px 700px at 80% 90%, rgba(63,74,42,0.05), transparent 60%);
+    font-family: "Source Serif 4", "Source Serif Pro", "Lyon Text", Georgia, serif;
+    font-size: 14px;
+    line-height: 1.55;
+    font-feature-settings: "kern" 1, "liga" 1, "onum" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* a real specimen sheet — wide white margins, a thin gridded frame */
+  .sheet {
+    width: 1440px;
+    margin: 0 auto;
+    padding: 56px 56px 64px;
+    position: relative;
+  }
+  .frame {
+    position: relative;
+    border: 0.6px solid var(--rule);
+    padding: 36px 44px 40px;
+    background: var(--parchment);
+  }
+  .frame::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 0.4px solid var(--rule-faint);
+    pointer-events: none;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* MASTHEAD                                                           */
+  /* ------------------------------------------------------------------ */
+  .masthead {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    align-items: end;
+    gap: 24px;
+    padding-bottom: 18px;
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .masthead .logo { width: 64px; height: 64px; }
+  .masthead .logo svg { width: 100%; height: 100%; display: block; }
+  .masthead .title {
+    line-height: 1;
+  }
+  .masthead .title h1 {
+    font-family: "Cormorant Garamond", "Adobe Caslon Pro", Georgia, serif;
+    font-weight: 500;
+    font-size: 38px;
+    margin: 0 0 6px;
+    letter-spacing: 0.2px;
+  }
+  .masthead .title h1 em {
+    font-style: italic;
+  }
+  .masthead .title p {
+    margin: 0;
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--peat-soft);
+    letter-spacing: 0.2px;
+  }
+  .masthead .meta {
+    text-align: right;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--peat-soft);
+    font-style: italic;
+  }
+  .masthead .meta .tab {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--peat);
+    letter-spacing: 1.6px;
+    display: block;
+  }
+
+  /* live indicator — a single chartreuse-lichen dot, the only colored thing on the page */
+  .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-style: italic;
+    font-size: 11.5px;
+    color: var(--peat-soft);
+    letter-spacing: 0.4px;
+  }
+  .live::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lichen);
+    box-shadow: 0 0 0 1px rgba(27,24,18,0.55) inset;
+    animation: pulse 3.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .live::before { animation: none; }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* MAIN GRID                                                          */
+  /* ------------------------------------------------------------------ */
+  .main {
+    display: grid;
+    grid-template-columns: 1.32fr 1fr;
+    gap: 44px;
+    padding-top: 28px;
+  }
+
+  /* section headings: small, italic, smallcaps-ish */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 14px;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--peat);
+  }
+  .section-head .num {
+    font-size: 13px;
+    color: var(--peat-mute);
+    letter-spacing: 1px;
+    min-width: 16px;
+  }
+  .section-head .label {
+    font-size: 21px;
+    line-height: 1;
+  }
+  .section-head .gloss {
+    font-size: 12.5px;
+    color: var(--peat-mute);
+    margin-left: 8px;
+    letter-spacing: 0.3px;
+    font-style: italic;
+    font-family: "Source Serif 4", Georgia, serif;
+  }
+
+  /* the BIG specimen plate — pool drawn as a fruiting body */
+  .plate {
+    position: relative;
+    background: var(--parchment);
+    padding: 4px 0 0;
+  }
+  .plate .specimen {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* the headline number, set as a Haeckel plate annotation */
+  .annotated-number {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    margin-top: -4px;
+  }
+  .annotated-number .figure {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 500;
+    font-size: 80px;
+    line-height: 0.95;
+    letter-spacing: -1px;
+    font-feature-settings: "onum" 1, "tnum" 1;
+  }
+  .annotated-number .figure .cents {
+    font-size: 38px;
+    color: var(--peat-soft);
+    letter-spacing: -0.5px;
+  }
+  .annotated-number .legend {
+    padding-top: 12px;
+    flex: 1;
+    border-left: 0.5px solid var(--rule);
+    padding-left: 16px;
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+  .annotated-number .legend .latin {
+    font-style: italic;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 16px;
+    display: block;
+    margin-bottom: 2px;
+    color: var(--peat);
+  }
+  .annotated-number .legend .gloss {
+    color: var(--peat-mute);
+    font-style: italic;
+  }
+  .annotated-number .legend .delta {
+    margin-top: 8px;
+    display: inline-block;
+    font-style: italic;
+    color: var(--moss);
+    font-size: 12.5px;
+  }
+  .annotated-number .legend .delta.neg { color: var(--oxblood); }
+
+  /* utilization curve panel */
+  .curve-block {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--rule);
+  }
+  .curve-block .curve {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .curve-block .caption {
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--peat-mute);
+    font-style: italic;
+  }
+
+  /* RIGHT column blocks */
+  .stack > * + * {
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 0.5px solid var(--rule);
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .stat-row .figure {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 500;
+    font-size: 56px;
+    line-height: 0.95;
+    letter-spacing: -0.5px;
+    font-feature-settings: "onum" 1, "tnum" 1;
+  }
+  .stat-row .figure .small {
+    font-size: 26px;
+    color: var(--peat-soft);
+  }
+  .stat-row .legend {
+    flex: 1;
+    border-left: 0.5px solid var(--rule);
+    padding-left: 14px;
+    padding-top: 8px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .stat-row .legend .latin {
+    font-style: italic;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 15px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .stat-row .legend .gloss { color: var(--peat-mute); font-style: italic; }
+  .stat-row .legend .delta { margin-top: 6px; display: inline-block; font-style: italic; color: var(--moss); font-size: 12px; }
+  .stat-row .legend .delta.neg { color: var(--oxblood); }
+
+  /* tables — 19th-century ledger style, hairlines only */
+  table.specimen-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  table.specimen-list thead th {
+    text-align: left;
+    font-style: italic;
+    font-weight: 400;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 13px;
+    color: var(--peat-mute);
+    padding: 0 8px 8px;
+    border-bottom: 0.5px solid var(--rule);
+    letter-spacing: 0.2px;
+  }
+  table.specimen-list thead th.right { text-align: right; }
+  table.specimen-list tbody td {
+    padding: 11px 8px;
+    border-bottom: 0.4px solid var(--rule-faint);
+    vertical-align: baseline;
+    font-feature-settings: "onum" 1, "tnum" 1;
+  }
+  table.specimen-list tbody tr:last-child td { border-bottom: none; }
+  table.specimen-list .rank {
+    font-style: italic;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    color: var(--peat-mute);
+    width: 28px;
+    letter-spacing: 1px;
+  }
+  table.specimen-list .name {
+    font-style: italic;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 15.5px;
+    color: var(--peat);
+    letter-spacing: 0.1px;
+  }
+  table.specimen-list .name .sub {
+    display: block;
+    font-style: italic;
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 11.5px;
+    color: var(--peat-mute);
+    margin-top: 1px;
+    letter-spacing: 0.1px;
+  }
+  table.specimen-list .num {
+    text-align: right;
+    font-feature-settings: "onum" 1, "tnum" 1;
+  }
+  table.specimen-list .epoch {
+    text-align: right;
+    font-style: italic;
+    color: var(--peat-mute);
+    font-size: 12px;
+  }
+  table.specimen-list .badge-zero {
+    color: var(--moss);
+    font-style: italic;
+  }
+  table.specimen-list .badge-default {
+    color: var(--oxblood);
+    font-style: italic;
+  }
+
+  /* recent advances — full width below the main grid */
+  .ledger {
+    margin-top: 38px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--rule);
+  }
+  .ledger table.specimen-list .name { font-size: 15px; }
+  .ledger table.specimen-list .receivable {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-style: italic;
+    font-size: 12.5px;
+    color: var(--peat-soft);
+  }
+
+  /* footer */
+  .colophon {
+    margin-top: 44px;
+    padding-top: 16px;
+    border-top: 0.5px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--peat-mute);
+    letter-spacing: 0.3px;
+  }
+  .colophon .center { text-align: center; flex: 1; }
+
+  /* tiny "·" separator */
+  .dot { color: var(--rule); padding: 0 8px; }
+
+  /* a single line of marginalia note in the corner */
+  .marginalia {
+    position: absolute;
+    right: 56px;
+    top: 22px;
+    font-size: 10px;
+    font-style: italic;
+    color: var(--peat-mute);
+    letter-spacing: 0.5px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <div class="marginalia">[ specimen sheet · printed at MMXXVI · pp. xxiv ]</div>
+  <div class="frame">
+
+    <!-- =========================== MASTHEAD =========================== -->
+    <header class="masthead">
+      <div class="logo" aria-hidden="true">
+        <!-- inline logo (mini specimen mark) -->
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="200" height="200" fill="#F2EBDA"/>
+          <g fill="none" stroke="#3F4A2A" stroke-opacity="0.55">
+            <rect x="10" y="10" width="180" height="180" stroke-width="0.8"/>
+            <rect x="14" y="14" width="172" height="172" stroke-width="0.4"/>
+          </g>
+          <line x1="22" y1="138" x2="178" y2="138" stroke="#1B1812" stroke-width="0.4" stroke-dasharray="0.5 1.8"/>
+          <g fill="none" stroke="#1B1812" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M100,138 C 99,128 101,118 100,108" stroke-width="2.2"/>
+            <path d="M100,108 C 92,98 78,92 64,82  C 58,78 54,72 50,64"  stroke-width="1.6"/>
+            <path d="M100,108 C 108,98 122,92 136,82 C 142,78 146,72 150,64" stroke-width="1.6"/>
+            <path d="M100,108 C 96,94 94,80 92,64 C 91,56 92,50 90,42"   stroke-width="1.6"/>
+            <path d="M100,108 C 104,94 106,80 108,64 C 109,56 108,50 110,42" stroke-width="1.6"/>
+            <path d="M100,108 C 86,102 72,104 58,108 C 48,112 42,118 36,122" stroke-width="1.4"/>
+            <path d="M100,108 C 114,102 128,104 142,108 C 152,112 158,118 164,122" stroke-width="1.4"/>
+            <path d="M100,138 C 96,148 90,156 84,166 C 80,172 76,176 72,180" stroke-width="1.1"/>
+            <path d="M100,138 C 104,148 110,156 116,166 C 120,172 124,176 128,180" stroke-width="1.1"/>
+            <path d="M100,138 C 100,150 100,162 100,176" stroke-width="1.0"/>
+          </g>
+          <g fill="#1B1812">
+            <circle cx="50"  cy="64"  r="1.6"/>
+            <circle cx="150" cy="64"  r="1.6"/>
+            <circle cx="90"  cy="42"  r="1.4"/>
+            <circle cx="110" cy="42"  r="1.4"/>
+          </g>
+          <circle cx="100" cy="108" r="2.6" fill="#A8B560" stroke="#1B1812" stroke-width="0.6"/>
+        </svg>
+      </div>
+      <div class="title">
+        <h1>CredMesh <em>· Credimycetes substrati</em></h1>
+        <p>A field guide to programmable credit for autonomous agents — Substratum I, Reticulum Solanense.</p>
+      </div>
+      <div class="meta">
+        <span class="tab">Tab. CCXIV</span>
+        iii. Maii MMXXVI<br />
+        <span class="live">live · slot 314,592,001</span>
+      </div>
+    </header>
+
+    <!-- =========================== MAIN GRID =========================== -->
+    <main class="main">
+
+      <!-- LEFT — the principal specimen + utilization tendril -->
+      <section>
+        <h2 class="section-head">
+          <span class="num">i.</span>
+          <span class="label">Substratum Principale</span>
+          <span class="gloss">— the pool, drawn from the substrate.</span>
+        </h2>
+
+        <div class="plate">
+          <!-- The pool, drawn as a fruiting body. Hand-set in SVG, no fills, hatching for shadow. -->
+          <svg class="specimen" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" aria-label="Pool specimen — Credimycetes substrati">
+            <!-- substrate horizon line -->
+            <line x1="40" y1="262" x2="680" y2="262" stroke="#1B1812" stroke-width="0.5" stroke-dasharray="1 3"/>
+
+            <!-- ========= the cap (the pool capital) ========= -->
+            <g fill="none" stroke="#1B1812" stroke-linecap="round" stroke-linejoin="round">
+              <!-- cap silhouette -->
+              <path d="M220,150
+                       C 232,80 290,52 360,52
+                       C 430,52 488,80 500,150
+                       Z"
+                    stroke-width="1.5"/>
+              <!-- cap shadow line under the rim -->
+              <path d="M226,148 C 290,168 430,168 494,148" stroke-width="0.8" stroke-opacity="0.7"/>
+
+              <!-- gills, drawn as fine radial hatching under the cap -->
+              <g stroke-width="0.4" stroke-opacity="0.55">
+                <path d="M236,148 C 240,162 246,176 252,188"/>
+                <path d="M252,148 C 256,164 262,180 270,196"/>
+                <path d="M268,148 C 272,166 280,184 290,202"/>
+                <path d="M286,148 C 290,168 300,188 312,206"/>
+                <path d="M306,148 C 310,170 322,192 336,210"/>
+                <path d="M328,148 C 332,172 346,196 360,214"/>
+                <path d="M360,148 C 360,172 360,196 360,216"/>
+                <path d="M392,148 C 388,172 374,196 360,214"/>
+                <path d="M414,148 C 410,170 398,192 384,210"/>
+                <path d="M434,148 C 430,168 420,188 408,206"/>
+                <path d="M452,148 C 448,166 440,184 430,202"/>
+                <path d="M468,148 C 464,164 458,180 450,196"/>
+                <path d="M484,148 C 480,162 474,176 468,188"/>
+              </g>
+
+              <!-- cap surface hatching (shadow on the upper-left) -->
+              <g stroke-width="0.45" stroke-opacity="0.5">
+                <path d="M232,134 C 252,108 280,86 310,76"/>
+                <path d="M240,124 C 262,100 290,80 322,72"/>
+                <path d="M252,116 C 274,94  302,76 334,68"/>
+                <path d="M268,108 C 290,88  316,72 346,64"/>
+                <path d="M286,100 C 310,82  336,68 366,60"/>
+              </g>
+
+              <!-- a few stippled spores on the cap surface -->
+            </g>
+            <g fill="#1B1812" fill-opacity="0.7">
+              <circle cx="312" cy="92"  r="0.7"/>
+              <circle cx="346" cy="78"  r="0.6"/>
+              <circle cx="384" cy="72"  r="0.65"/>
+              <circle cx="420" cy="80"  r="0.6"/>
+              <circle cx="448" cy="94"  r="0.7"/>
+              <circle cx="290" cy="118" r="0.55"/>
+              <circle cx="464" cy="116" r="0.55"/>
+            </g>
+
+            <!-- ========= sporangia at the cap fringe (active agent fruitings) ========= -->
+            <g fill="#1B1812">
+              <circle cx="226" cy="148" r="1.6"/>
+              <circle cx="494" cy="148" r="1.6"/>
+              <circle cx="264" cy="60"  r="1.4"/>
+              <circle cx="456" cy="60"  r="1.4"/>
+            </g>
+
+            <!-- ========= stipe (stem) ========= -->
+            <g fill="none" stroke="#1B1812" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M340,150 C 336,180 332,220 336,262" stroke-width="1.4"/>
+              <path d="M380,150 C 384,180 388,220 384,262" stroke-width="1.4"/>
+              <!-- stipe shading (vertical fine lines) -->
+              <path d="M348,160 C 348,200 348,240 348,260" stroke-width="0.35" stroke-opacity="0.55"/>
+              <path d="M360,156 C 360,200 360,240 360,260" stroke-width="0.35" stroke-opacity="0.55"/>
+              <path d="M372,160 C 372,200 372,240 372,260" stroke-width="0.35" stroke-opacity="0.55"/>
+              <!-- annular ring (a small partial veil — like Squads multisig collar) -->
+              <path d="M338,196 C 348,194 372,194 382,196 C 374,202 346,202 338,196 Z" stroke-width="0.7"/>
+            </g>
+
+            <!-- ========= rhizomorphs (depositor mycelium underground) ========= -->
+            <g fill="none" stroke="#1B1812" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.85">
+              <path d="M340,262 C 320,278 296,290 268,302 C 244,312 220,316 198,314" stroke-width="1.0"/>
+              <path d="M340,262 C 326,282 308,300 286,316 C 264,330 240,338 214,340" stroke-width="0.85"/>
+              <path d="M340,262 C 332,286 322,308 308,328" stroke-width="0.7"/>
+              <path d="M380,262 C 400,278 424,290 452,302 C 476,312 500,316 522,314" stroke-width="1.0"/>
+              <path d="M380,262 C 394,282 412,300 434,316 C 456,330 480,338 506,340" stroke-width="0.85"/>
+              <path d="M380,262 C 388,286 398,308 412,328" stroke-width="0.7"/>
+              <path d="M360,262 C 360,290 360,318 360,344" stroke-width="0.6"/>
+              <!-- secondary forks -->
+              <path d="M268,302 C 254,304 240,304 226,300" stroke-width="0.5" stroke-opacity="0.7"/>
+              <path d="M452,302 C 466,304 480,304 494,300" stroke-width="0.5" stroke-opacity="0.7"/>
+              <path d="M286,316 C 274,318 264,322 254,326" stroke-width="0.45" stroke-opacity="0.65"/>
+              <path d="M434,316 C 446,318 456,322 466,326" stroke-width="0.45" stroke-opacity="0.65"/>
+            </g>
+
+            <!-- ========= live point of growth ========= -->
+            <circle cx="360" cy="150" r="3.4" fill="#A8B560" stroke="#1B1812" stroke-width="0.6"/>
+
+            <!-- ========= annotation tics (Haeckel plate convention) ========= -->
+            <g fill="none" stroke="#1B1812" stroke-width="0.4">
+              <!-- 1. cap = pool capital -->
+              <path d="M250,52 L 130,52 L 130,40"/>
+              <!-- 2. stipe = share-mint -->
+              <path d="M388,210 L 540,210 L 540,202"/>
+              <!-- 3. annulus = Squads collar -->
+              <path d="M382,196 L 540,180 L 552,180"/>
+              <!-- 4. rhizomorphs = depositor mycelium -->
+              <path d="M198,314 L 110,314 L 110,326"/>
+              <!-- 5. sporangia = agent fruitings (placed on the right) -->
+              <path d="M456,60 L 590,40 L 610,40"/>
+            </g>
+            <g font-family="'Cormorant Garamond', 'Adobe Caslon Pro', Georgia, serif"
+               font-style="italic" fill="#1B1812">
+              <text x="130" y="36" font-size="11" text-anchor="start">i. Carpus<tspan font-style="italic" font-family="'Source Serif 4', serif" font-size="9.5" fill-opacity="0.7"> · pool capital</tspan></text>
+              <text x="540" y="200" font-size="11">ii. Stipes<tspan font-family="'Source Serif 4', serif" font-size="9.5" fill-opacity="0.7"> · share-mint stem</tspan></text>
+              <text x="552" y="178" font-size="11">iii. Annulus<tspan font-family="'Source Serif 4', serif" font-size="9.5" fill-opacity="0.7"> · Squads collar</tspan></text>
+              <text x="110" y="338" font-size="11">iv. Rhizomorpha<tspan font-family="'Source Serif 4', serif" font-size="9.5" fill-opacity="0.7"> · depositor mycelium</tspan></text>
+              <text x="610" y="36" font-size="11" text-anchor="start">v. Sporangia<tspan font-family="'Source Serif 4', serif" font-size="9.5" fill-opacity="0.7"> · agent fruit.</tspan></text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="annotated-number" style="margin-top:8px;">
+          <div class="figure">$11,247,392<span class="cents">.18</span></div>
+          <div class="legend">
+            <span class="latin">Crescentia substrati</span>
+            <span class="gloss">Total deposited (USDC) across all substrate horizons.</span>
+            <span class="delta">+$184,910 · ult. vii dies</span>
+          </div>
+        </div>
+
+        <!-- ===================== UTILIZATION CURVE ===================== -->
+        <div class="curve-block">
+          <h3 class="section-head" style="margin-bottom:8px;">
+            <span class="num">i.b</span>
+            <span class="label">Saturatio reticuli</span>
+            <span class="gloss">— a hyphal record of utilization through the network, ult. xxx dies.</span>
+          </h3>
+
+          <svg class="curve" viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" aria-label="Utilization curve, last 30 days">
+            <!-- gridded plate margin -->
+            <g fill="none" stroke="#3F4A2A" stroke-opacity="0.22">
+              <line x1="48" y1="20"  x2="48"  y2="186" stroke-width="0.6"/>
+              <line x1="48" y1="186" x2="700" y2="186" stroke-width="0.6"/>
+              <!-- horizontal hairlines at 25/50/75/100 -->
+              <line x1="48" y1="48"  x2="700" y2="48"  stroke-width="0.3" stroke-dasharray="0.5 2"/>
+              <line x1="48" y1="86"  x2="700" y2="86"  stroke-width="0.3" stroke-dasharray="0.5 2"/>
+              <line x1="48" y1="120" x2="700" y2="120" stroke-width="0.3" stroke-dasharray="0.5 2"/>
+              <line x1="48" y1="158" x2="700" y2="158" stroke-width="0.3" stroke-dasharray="0.5 2"/>
+            </g>
+
+            <!-- y-axis labels -->
+            <g font-family="'Source Serif 4', Georgia, serif" font-style="italic"
+               font-size="10" fill="#1B1812" fill-opacity="0.6" text-anchor="end">
+              <text x="42" y="50">100</text>
+              <text x="42" y="88">75</text>
+              <text x="42" y="122">50</text>
+              <text x="42" y="160">25</text>
+              <text x="42" y="190">0</text>
+            </g>
+
+            <!-- x-axis labels -->
+            <g font-family="'Cormorant Garamond', Georgia, serif" font-style="italic"
+               font-size="11" fill="#1B1812" fill-opacity="0.65">
+              <text x="48"  y="206" text-anchor="start">xxx dies ante</text>
+              <text x="180" y="206" text-anchor="middle">xx</text>
+              <text x="320" y="206" text-anchor="middle">xv</text>
+              <text x="460" y="206" text-anchor="middle">x</text>
+              <text x="580" y="206" text-anchor="middle">v</text>
+              <text x="700" y="206" text-anchor="end">hodie</text>
+            </g>
+
+            <!-- the principal hyphal tendril — utilization over time -->
+            <g fill="none" stroke="#1B1812" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M48,168
+                       C 90,170 120,160 150,158
+                       C 190,156 220,150 250,144
+                       C 290,138 320,128 360,118
+                       C 400,110 430,108 470,100
+                       C 510,92  540,86  580,82
+                       C 610,80  630,82  680,76"
+                    stroke-width="1.6"/>
+              <!-- a secondary fork (a branching hypha — settled position before recovery) -->
+              <path d="M250,144
+                       C 280,150 300,160 320,166
+                       C 336,170 350,168 360,162"
+                    stroke-width="0.8" stroke-opacity="0.65"/>
+              <!-- a tertiary, dying fork (oxblood-shaded if needed) -->
+              <path d="M470,100
+                       C 490,108 504,116 510,122"
+                    stroke-width="0.55" stroke-opacity="0.5"/>
+            </g>
+
+            <!-- terminal sporangium at "today" -->
+            <g>
+              <line x1="680" y1="186" x2="680" y2="76" stroke="#1B1812" stroke-width="0.4" stroke-dasharray="1 2"/>
+              <circle cx="680" cy="76" r="3.2" fill="#A8B560" stroke="#1B1812" stroke-width="0.6"/>
+            </g>
+
+            <!-- callout for current utilization -->
+            <g font-family="'Cormorant Garamond', Georgia, serif" fill="#1B1812">
+              <line x1="680" y1="76" x2="700" y2="60" stroke="#1B1812" stroke-width="0.4"/>
+              <text x="702" y="58" font-style="italic" font-size="14">67.4 %</text>
+              <text x="702" y="72" font-style="italic" font-family="'Source Serif 4', serif" font-size="10" fill-opacity="0.7">saturatio · hodie</text>
+            </g>
+
+            <!-- a faint scatter of spore dots in the field — incidental marginalia -->
+            <g fill="#1B1812" fill-opacity="0.35">
+              <circle cx="120" cy="38"  r="0.7"/>
+              <circle cx="220" cy="60"  r="0.55"/>
+              <circle cx="380" cy="40"  r="0.6"/>
+              <circle cx="520" cy="58"  r="0.5"/>
+              <circle cx="640" cy="42"  r="0.55"/>
+              <circle cx="80"  cy="100" r="0.45"/>
+              <circle cx="300" cy="80"  r="0.5"/>
+              <circle cx="540" cy="44"  r="0.45"/>
+            </g>
+          </svg>
+
+          <div class="caption">
+            <span><em>Fig. b.</em> mean of every block in interval; observed 7.4&nbsp;k advance events.</span>
+            <span><em>μ</em> 0.612 &nbsp;·&nbsp; <em>σ</em> 0.084 &nbsp;·&nbsp; max 0.812 (xv. apr.)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT — share price, saturation, top agents -->
+      <aside class="stack">
+
+        <div>
+          <h2 class="section-head">
+            <span class="num">ii.</span>
+            <span class="label">Pretium spori</span>
+            <span class="gloss">— price of one share, set against deposit.</span>
+          </h2>
+          <div class="stat-row">
+            <div class="figure">$1.0234</div>
+            <div class="legend">
+              <span class="latin">Pretium spori</span>
+              <span class="gloss">Share price (USDC). Increases as the substrate is fed.</span>
+              <span class="delta">+0.21 % · per diem</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-head">
+            <span class="num">iii.</span>
+            <span class="label">Sporophora viva</span>
+            <span class="gloss">— colony census of fruiting agents.</span>
+          </h2>
+          <div class="stat-row">
+            <div class="figure">47<span class="small"> / lxiii</span></div>
+            <div class="legend">
+              <span class="latin">Sporophora viva</span>
+              <span class="gloss">Active agents fruiting against the pool, of total registered.</span>
+              <span class="delta">+iv · ult. xxiv horas</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="section-head">
+            <span class="num">iv.</span>
+            <span class="label">Patina insignia</span>
+            <span class="gloss">— the colony's most-darkened hyphae, by reputation.</span>
+          </h2>
+          <table class="specimen-list" aria-label="Top agents by reputation">
+            <thead>
+              <tr>
+                <th class="rank"></th>
+                <th>Sporophorum</th>
+                <th class="right">Patina</th>
+                <th class="right">Carpophora</th>
+                <th class="right">Defaults</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="rank">i.</td>
+                <td class="name">Aspergillus &mdash; ferri<span class="sub">7QtN…3xKp · since slot 312,440,118</span></td>
+                <td class="num">0.9421</td>
+                <td class="num">184</td>
+                <td class="num badge-zero">0</td>
+              </tr>
+              <tr>
+                <td class="rank">ii.</td>
+                <td class="name">Coprinus &mdash; lucens<span class="sub">2bTu…Wq8H · since slot 313,015,902</span></td>
+                <td class="num">0.9087</td>
+                <td class="num">96</td>
+                <td class="num badge-default">1</td>
+              </tr>
+              <tr>
+                <td class="rank">iii.</td>
+                <td class="name">Boletus &mdash; serenus<span class="sub">8rQv…Bp9F · since slot 313,820,776</span></td>
+                <td class="num">0.8855</td>
+                <td class="num">71</td>
+                <td class="num badge-zero">0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </aside>
+
+    </main>
+
+    <!-- =========================== LEDGER =========================== -->
+    <section class="ledger">
+      <h2 class="section-head">
+        <span class="num">v.</span>
+        <span class="label">Recentia carpophora</span>
+        <span class="gloss">— five most recent advances, drawn from the daily field record.</span>
+      </h2>
+
+      <table class="specimen-list" aria-label="Recent advances">
+        <thead>
+          <tr>
+            <th class="rank"></th>
+            <th>Sporophorum (agent · Squads)</th>
+            <th>Receivable</th>
+            <th class="right">Advance</th>
+            <th class="right">Fee</th>
+            <th class="right">Patina</th>
+            <th class="right">Block</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rank">i.</td>
+            <td class="name">Aspergillus &mdash; ferri<span class="sub">7QtN…3xKp</span></td>
+            <td class="receivable">inv-0x91a4…f217 · oracle ✓</td>
+            <td class="num">$24,800.00</td>
+            <td class="num">1.18 %</td>
+            <td class="num">0.9421</td>
+            <td class="epoch">314,592,001</td>
+          </tr>
+          <tr>
+            <td class="rank">ii.</td>
+            <td class="name">Lentinula &mdash; tenuis<span class="sub">9aRm…Lv2C</span></td>
+            <td class="receivable">api-0x4cd8…91ee · oracle ✓</td>
+            <td class="num">$9,250.00</td>
+            <td class="num">0.92 %</td>
+            <td class="num">0.7644</td>
+            <td class="epoch">314,591,884</td>
+          </tr>
+          <tr>
+            <td class="rank">iii.</td>
+            <td class="name">Coprinus &mdash; lucens<span class="sub">2bTu…Wq8H</span></td>
+            <td class="receivable">data-0x77b1…0a2f · oracle ✓</td>
+            <td class="num">$42,100.00</td>
+            <td class="num">1.04 %</td>
+            <td class="num">0.9087</td>
+            <td class="epoch">314,591,742</td>
+          </tr>
+          <tr>
+            <td class="rank">iv.</td>
+            <td class="name">Pleurotus &mdash; pluvialis<span class="sub">4eXn…Vd1A</span></td>
+            <td class="receivable">job-0xa2cc…44b9 · oracle ✓</td>
+            <td class="num">$1,860.00</td>
+            <td class="num">0.74 %</td>
+            <td class="num">0.6291</td>
+            <td class="epoch">314,591,610</td>
+          </tr>
+          <tr>
+            <td class="rank">v.</td>
+            <td class="name">Boletus &mdash; serenus<span class="sub">8rQv…Bp9F</span></td>
+            <td class="receivable">task-0x55ff…cd03 · oracle ✓</td>
+            <td class="num">$76,500.00</td>
+            <td class="num">1.32 %</td>
+            <td class="num">0.8855</td>
+            <td class="epoch">314,591,503</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- =========================== COLOPHON =========================== -->
+    <footer class="colophon">
+      <span>CredMesh · <em>Reticulum Solanense</em></span>
+      <span class="center"><em>Credit is what the forest is doing underground.</em></span>
+      <span>Tab. CCXIV <span class="dot">·</span> figit MMXXVI <span class="dot">·</span> pp. xxiv</span>
+    </footer>
+
+  </div>
+</div>
+
+</body>
+</html>

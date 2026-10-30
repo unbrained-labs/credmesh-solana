@@ -1,0 +1,415 @@
+/* =========================================================================
+ * CREDMESH — 09 ARCHITECTURAL BLUEPRINT — v2
+ * Tokens for a paper-cream working sheet on which blueprint cyan is the
+ * DRAWING LAYER (sheet titles, dimension lines, callouts), not the canvas.
+ * ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Barlow+Condensed:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+
+:root {
+  /* ---------- PAPER (canvas) ----------
+   * The page is drafting paper. Slightly warm cream, never pure white.
+   * Two stops let us layer schedules onto the sheet without strokes alone.
+   */
+  --paper:        #ECE3CD;     /* primary canvas — aged cream */
+  --paper-warm:   #E2D7BC;     /* secondary, schedules / rebated zones */
+  --paper-deep:   #D7C9A6;     /* tertiary, inset banding / hatched zones */
+  --paper-edge:   #C9B98F;     /* deckle edge / margin band */
+
+  /* ---------- INK ----------
+   * Blueprint cyan-navy. Used for ALL linework, chrome, primary type.
+   * Body data text uses --ink. Headings/dimension lines also --ink.
+   */
+  --ink:          #1B3A6F;     /* blueprint navy — primary ink */
+  --ink-deep:     #0F2347;     /* darker stamp / heavy linework */
+  --ink-soft:     rgba(27, 58, 111, 0.62); /* secondary labels */
+  --ink-faint:    rgba(27, 58, 111, 0.35); /* axis labels, micro-rules */
+  --ink-ghost:    rgba(27, 58, 111, 0.16); /* table inner rules */
+  --ink-trace:    rgba(27, 58, 111, 0.08); /* underlay tracing */
+
+  /* ---------- BLUEPRINT INSET ----------
+   * Inverted zones where the page becomes traditional blueprint. Reserved
+   * for: hero TVL panel, status stamps, destructive-action gates, key
+   * diagrams. Never used as full-page background.
+   */
+  --blueprint:        #1B3A6F;
+  --blueprint-deep:   #143057;
+  --blueprint-ink:    #F2EDE0;          /* cream linework on inset */
+  --blueprint-soft:   rgba(242, 237, 224, 0.62);
+  --blueprint-faint:  rgba(242, 237, 224, 0.30);
+
+  /* ---------- STAMP RED ----------
+   * The only saturated colour. Reserved for:
+   *  - destructive action chrome
+   *  - "VOID" / "REJECTED" / "FROZEN" stamp callouts
+   *  - circuit-breaker active indicator
+   * Never used for ordinary status.
+   */
+  --stamp:        #A8342B;
+  --stamp-soft:   rgba(168, 52, 43, 0.18);
+  --stamp-deep:   #7A1F18;
+
+  /* ---------- AMBER STAMP ----------
+   * Pending / timelock / oracle-stale. Drafting orange.
+   */
+  --amber:        #B26A1F;
+  --amber-soft:   rgba(178, 106, 31, 0.16);
+
+  /* ---------- TYPE ----------
+   * Three families, no exceptions:
+   *  - Barlow Condensed: ALL CAPS labels, headers
+   *  - JetBrains Mono: every numeric and address
+   *  - Architects Daughter: handwritten margin notes only, never data
+   */
+  --face-sans:    'Barlow Condensed', 'Helvetica Neue', sans-serif;
+  --face-mono:    'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --face-hand:    'Architects Daughter', cursive;
+
+  /* TYPE LADDER — named sizes mapped to UI roles */
+  --t-micro:      8.5px;   /* registration marks, witness labels */
+  --t-mini:       9.5px;   /* schedule column heads, dim labels */
+  --t-tiny:      10.5px;   /* table cells, sub-stats, titleblock keys */
+  --t-fine:      11.5px;   /* schedule body data, primary numbers */
+  --t-base:      13px;     /* paragraph, marginalia */
+  --t-md:        16px;     /* secondary metric values */
+  --t-lg:        22px;     /* sheet title, section markers */
+  --t-xl:        28px;     /* metric heroes (e.g. share price) */
+  --t-2xl:       42px;     /* schedule heroes / minor TVL */
+  --t-3xl:       72px;     /* TVL hero on dashboard inset */
+  --t-4xl:      112px;     /* (reserved — hero stamp) */
+
+  /* ---------- SPACING SCALE (4px base) ---------- */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+
+  /* ---------- LINEWORK ----------
+   * Hairlines: 0.5px (chrome), 1px (primary linework), 1.5px (stamps)
+   */
+  --rule-hair:    0.5px solid var(--ink-faint);
+  --rule-soft:    0.5px solid var(--ink-soft);
+  --rule-line:    0.75px solid var(--ink);
+  --rule-bold:    1px solid var(--ink);
+  --rule-stamp:   1.5px solid var(--stamp);
+
+  /* ---------- HATCHING ----------
+   * Filled zones are 45° hairline hatching at ~6–8px spacing.
+   * Three densities. NEVER use solid fills for status.
+   */
+  --hatch-sparse: repeating-linear-gradient(45deg,
+                    var(--ink) 0 0.6px,
+                    transparent 0.6px 8px);
+  --hatch-mid:    repeating-linear-gradient(45deg,
+                    var(--ink) 0 0.6px,
+                    transparent 0.6px 5px);
+  --hatch-dense:  repeating-linear-gradient(45deg,
+                    var(--ink) 0 0.6px,
+                    transparent 0.6px 3.2px);
+  --hatch-stamp:  repeating-linear-gradient(45deg,
+                    var(--stamp) 0 0.6px,
+                    transparent 0.6px 5px);
+  --hatch-amber:  repeating-linear-gradient(45deg,
+                    var(--amber) 0 0.6px,
+                    transparent 0.6px 5px);
+  --hatch-cream:  repeating-linear-gradient(45deg,
+                    var(--blueprint-ink) 0 0.6px,
+                    transparent 0.6px 5px);
+
+  /* ---------- PAPER GRAIN ----------
+   * The cream sheet has a subtle drafting-grid undertone.
+   */
+  --grain-grid:   repeating-linear-gradient(0deg,
+                    rgba(27, 58, 111, 0.035) 0 1px,
+                    transparent 1px 24px),
+                  repeating-linear-gradient(90deg,
+                    rgba(27, 58, 111, 0.035) 0 1px,
+                    transparent 1px 24px);
+
+  /* ---------- SHADOWS ----------
+   * Paper has a hint of physical thickness. One pressed shadow.
+   */
+  --shadow-sheet: 0 1px 0 rgba(27, 58, 111, 0.10),
+                  0 12px 28px -16px rgba(27, 58, 111, 0.30);
+}
+
+/* ---------- BASE RESETS ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--face-sans);
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(1200px 700px at 80% -10%, rgba(27,58,111,0.05), transparent 60%),
+    radial-gradient(900px 700px at -10% 110%, rgba(27,58,111,0.05), transparent 70%),
+    var(--grain-grid);
+  background-color: var(--paper);
+}
+
+/* ---------- ATOMS ---------- */
+
+/* labels (Barlow caps) */
+.lbl,
+.label {
+  font-family: var(--face-sans);
+  font-size: var(--t-mini);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+.num,
+.mono {
+  font-family: var(--face-mono);
+  font-feature-settings: 'tnum' on, 'lnum' on, 'zero' on;
+  font-weight: 400;
+}
+
+.hand {
+  font-family: var(--face-hand);
+  letter-spacing: 0;
+  color: var(--ink);
+}
+
+/* unit suffix that rides under any number */
+.unit {
+  font-family: var(--face-sans);
+  font-size: 0.62em;
+  letter-spacing: 0.32em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  margin-left: 0.45em;
+  vertical-align: 0.18em;
+}
+
+/* registration cross — ubiquitous corner marker */
+.reg {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+}
+.reg::before, .reg::after {
+  content: '';
+  position: absolute;
+  background: var(--ink-soft);
+}
+.reg::before { left: 6px; top: 0; bottom: 0; width: 1px; }
+.reg::after  { top: 6px; left: 0; right: 0; height: 1px; }
+
+/* section marker — circled letter (Ⓐ Ⓑ...) — DRAWING LAYER */
+.section-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0.6px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--face-mono);
+  font-size: 10.5px;
+  letter-spacing: 0;
+  color: var(--ink);
+  background: var(--paper);
+  flex-shrink: 0;
+}
+.section-mark.invert {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* dimension line — every quantity must have one */
+.dim {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 80px;
+}
+.dim > .rule {
+  position: relative;
+  height: 1px;
+  background: var(--ink);
+}
+.dim > .rule::before,
+.dim > .rule::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  width: 1px;
+  height: 11px;
+  background: var(--ink);
+}
+.dim > .rule::before { left: 0; }
+.dim > .rule::after  { right: 0; }
+.dim > .v {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  padding: 0 6px;
+  font-family: var(--face-mono);
+  font-size: var(--t-tiny);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.dim > .lbl-mid {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  padding: 0 6px;
+  font-size: var(--t-micro);
+}
+
+/* status callout — leader line + numbered note */
+.callout {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--face-sans);
+  font-size: var(--t-mini);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  border: 0.6px solid var(--ink);
+  padding: 3px 8px 3px 6px;
+  background: var(--paper);
+}
+.callout > .num-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 0.6px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--face-mono);
+  font-size: 9px;
+  background: var(--paper);
+}
+
+/* status stamp — overprint chrome — used at three intensities */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--face-sans);
+  font-size: var(--t-mini);
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  background: var(--paper);
+  position: relative;
+}
+.stamp.danger {
+  border-color: var(--stamp);
+  color: var(--stamp);
+}
+.stamp.amber {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+.stamp.invert {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.stamp.shouted {
+  font-size: var(--t-base);
+  letter-spacing: 0.36em;
+  border-width: 1.5px;
+  padding: 6px 14px;
+}
+
+/* hairline frame — sheet edge or panel edge */
+.frame-edge {
+  border: 0.5px solid var(--ink-faint);
+}
+
+/* schedule (table) chrome */
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--face-mono);
+  font-size: var(--t-fine);
+}
+.schedule-table thead th {
+  font-family: var(--face-sans);
+  font-weight: 500;
+  font-size: var(--t-mini);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--ink);
+  padding: 10px 10px 8px 0;
+  border-bottom: 1px solid var(--ink);
+  border-top: 0.5px solid var(--ink-faint);
+}
+.schedule-table tbody td {
+  font-family: var(--face-mono);
+  font-size: var(--t-fine);
+  color: var(--ink-deep);
+  padding: 10px 10px 10px 0;
+  border-bottom: 0.5px solid var(--ink-ghost);
+  vertical-align: middle;
+}
+.schedule-table tbody tr:last-child td {
+  border-bottom: 0.5px solid var(--ink-faint);
+}
+.schedule-table .right { text-align: right; padding-right: 0; }
+.schedule-table .center { text-align: center; }
+
+/* mono pubkey atom */
+.pk {
+  font-family: var(--face-mono);
+  font-size: var(--t-fine);
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.pk-mid { color: var(--ink-soft); }     /* the … */
+.pk-copy {
+  display: inline-block;
+  margin-left: 6px;
+  width: 10px;
+  height: 10px;
+  border: 0.6px solid var(--ink-soft);
+  vertical-align: -1px;
+  cursor: pointer;
+  background: var(--paper);
+}
+.pk-copy:hover { border-color: var(--ink); }
+
+/* handwritten margin */
+.margin-note {
+  font-family: var(--face-hand);
+  font-size: var(--t-base);
+  color: var(--ink);
+  line-height: 1.4;
+}
+.margin-note .strike {
+  text-decoration: line-through;
+  color: var(--ink-soft);
+}

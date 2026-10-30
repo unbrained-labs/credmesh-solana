@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="CredMesh — Statistical Bulletin No. 1">
+  <title>CredMesh</title>
+  <desc>Sovereign-red registered-issuer mark, hairline rule, and two-line Helvetica 95 Black wordmark CRED / MESH.</desc>
+
+  <!-- Paper -->
+  <rect x="0" y="0" width="200" height="200" fill="#F4F2EE"/>
+
+  <!-- Top hairline rule (document edge) -->
+  <rect x="20" y="28" width="160" height="1.2" fill="#0A0A0A"/>
+
+  <!-- Sovereign-red registered-issuer mark, top-left corner stamp -->
+  <rect x="20" y="38" width="14" height="14" fill="#C8102E"/>
+
+  <!-- Issue / serial micro-type (right-aligned, like a bulletin masthead) -->
+  <text x="180" y="49"
+        text-anchor="end"
+        font-family="'Helvetica Neue','Helvetica','Inter','Arial',sans-serif"
+        font-weight="400"
+        font-size="8"
+        letter-spacing="1.6"
+        fill="#0A0A0A">No. 1 / 2026</text>
+
+  <!-- Wordmark: two stacked lines, Helvetica 95 Black, optically tight -->
+  <g font-family="'Helvetica Neue','Helvetica','Inter','Arial Black',sans-serif"
+     font-weight="900"
+     fill="#0A0A0A"
+     text-anchor="middle">
+    <text x="100" y="112" font-size="48" letter-spacing="-1.6">CRED</text>
+    <text x="100" y="156" font-size="48" letter-spacing="-1.6">MESH</text>
+  </g>
+
+  <!-- Bottom hairline rule -->
+  <rect x="20" y="172" width="160" height="0.8" fill="#0A0A0A"/>
+
+  <!-- Footer caption (only visible at large sizes; collapses at 32px to a single dark band) -->
+  <text x="100" y="184"
+        text-anchor="middle"
+        font-family="'Helvetica Neue','Helvetica','Inter','Arial',sans-serif"
+        font-weight="400"
+        font-size="6"
+        letter-spacing="2.2"
+        fill="#0A0A0A">PROGRAMMABLE CREDIT REGISTRY</text>
+</svg>

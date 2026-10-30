@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>CREDMESH — GOVERNANCE — FRAME 02 / 47</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { padding-bottom: var(--s-7); }
+
+  /* hero proposal — countdown is the 240pt singular hero */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    border-bottom: 1px solid var(--ink);
+    padding: var(--s-5) 0 var(--s-6);
+    gap: var(--s-6);
+  }
+  .hero-l { padding-right: var(--s-6); border-right: 1px solid var(--ink); }
+  .prop-eyebrow {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-bottom: 12px;
+  }
+  .prop-eyebrow .red { color: var(--red); }
+  .prop-title {
+    font-size: 80px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.045em;
+    line-height: 0.86;
+    text-transform: uppercase;
+  }
+  .prop-summary {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-top: var(--s-4);
+    max-width: 90%;
+  }
+  .prop-diff {
+    margin-top: var(--s-5);
+    border-top: 1px solid var(--rule);
+    padding-top: var(--s-3);
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .diff-line {
+    display: grid;
+    grid-template-columns: 200px 1fr 1fr;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--rule);
+    gap: var(--s-4);
+  }
+  .diff-line:last-child { border-bottom: 0; }
+  .diff-line .lbl {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+  }
+  .diff-line .v {
+    font-size: 20px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.025em;
+    font-feature-settings: 'tnum';
+    line-height: 1.1;
+  }
+  .diff-line .v .from {
+    color: var(--ink-low);
+    text-decoration: line-through;
+    margin-right: 8px;
+    font-size: 0.85em;
+  }
+  .diff-line .v .to { color: var(--ink); }
+  .diff-line .v .to.red { color: var(--red); }
+  .diff-line .v .arrow { color: var(--red); margin-right: 8px; font-size: 0.8em; }
+  .diff-line .v .unit { font-size: 0.55em; color: var(--ink-mid); margin-left: 6px; letter-spacing: 0.04em; }
+
+  .countdown {
+    text-align: left;
+  }
+  .countdown .label { margin-bottom: 12px; }
+  .countdown .num {
+    font-size: 240px;
+    line-height: 0.82;
+    font-weight: var(--w-display);
+    letter-spacing: -0.07em;
+    color: var(--red);
+    font-feature-settings: 'tnum';
+  }
+  .countdown .num .unit {
+    font-size: 0.4em;
+    color: var(--red-mid);
+    letter-spacing: -0.04em;
+    margin-left: 8px;
+  }
+  .countdown-cap {
+    margin-top: var(--s-4);
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    line-height: 1.55;
+  }
+  .countdown-cap .strong { color: var(--ink); font-feature-settings: 'tnum'; letter-spacing: 0.04em; }
+
+  /* tally bar */
+  .tally {
+    margin-top: var(--s-4);
+    border-top: 1px solid var(--rule);
+    padding-top: var(--s-4);
+  }
+  .tally .row {
+    display: grid;
+    grid-template-columns: 70px 1fr 110px 80px;
+    align-items: center;
+    gap: var(--s-3);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .tally .row:last-child { border-bottom: 0; }
+  .tally .lbl {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .tally .lbl.red { color: var(--red); }
+  .tally .bar {
+    height: 8px;
+    background: var(--ink-faint);
+    position: relative;
+  }
+  .tally .bar .fill {
+    position: absolute; inset: 0 auto 0 0;
+    background: var(--ink);
+  }
+  .tally .bar .fill.red { background: var(--red); }
+  .tally .num {
+    font-size: 18px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.025em;
+    text-align: right;
+    font-feature-settings: 'tnum';
+  }
+  .tally .pct {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink-mid);
+    text-align: right;
+    letter-spacing: 0.04em;
+    font-feature-settings: 'tnum';
+  }
+
+  /* my voting power */
+  .mvp {
+    border: 1.5px solid var(--ink);
+    padding: 18px 22px 18px;
+    margin-top: var(--s-5);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-5);
+  }
+  .mvp .lbl {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-bottom: 10px;
+  }
+  .mvp .val {
+    font-size: 54px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.045em;
+    line-height: 1;
+    font-feature-settings: 'tnum';
+  }
+  .mvp .val .unit { font-size: 0.4em; color: var(--ink-mid); margin-left: 6px; letter-spacing: 0.04em; vertical-align: 0.45em; }
+  .mvp .sub {
+    font-size: 11px;
+    font-weight: var(--w-bold);
+    letter-spacing: 0.18em;
+    color: var(--ink-mid);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  /* proposal cards stack */
+  .stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .pcard {
+    display: grid;
+    grid-template-columns: 90px 1fr 240px 160px;
+    gap: var(--s-5);
+    align-items: baseline;
+    border-bottom: 1px solid var(--rule);
+    padding: var(--s-4) 0;
+  }
+  .pcard:last-child { border-bottom: 0; }
+  .pcard .pid {
+    font-size: 24px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.025em;
+    font-feature-settings: 'tnum';
+  }
+  .pcard .pid .stage {
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    color: var(--ink-mid);
+    margin-top: 4px;
+  }
+  .pcard .pid .stage.red { color: var(--red); }
+  .pcard .ph {
+    font-size: 22px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .pcard .pmeta {
+    font-size: 11px;
+    font-weight: var(--w-bold);
+    letter-spacing: 0.18em;
+    color: var(--ink-mid);
+    text-transform: uppercase;
+    line-height: 1.6;
+    margin-top: 6px;
+  }
+  .pcard .pmeta .strong { color: var(--ink); font-feature-settings: 'tnum', 'ss01'; letter-spacing: 0.04em; }
+  .pcard .pdiff {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--ink);
+    font-weight: var(--w-bold);
+    font-feature-settings: 'tnum';
+  }
+  .pcard .pdiff .key {
+    display: block;
+    font-size: 10px;
+    color: var(--ink-mid);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+    font-weight: var(--w-bold);
+  }
+  .pcard .pdiff .from { color: var(--ink-low); text-decoration: line-through; margin-right: 6px; }
+  .pcard .pdiff .to.red { color: var(--red); }
+  .pcard .ptally {
+    font-size: 11px;
+    font-weight: var(--w-bold);
+    letter-spacing: 0.18em;
+    color: var(--ink-mid);
+    text-align: right;
+    text-transform: uppercase;
+    line-height: 1.7;
+  }
+  .pcard .ptally .big {
+    display: block;
+    font-size: 22px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    text-transform: none;
+    font-feature-settings: 'tnum';
+    margin-top: 4px;
+  }
+  .pcard .ptally .big.red { color: var(--red); }
+
+  /* parameter explorer */
+  .params {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 var(--s-7);
+    border-top: 1px solid var(--rule);
+  }
+  .pgrid-row {
+    display: grid;
+    grid-template-columns: 1fr auto 60px;
+    gap: var(--s-3);
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .pgrid-row .lbl {
+    font-size: 13px;
+    font-weight: var(--w-bold);
+    letter-spacing: 0;
+  }
+  .pgrid-row .lbl .ns {
+    font-size: 10px;
+    color: var(--ink-mid);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-right: 8px;
+    font-weight: var(--w-bold);
+  }
+  .pgrid-row .v {
+    font-size: 20px;
+    font-weight: var(--w-display);
+    letter-spacing: -0.025em;
+    text-align: right;
+    font-feature-settings: 'tnum';
+  }
+  .pgrid-row .v .unit { font-size: 0.55em; color: var(--ink-mid); margin-left: 6px; letter-spacing: 0.04em; }
+  .pgrid-row .hist {
+    font-size: 10px;
+    font-weight: var(--w-bold);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    text-align: right;
+    border-bottom: 1px dotted var(--ink-low);
+    padding-bottom: 1px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+  <!-- MASTHEAD ==================================================== -->
+  <header class="masthead">
+    <div class="wordmark">CREDMESH</div>
+    <div class="masthead-line">
+      GOVERNANCE &nbsp;·&nbsp; PARAMETER&nbsp;CONTROL &nbsp;·&nbsp; SQUADS&nbsp;V4&nbsp;MULTISIG &nbsp;·&nbsp;
+      DEVNET
+    </div>
+    <div class="masthead-meta">
+      <div>03&nbsp;MAY&nbsp;2026 &nbsp;·&nbsp; 14:22:08&nbsp;UTC</div>
+      <div><span class="dim">FRAME</span>&nbsp;02&nbsp;/&nbsp;47</div>
+    </div>
+  </header>
+
+  <!-- IDENTITY STRIP =========================================== -->
+  <div class="id-strip" style="border-top: 0; padding-top: 0; margin-bottom: var(--s-3);">
+    <span class="pk">
+      <span class="role">GOV.&nbsp;MULTISIG</span>
+      Govm<span class="dim">…</span>9z2K
+      <span class="copy">COPY</span>
+    </span>
+    <span class="micro" style="color: var(--ink-mid);">
+      THRESHOLD&nbsp;3&nbsp;OF&nbsp;5 &nbsp;·&nbsp;
+      TIMELOCK&nbsp;48&nbsp;H &nbsp;·&nbsp;
+      EXEC.&nbsp;PROGRAM&nbsp;CMshESCw<span style="color:var(--ink-mid);">…</span>v4
+    </span>
+    <span class="tag-stamp red">VOTE OPEN</span>
+  </div>
+
+  <!-- HERO PROPOSAL ========================================== -->
+  <section class="hero">
+
+    <div class="hero-l">
+      <div class="prop-eyebrow">
+        ACTIVE PROPOSAL <span class="red">·</span> CMP-014 <span class="red">·</span> AT VOTE
+      </div>
+      <div class="prop-title">RAISE FEE-CURVE<br>KINK 80 → 85<span style="color:var(--red);">.</span></div>
+      <p class="prop-summary">
+        Move the utilization-curve kink point from 80% to 85% utilization, and the post-kink slope coefficient from 4.0× to 3.6×. Yields a flatter borrow rate at high utilization; LPs trade marginal yield for borrower retention. <strong>Affects pool Pooz<span style="color:var(--ink-mid);">…</span>v401 only.</strong>
+      </p>
+
+      <div class="prop-diff">
+        <div class="diff-line">
+          <div class="lbl">FEE&nbsp;CURVE&nbsp;KINK</div>
+          <div class="v"><span class="from">80%</span><span class="arrow">→</span><span class="to red">85%</span></div>
+          <div class="v" style="font-size: 11px; color: var(--ink-mid); letter-spacing:0.18em; text-transform: uppercase; font-weight: var(--w-bold);">+5 PCT-PT</div>
+        </div>
+        <div class="diff-line">
+          <div class="lbl">POST-KINK&nbsp;SLOPE</div>
+          <div class="v"><span class="from">4.0×</span><span class="arrow">→</span><span class="to">3.6×</span></div>
+          <div class="v" style="font-size: 11px; color: var(--ink-mid); letter-spacing:0.18em; text-transform: uppercase; font-weight: var(--w-bold);">−10%</div>
+        </div>
+        <div class="diff-line">
+          <div class="lbl">BASE&nbsp;BORROW&nbsp;APR</div>
+          <div class="v"><span class="from">3.20%</span><span class="arrow">→</span><span class="to">3.20%</span></div>
+          <div class="v" style="font-size: 11px; color: var(--ink-mid); letter-spacing:0.18em; text-transform: uppercase; font-weight: var(--w-bold);">UNCHANGED</div>
+        </div>
+        <div class="diff-line">
+          <div class="lbl">PROPOSER</div>
+          <div class="v" style="font-feature-settings:'tnum','ss01'; font-size: 16px;">Gv01<span style="color:var(--ink-mid);">…</span>k7Yz</div>
+          <div class="v" style="font-size: 11px; color: var(--ink-mid); letter-spacing:0.18em; text-transform: uppercase; font-weight: var(--w-bold);">SUBMIT&nbsp;SLOT&nbsp;268,381,002</div>
+        </div>
+      </div>
+
+      <!-- TALLY -->
+      <div class="tally">
+        <div class="row">
+          <div class="lbl">FOR</div>
+          <div class="bar"><div class="fill" style="width: 64%;"></div></div>
+          <div class="num">11.42&nbsp;M</div>
+          <div class="pct">63.9%</div>
+        </div>
+        <div class="row">
+          <div class="lbl red">AGAINST</div>
+          <div class="bar"><div class="fill red" style="width: 31%;"></div></div>
+          <div class="num">5.54&nbsp;M</div>
+          <div class="pct">31.0%</div>
+        </div>
+        <div class="row">
+          <div class="lbl">ABSTAIN</div>
+          <div class="bar"><div class="fill" style="width: 5%; background: var(--ink-mid);"></div></div>
+          <div class="num">0.91&nbsp;M</div>
+          <div class="pct">5.1%</div>
+        </div>
+      </div>
+
+      <!-- MY VOTING POWER -->
+      <div class="mvp">
+        <div>
+          <div class="lbl">MY VOTING POWER</div>
+          <div class="val">182,440<span class="unit">VP</span></div>
+          <div class="sub">128,402&nbsp;SHARES &nbsp;·&nbsp; ×&nbsp;1.42&nbsp;TIME-WEIGHT</div>
+        </div>
+        <div>
+          <div class="lbl">MY VOTE</div>
+          <div class="val" style="color: var(--ink);">FOR<span class="unit">CAST</span></div>
+          <div class="sub">SLOT&nbsp;268,392,001 &nbsp;·&nbsp; SIG&nbsp;Vt7Q…aR9b &nbsp;·&nbsp; <span style="color:var(--red); font-weight:800;">NOT YET EXECUTED</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COUNTDOWN: 240pt singular hero -->
+    <div>
+      <div class="prop-eyebrow"><span class="red">VOTE WINDOW CLOSES</span> &nbsp;·&nbsp; THEN 48H TIMELOCK</div>
+      <div class="countdown">
+        <div class="num">11<span class="unit">H</span></div>
+        <div style="font-size: 80px; font-weight: var(--w-display); letter-spacing: -0.05em; line-height: 0.9; color: var(--ink); margin-top: 6px;">04 M 18 S</div>
+      </div>
+      <div class="countdown-cap" style="margin-top: var(--s-5);">
+        VOTE&nbsp;ENDS &nbsp;<span class="strong">SLOT&nbsp;268,432,118</span><br>
+        TIMELOCK&nbsp;ENDS &nbsp;<span class="strong">SLOT&nbsp;268,548,118</span> · 05&nbsp;MAY&nbsp;14:24&nbsp;UTC<br>
+        EARLIEST&nbsp;EXEC. &nbsp;<span class="strong">05&nbsp;MAY&nbsp;14:25&nbsp;UTC</span>
+      </div>
+      <div class="action" style="margin-top: var(--s-5); flex-direction: column; gap: var(--s-3); align-items: stretch;">
+        <button class="btn primary">CHANGE VOTE &nbsp;·&nbsp; FOR</button>
+        <button class="btn">ABSTAIN</button>
+        <button class="btn danger">VOTE AGAINST</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- PENDING TIMELOCK ======================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-h">PENDING TIMELOCK &nbsp;·&nbsp; 2</div>
+      <div></div>
+      <div class="section-cap">VOTED &nbsp;·&nbsp; AWAITING 48H WINDOW &nbsp;·&nbsp; AUTO-EXECUTABLE BY ANY KEYHOLDER</div>
+    </div>
+
+    <div class="stack">
+      <div class="pcard">
+        <div class="pid">CMP-013<span class="stage">EXEC. SLOT</span><span style="font-feature-settings:'tnum'; font-weight:800; font-size:13px; color:var(--ink); letter-spacing:0;">268,440,002</span></div>
+        <div>
+          <div class="ph">Lower max-utilization 95% → 90%</div>
+          <div class="pmeta">
+            VOTE&nbsp;<span class="strong">FOR&nbsp;14.2&nbsp;M&nbsp;·&nbsp;AGAINST&nbsp;0.9&nbsp;M</span>
+            &nbsp;·&nbsp;
+            PROPOSER&nbsp;<span class="strong">Gv01<span style="color:var(--ink-mid);">…</span>k7Yz</span>
+          </div>
+        </div>
+        <div class="pdiff">
+          <span class="key">MAX UTIL</span>
+          <span class="from">95.0%</span> <span class="arrow" style="color:var(--red);">→</span> <span class="to">90.0%</span>
+        </div>
+        <div class="ptally">
+          TIMELOCK ENDS<br>
+          <span class="big">11&nbsp;H&nbsp;42&nbsp;M</span>
+          SLOT 268,440,000
+        </div>
+      </div>
+
+      <div class="pcard">
+        <div class="pid">CMP-012<span class="stage">EXEC. SLOT</span><span style="font-feature-settings:'tnum'; font-weight:800; font-size:13px; color:var(--ink); letter-spacing:0;">268,512,002</span></div>
+        <div>
+          <div class="ph">Add SAS attester WhitelistV1.0</div>
+          <div class="pmeta">
+            VOTE&nbsp;<span class="strong">FOR&nbsp;9.1&nbsp;M&nbsp;·&nbsp;AGAINST&nbsp;3.2&nbsp;M</span>
+            &nbsp;·&nbsp;
+            PROPOSER&nbsp;<span class="strong">SasW<span style="color:var(--ink-mid);">…</span>2Bex</span>
+          </div>
+        </div>
+        <div class="pdiff">
+          <span class="key">SAS WHITELIST</span>
+          <span class="from">empty</span> <span class="arrow" style="color:var(--red);">→</span> <span class="to red">+1 attester</span>
+        </div>
+        <div class="ptally">
+          TIMELOCK ENDS<br>
+          <span class="big">29&nbsp;H&nbsp;12&nbsp;M</span>
+          SLOT 268,512,000
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PARAMETER EXPLORER ======================================= -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-h">PARAMETER EXPLORER &nbsp;·&nbsp; POOL Pooz…v401</div>
+      <div></div>
+      <div class="section-cap">CURRENT VALUES &nbsp;·&nbsp; CLICK HISTORY FOR ALL EXEC. PROPOSALS</div>
+    </div>
+
+    <div class="params">
+      <div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">FEE</span>Base&nbsp;borrow&nbsp;APR</div><div class="v">3.20<span class="unit">%</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">FEE</span>Kink&nbsp;utilization</div><div class="v">80.00<span class="unit">%</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">FEE</span>Post-kink&nbsp;slope</div><div class="v">4.00<span class="unit">×</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">FEE</span>Protocol&nbsp;fee&nbsp;take</div><div class="v">0<span class="unit">BPS</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">RISK</span>Max&nbsp;utilization</div><div class="v">95.00<span class="unit">%</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">RISK</span>Per-agent&nbsp;cap</div><div class="v">500,000<span class="unit">USDC</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">RISK</span>Liquidation&nbsp;threshold</div><div class="v">85.00<span class="unit">%</span></div><a class="hist">HISTORY ↗</a></div>
+      </div>
+      <div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">REP</span>Min.&nbsp;reputation&nbsp;to&nbsp;borrow</div><div class="v">0.4500<span class="unit">DIGEST</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">REP</span>Window&nbsp;decay&nbsp;half-life</div><div class="v">14<span class="unit">DAYS</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">REP</span>Default&nbsp;weight</div><div class="v">−2.00<span class="unit">×</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">ORC</span>Oracle&nbsp;staleness&nbsp;limit</div><div class="v">5<span class="unit">SEC</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">GOV</span>Quorum</div><div class="v">10.00<span class="unit">%&nbsp;OF&nbsp;SHARES</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">GOV</span>Vote&nbsp;window</div><div class="v">72<span class="unit">H</span></div><a class="hist">HISTORY ↗</a></div>
+        <div class="pgrid-row"><div class="lbl"><span class="ns">GOV</span>Timelock</div><div class="v">48<span class="unit">H</span></div><a class="hist">HISTORY ↗</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY ================================================= -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-h">EXECUTED &nbsp;·&nbsp; LAST 8</div>
+      <div></div>
+      <div class="section-cap">REVERSE&nbsp;CHRONOLOGICAL &nbsp;·&nbsp; ALL ON-CHAIN</div>
+    </div>
+    <table class="dense">
+      <thead>
+        <tr>
+          <th style="width:36px">№</th>
+          <th style="width:80px">ID</th>
+          <th>CHANGE</th>
+          <th class="num">FROM</th>
+          <th class="num">TO</th>
+          <th class="num" style="width:120px">EXEC. SLOT</th>
+          <th class="num" style="width:60px">VOTE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="idx">01.</td><td class="id">CMP-011</td><td>Base borrow APR</td><td class="num amount">3.50%</td><td class="num amount">3.20%</td><td class="num time">267,961,002</td><td class="num"><span class="tag-stamp">FOR</span></td></tr>
+        <tr><td class="idx">02.</td><td class="id">CMP-010</td><td>Per-agent cap</td><td class="num amount">300,000</td><td class="num amount">500,000</td><td class="num time">267,418,001</td><td class="num"><span class="tag-stamp">FOR</span></td></tr>
+        <tr><td class="idx">03.</td><td class="id">CMP-009</td><td>Reputation default weight</td><td class="num amount">−1.50×</td><td class="num amount">−2.00×</td><td class="num time">267,201,440</td><td class="num"><span class="tag-stamp">FOR</span></td></tr>
+        <tr><td class="idx">04.</td><td class="id">CMP-008</td><td>Add oracle worker key</td><td class="num">∅</td><td class="num amount">+1</td><td class="num time">267,001,002</td><td class="num"><span class="tag-stamp">FOR</span></td></tr>
+        <tr><td class="idx">05.</td><td class="id">CMP-007</td><td>Quorum</td><td class="num amount">5.00%</td><td class="num amount">10.00%</td><td class="num time">266,418,022</td><td class="num"><span class="tag-stamp">FOR</span></td></tr>
+        <tr><td class="idx">06.</td><td class="id">CMP-006</td><td>Add fee-payer key</td><td class="num">∅</td><td class="num amount">+1</td><td class="num time">266,201,001</td><td class="num"><span class="tag-stamp">FOR</span></td></tr>
+        <tr><td class="idx">07.</td><td class="id">CMP-005</td><td>Liquidation threshold</td><td class="num amount">80.00%</td><td class="num amount">85.00%</td><td class="num time">265,901,002</td><td class="num"><span class="tag-stamp">FOR</span></td></tr>
+        <tr><td class="idx">08.</td><td class="id">CMP-004</td><td>Disable advance.pause</td><td class="num">true</td><td class="num">false</td><td class="num time">265,442,180</td><td class="num"><span class="tag-stamp red">AGAINST</span></td></tr>
+      </tbody>
+    </table>
+    <div class="footnotes">
+      <div class="fn-row"><span class="n">1.</span><span>The pool's `paused` field was rejected on principle (CMP-004); advance issuance has no governance pause path. See DESIGN §3.5.</span></div>
+      <div class="fn-row"><span class="n">2.</span><span>Voting power is a snapshot at proposal-submit slot; subsequent share movements do not change a vote already cast.</span></div>
+    </div>
+  </section>
+
+  <!-- COLOPHON ==================================================== -->
+  <footer class="colophon">
+    <div class="tagline">CREDIT,<br>COMPOSED<span class="red">.</span></div>
+    <div class="colophon-meta">
+      <div><span class="dim">CREDMESH</span> &nbsp;·&nbsp; GOV.&nbsp;MULTISIG&nbsp;Govm…9z2K</div>
+      <div><span class="dim">DEVNET</span> &nbsp;·&nbsp; SLOT&nbsp;268,403,224</div>
+      <div class="fin">FRAME&nbsp;02&nbsp;/&nbsp;47 &nbsp;·&nbsp; FIN.</div>
+    </div>
+  </footer>
+
+</body>
+</html>

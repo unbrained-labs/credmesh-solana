@@ -1,0 +1,1121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1440, initial-scale=1" />
+  <title>CREDMESH — SHEET 03 / GOVERNANCE</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    body {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+    }
+
+    main.sheet {
+      position: relative;
+      width: 1440px;
+      min-height: 1180px;
+      background: var(--paper);
+      box-shadow: var(--shadow-sheet);
+      background-image:
+        radial-gradient(1200px 700px at 80% -10%, rgba(27,58,111,0.05), transparent 60%),
+        var(--grain-grid);
+      padding: 0 0 36px 0;
+    }
+    .frame { position: absolute; inset: 18px; border: 0.5px solid var(--ink-faint); pointer-events: none; }
+    .frame-inner { position: absolute; inset: 22px; border: 0.5px solid var(--ink-ghost); pointer-events: none; }
+
+    .reg { position: absolute; width: 14px; height: 14px; pointer-events: none; }
+    .reg::before, .reg::after { content: ''; position: absolute; background: var(--ink-soft); }
+    .reg::before { left: 6px; top: 0; bottom: 0; width: 1px; }
+    .reg::after  { top: 6px; left: 0; right: 0; height: 1px; }
+    .reg.tl { top: 8px; left: 8px; } .reg.tr { top: 8px; right: 8px; }
+    .reg.bl { bottom: 8px; left: 8px; } .reg.br { bottom: 8px; right: 8px; }
+
+    .header {
+      margin: 36px 36px 0;
+      height: 56px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 0.5px solid var(--ink);
+      padding-bottom: 12px;
+    }
+    .header .left, .header .right { display: flex; gap: 28px; align-items: baseline; }
+    .header .meta .k { font-size: var(--t-micro); letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-soft); }
+    .header .meta .v { font-family: var(--face-mono); font-size: var(--t-fine); color: var(--ink); letter-spacing: 0.04em; }
+    .header .title { font-size: var(--t-lg); letter-spacing: 0.4em; font-weight: 500; text-transform: uppercase; }
+    .header .subtitle { font-size: var(--t-mini); letter-spacing: 0.45em; color: var(--ink-soft); text-transform: uppercase; margin-left: 14px; }
+
+    /* TOP STRIP — voting power card + summary */
+    .top-strip {
+      margin: 24px 36px 0;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr 1fr;
+      gap: 20px;
+    }
+    .strip-card {
+      border: 0.5px solid var(--ink-faint);
+      background: var(--paper);
+      padding: 16px 20px 16px;
+      position: relative;
+      min-height: 140px;
+    }
+    .strip-card .head {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .strip-card .head .label {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .strip-card .head .ref {
+      margin-left: auto;
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .strip-card .v {
+      font-family: var(--face-mono);
+      font-weight: 300;
+      font-size: var(--t-2xl);
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .strip-card .v .unit {
+      font-family: var(--face-sans);
+      font-size: 13px;
+      letter-spacing: 0.32em;
+      color: var(--ink-soft);
+      vertical-align: 0.5em;
+      margin-left: 6px;
+    }
+    .strip-card .sub {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      margin-top: 8px;
+    }
+    .strip-card.featured {
+      border: 0.6px solid var(--ink);
+      background: var(--paper-warm);
+    }
+    .strip-card.featured .head .label { color: var(--ink); }
+    .strip-card .secondary-line {
+      margin-top: 10px;
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      letter-spacing: 0.02em;
+    }
+    .strip-card .secondary-line b { color: var(--ink); font-weight: 500; }
+
+    /* PROPOSALS — full-width section */
+    .proposals-wrap {
+      margin: 28px 36px 0;
+      padding-top: 30px;
+      position: relative;
+    }
+    .proposals-wrap .sched-head {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .proposals-wrap .sched-head .l { display: flex; gap: 12px; align-items: center; }
+    .proposals-wrap .sched-head .title {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .proposals-wrap .sched-head .tag {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .proposal-bands {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* a single proposal "drawing revision" card */
+    .proposal {
+      display: grid;
+      grid-template-columns: 80px 1.2fr 1fr 1.1fr 0.9fr;
+      gap: 0;
+      border: 0.5px solid var(--ink);
+      background: var(--paper);
+      align-items: stretch;
+      position: relative;
+    }
+    .proposal.timelock {
+      border-color: var(--amber);
+    }
+    .proposal.timelock::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: var(--hatch-amber); opacity: 0.06;
+    }
+    .proposal.executed {
+      border-color: var(--ink-faint);
+      background: var(--paper);
+    }
+    .proposal.executed::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: var(--hatch-sparse); opacity: 0.30;
+    }
+    .proposal.rejected {
+      border-color: var(--stamp);
+    }
+    .proposal.rejected::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: var(--hatch-stamp); opacity: 0.07;
+    }
+    .proposal > * { position: relative; z-index: 1; }
+
+    .proposal .rev-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 8px;
+      border-right: 0.5px solid var(--ink);
+      background: var(--paper-warm);
+      gap: 6px;
+    }
+    .proposal.executed .rev-block { background: var(--paper); border-right: 0.5px solid var(--ink-faint); }
+    .proposal.timelock .rev-block { background: var(--paper-warm); border-right: 0.5px solid var(--amber); }
+    .proposal.rejected .rev-block { background: var(--paper); border-right: 0.5px solid var(--stamp); }
+
+    .proposal .rev-block .rev-label {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .proposal .rev-block .rev-id {
+      font-family: var(--face-mono);
+      font-size: var(--t-xl);
+      color: var(--ink);
+      line-height: 1;
+    }
+    .proposal.rejected .rev-block .rev-id { color: var(--stamp); }
+    .proposal .rev-block .rev-id .seq {
+      font-size: 14px;
+      color: var(--ink-soft);
+    }
+
+    .proposal .change-block {
+      padding: 14px 16px;
+      border-right: 0.5px solid var(--ink-faint);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .proposal .change-block .param-line {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .proposal .change-block .change-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+    }
+    .proposal .change-block .change-row .arrow {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      color: var(--ink-soft);
+      letter-spacing: 0.2em;
+    }
+    .proposal .change-block .from {
+      color: var(--ink-soft);
+      text-decoration: line-through;
+    }
+    .proposal .change-block .to {
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .proposal.rejected .change-block .to { color: var(--stamp); }
+    .proposal .change-block .meta {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+
+    .proposal .timeline-block {
+      padding: 14px 16px;
+      border-right: 0.5px solid var(--ink-faint);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .proposal .timeline-block .l {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .proposal .timeline-block .countdown {
+      font-family: var(--face-mono);
+      font-size: var(--t-md);
+      color: var(--ink);
+      line-height: 1.05;
+    }
+    .proposal.timelock .timeline-block .countdown { color: var(--amber); }
+    .proposal .timeline-block .slot-info {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+
+    .proposal .vote-block {
+      padding: 14px 16px;
+      border-right: 0.5px solid var(--ink-faint);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .proposal .vote-block .l {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .proposal .vote-block .tally-row {
+      display: grid;
+      grid-template-columns: 38px 1fr 60px;
+      gap: 8px;
+      align-items: center;
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink);
+    }
+    .proposal .vote-block .bar {
+      height: 6px;
+      border-top: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+      position: relative;
+    }
+    .proposal .vote-block .bar > i {
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      background: var(--hatch-mid);
+    }
+    .proposal .vote-block .bar.against > i {
+      background: var(--hatch-stamp);
+    }
+    .proposal .vote-block .bar.abstain > i {
+      background: var(--hatch-sparse);
+    }
+    .proposal .vote-block .quorum-line {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+      margin-top: 2px;
+    }
+
+    .proposal .stamp-block {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 8px;
+    }
+    .proposal .stamp-block .my-vote {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+    .proposal .stamp-block .my-vote b { color: var(--ink); font-weight: 500; }
+
+    /* the big stamp at top-right of executed/rejected proposals */
+    .proposal.executed .stamp-block::before {
+      content: 'EXECUTED';
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      font-family: var(--face-sans);
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: 0.18em;
+      color: var(--ink);
+      opacity: 0.18;
+      transform: rotate(-8deg);
+      pointer-events: none;
+      border: 2px solid var(--ink);
+      padding: 4px 12px;
+      z-index: 0;
+    }
+    .proposal.rejected .stamp-block::before {
+      content: 'REJECTED';
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      font-family: var(--face-sans);
+      font-weight: 700;
+      font-size: 28px;
+      letter-spacing: 0.18em;
+      color: var(--stamp);
+      opacity: 0.32;
+      transform: rotate(-8deg);
+      pointer-events: none;
+      border: 2px solid var(--stamp);
+      padding: 4px 12px;
+      z-index: 0;
+    }
+    .proposal .stamp {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      font-weight: 500;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 0.6px solid var(--ink);
+      color: var(--ink);
+      background: var(--paper);
+      white-space: nowrap;
+      display: inline-block;
+    }
+    .proposal .stamp.amber { color: var(--amber); border-color: var(--amber); }
+    .proposal .stamp.danger { color: var(--stamp); border-color: var(--stamp); }
+    .proposal button.vote-btn {
+      font-family: var(--face-sans);
+      font-size: var(--t-micro);
+      font-weight: 500;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper);
+      cursor: pointer;
+    }
+    .proposal button.vote-btn.secondary {
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    /* Section divider banner */
+    .band-divider {
+      margin: 22px 36px 6px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding-top: 10px;
+      padding-bottom: 4px;
+      border-top: 0.5px solid var(--ink-faint);
+    }
+    .band-divider .num {
+      font-family: var(--face-mono);
+      font-size: var(--t-mini);
+      color: var(--ink-soft);
+    }
+    .band-divider .name {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .band-divider .meta {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      margin-left: auto;
+      letter-spacing: 0.06em;
+    }
+
+    /* PARAMETER EXPLORER SCHEDULE */
+    .param-row {
+      margin: 28px 36px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    .param-schedule {
+      padding-top: 30px;
+      position: relative;
+    }
+    .param-schedule .sched-head {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .param-schedule .sched-head .l { display: flex; gap: 12px; align-items: center; }
+    .param-schedule .sched-head .title {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .param-schedule .sched-head .tag {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .param-schedule table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    .param-schedule thead th {
+      font-family: var(--face-sans);
+      font-weight: 400;
+      font-size: var(--t-micro);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      text-align: left;
+      padding: 6px 8px 6px 0;
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .param-schedule tbody td {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      padding: 7px 8px 7px 0;
+      letter-spacing: 0.02em;
+      border-bottom: 0.5px solid var(--ink-ghost);
+      vertical-align: middle;
+    }
+    .param-schedule tbody tr:last-child td { border-bottom: 0.5px solid var(--ink-faint); }
+    .param-schedule .right { text-align: right; padding-right: 0; }
+    .param-schedule .param-name {
+      font-family: var(--face-sans);
+      font-size: var(--t-tiny);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+    .param-schedule .pin {
+      font-family: var(--face-mono);
+      font-size: 9px;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+
+    /* HISTORY DIFF panel */
+    .history-card {
+      padding-top: 30px;
+      position: relative;
+    }
+    .history-card .sched-head {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--ink);
+    }
+    .history-card .sched-head .l { display: flex; gap: 12px; align-items: center; }
+    .history-card .sched-head .title {
+      font-family: var(--face-sans);
+      font-size: var(--t-mini);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .history-card .sched-head .tag {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .history-card .h-list {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .history-card .h-row {
+      display: grid;
+      grid-template-columns: 60px 1fr auto auto;
+      gap: 14px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 0.5px solid var(--ink-ghost);
+    }
+    .history-card .h-row:last-child { border-bottom: 0.5px solid var(--ink-faint); }
+    .history-card .h-row .rev {
+      font-family: var(--face-mono);
+      font-size: var(--t-fine);
+      color: var(--ink);
+    }
+    .history-card .h-row .diff {
+      font-family: var(--face-mono);
+      font-size: var(--t-tiny);
+      color: var(--ink-deep);
+      letter-spacing: 0.02em;
+    }
+    .history-card .h-row .diff .from { color: var(--ink-soft); text-decoration: line-through; }
+    .history-card .h-row .slot {
+      font-family: var(--face-mono);
+      font-size: var(--t-micro);
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+    }
+    .history-card .h-row .stamp {
+      font-family: var(--face-sans);
+      font-size: 8.5px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border: 0.6px solid var(--ink);
+      color: var(--ink);
+      background: var(--paper);
+    }
+    .history-card .h-row .stamp.danger { color: var(--stamp); border-color: var(--stamp); }
+    .history-card .h-row .stamp.dim { color: var(--ink-soft); border-color: var(--ink-faint); }
+
+    /* footer */
+    .footer {
+      margin: 36px 36px 0;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 32px;
+      align-items: end;
+    }
+    .titleblock {
+      width: 460px;
+      border: 0.6px solid var(--ink);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--paper);
+    }
+    .titleblock .cell {
+      padding: 6px 12px 8px;
+      border-right: 0.5px solid var(--ink-faint);
+      border-bottom: 0.5px solid var(--ink-faint);
+    }
+    .titleblock .cell:nth-child(2n) { border-right: none; }
+    .titleblock .cell:nth-last-child(-n+2) { border-bottom: none; }
+    .titleblock .cell .k { font-size: var(--t-micro); letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-soft); }
+    .titleblock .cell .v { font-family: var(--face-mono); font-size: var(--t-fine); color: var(--ink); letter-spacing: 0.04em; }
+    .titleblock .full {
+      grid-column: 1 / -1; border-right: none; padding: 7px 12px 9px;
+    }
+    .titleblock .full .v {
+      font-family: var(--face-sans); font-size: var(--t-md);
+      letter-spacing: 0.36em; font-weight: 500; text-transform: uppercase;
+    }
+
+    .marginalia { padding: 0 24px; max-width: 360px; }
+    .marginalia .note {
+      font-family: var(--face-hand);
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    .marginalia .note .strike { text-decoration: line-through; color: var(--ink-soft); }
+
+    .compass { display: flex; align-items: center; gap: 12px; }
+    .compass svg { width: 48px; height: 48px; }
+    .compass .compass-label {
+      font-family: var(--face-sans); font-size: var(--t-mini);
+      letter-spacing: 0.32em; color: var(--ink-soft); text-transform: uppercase;
+      line-height: 1.4;
+    }
+    .compass .compass-label b { color: var(--ink); font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<main class="sheet">
+  <div class="frame"></div>
+  <div class="frame-inner"></div>
+
+  <span class="reg tl"></span><span class="reg tr"></span><span class="reg bl"></span><span class="reg br"></span>
+
+  <header class="header">
+    <div class="left">
+      <div class="meta"><div class="k">Project</div><div class="v">CREDMESH / SOLANA</div></div>
+      <div class="meta"><div class="k">Cluster</div><div class="v">MAINNET-BETA</div></div>
+      <div class="meta"><div class="k">Sheet</div><div class="v">03 OF 12</div></div>
+    </div>
+    <div style="display:flex; align-items: baseline;">
+      <span class="title">GOVERNANCE</span>
+      <span class="subtitle">— SECTION C‑C · DRAWING REVISIONS</span>
+    </div>
+    <div class="right">
+      <div class="meta"><div class="k">Drawn by</div><div class="v">PROTOCOL</div></div>
+      <div class="meta"><div class="k">Checked</div><div class="v">DAO</div></div>
+      <div class="meta"><div class="k">Rev.</div><div class="v">D / 2026‑05‑03</div></div>
+    </div>
+  </header>
+
+  <!-- TOP STRIP -->
+  <section class="top-strip">
+    <div class="strip-card featured">
+      <div class="head">
+        <span class="section-mark">A</span>
+        <span class="label">My Voting Power</span>
+        <span class="ref">SHEET R-04 · DAO</span>
+      </div>
+      <div class="v">82,418<span class="unit">SH-VOTE</span></div>
+      <div class="sub">SHARES 81,200 × T-WEIGHT 1.015 · MEASURED SLOT 268,402,184</div>
+      <div class="secondary-line">
+        delegate · <b>self</b> · last delegated slot <b>267,901,124</b><br>
+        you voted <b>FOR</b> on R-091 · <span style="color: var(--amber);">awaiting timelock</span>
+      </div>
+    </div>
+    <div class="strip-card">
+      <div class="head">
+        <span class="section-mark">B</span>
+        <span class="label">Active Proposals</span>
+      </div>
+      <div class="v">2<span class="unit">open</span></div>
+      <div class="sub">+ 1 IN TIMELOCK · 1 PENDING REVIEW</div>
+      <div class="secondary-line">
+        cycle 047 · 24 H AVG TURNOUT <b>62.4%</b><br>
+        quorum threshold <b>20% · 4.18M VOTES</b>
+      </div>
+    </div>
+    <div class="strip-card">
+      <div class="head">
+        <span class="section-mark">C</span>
+        <span class="label">Treasury &amp; Quorum</span>
+      </div>
+      <div class="v">8.42<span class="unit">M USDC</span></div>
+      <div class="sub">PROTOCOL TREASURY · POOL 001 + 002</div>
+      <div class="secondary-line">
+        circulating shares · <b>20.91M SH</b><br>
+        timelock min <b>72H</b> · param-tier <b>P1 = 168H</b>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTIVE PROPOSALS BAND -->
+  <div class="band-divider">
+    <span class="num">01</span>
+    <span class="name">Active · Voting Open</span>
+    <span class="meta">2 PROPOSALS · CYCLE 047 · CLOSES 268,524,800</span>
+  </div>
+  <section class="proposals-wrap" style="padding-top: 10px;">
+    <div class="proposal-bands">
+
+      <!-- PROPOSAL R-093 (active) -->
+      <div class="proposal">
+        <div class="rev-block">
+          <span class="rev-label">Rev.</span>
+          <span class="rev-id"><span class="seq">R-</span>093</span>
+        </div>
+        <div class="change-block">
+          <span class="param-line">Pool 001 · Fee Curve · Kink Util.</span>
+          <div class="change-row">
+            <span class="from">80.00 %</span>
+            <span class="arrow">⇢</span>
+            <span class="to">85.00 %</span>
+          </div>
+          <span class="meta">proposer <span style="color: var(--ink);">5tQp…m9wK</span> · target slot 268,560,000 · sig 3Hdj…tQ8x</span>
+        </div>
+        <div class="timeline-block">
+          <span class="l">Vote closes</span>
+          <span class="countdown">2 d 14 h 22 m</span>
+          <span class="slot-info">closes slot 268,524,800 · 24 h voting · 72 h timelock</span>
+        </div>
+        <div class="vote-block">
+          <span class="l">Tally · 14.2M / 20.91M voted</span>
+          <div class="tally-row"><span>FOR</span><span class="bar"><i style="width: 71%;"></i></span><span>71.4%</span></div>
+          <div class="tally-row"><span>AGNST</span><span class="bar against"><i style="width: 22%;"></i></span><span>22.1%</span></div>
+          <div class="tally-row"><span>ABST</span><span class="bar abstain"><i style="width: 7%;"></i></span><span>6.5%</span></div>
+          <span class="quorum-line">quorum ✓ 67.9% · turnout 67.9%</span>
+        </div>
+        <div class="stamp-block">
+          <span class="my-vote">YOU VOTED · <b>FOR</b></span>
+          <button class="vote-btn secondary">Change vote</button>
+        </div>
+      </div>
+
+      <!-- PROPOSAL R-092 (active, you haven't voted) -->
+      <div class="proposal">
+        <div class="rev-block">
+          <span class="rev-label">Rev.</span>
+          <span class="rev-id"><span class="seq">R-</span>092</span>
+        </div>
+        <div class="change-block">
+          <span class="param-line">Reputation · Min Threshold · request_advance</span>
+          <div class="change-row">
+            <span class="from">0.620</span>
+            <span class="arrow">⇢</span>
+            <span class="to">0.680</span>
+          </div>
+          <span class="meta">proposer <span style="color: var(--ink);">9p3k…N8cV</span> · 26 agents below new threshold · sig 7nFq…K2mR</span>
+        </div>
+        <div class="timeline-block">
+          <span class="l">Vote closes</span>
+          <span class="countdown">11 h 04 m</span>
+          <span class="slot-info">closes slot 268,440,200 · 24 h voting · 72 h timelock</span>
+        </div>
+        <div class="vote-block">
+          <span class="l">Tally · 8.4M / 20.91M voted</span>
+          <div class="tally-row"><span>FOR</span><span class="bar"><i style="width: 48%;"></i></span><span>48.2%</span></div>
+          <div class="tally-row"><span>AGNST</span><span class="bar against"><i style="width: 44%;"></i></span><span>44.0%</span></div>
+          <div class="tally-row"><span>ABST</span><span class="bar abstain"><i style="width: 8%;"></i></span><span>7.8%</span></div>
+          <span class="quorum-line">quorum ✓ 40.2% · contested</span>
+        </div>
+        <div class="stamp-block">
+          <span class="my-vote">YOU HAVE NOT VOTED</span>
+          <div style="display:flex; gap: 6px;">
+            <button class="vote-btn">For</button>
+            <button class="vote-btn secondary">Against</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TIMELOCK BAND -->
+  <div class="band-divider">
+    <span class="num">02</span>
+    <span class="name">In Timelock · Pending Execution</span>
+    <span class="meta">1 PROPOSAL · ANY HOLDER MAY EXECUTE AT END OF DELAY</span>
+  </div>
+  <section class="proposals-wrap" style="padding-top: 10px;">
+    <div class="proposal-bands">
+
+      <div class="proposal timelock">
+        <div class="rev-block">
+          <span class="rev-label">Rev.</span>
+          <span class="rev-id"><span class="seq">R-</span>091</span>
+        </div>
+        <div class="change-block">
+          <span class="param-line">Pool 001 · Max Utilization Cap</span>
+          <div class="change-row">
+            <span class="from">90.00 %</span>
+            <span class="arrow">⇢</span>
+            <span class="to">92.50 %</span>
+          </div>
+          <span class="meta">proposer <span style="color: var(--ink);">2Bvy…rM4j</span> · passed 81.2% / 64.4% turnout · sig aQ4f…p8Lm</span>
+        </div>
+        <div class="timeline-block">
+          <span class="l">Timelock ends</span>
+          <span class="countdown">3 d 04 h 12 m</span>
+          <span class="slot-info">unlock slot 268,738,200 · 168 h tier-1 delay</span>
+        </div>
+        <div class="vote-block">
+          <span class="l">Final tally · 13.5M voted</span>
+          <div class="tally-row"><span>FOR</span><span class="bar"><i style="width: 81%;"></i></span><span>81.2%</span></div>
+          <div class="tally-row"><span>AGNST</span><span class="bar against"><i style="width: 14%;"></i></span><span>14.4%</span></div>
+          <div class="tally-row"><span>ABST</span><span class="bar abstain"><i style="width: 4%;"></i></span><span>4.4%</span></div>
+          <span class="quorum-line">passed 2026‑04‑29 · slot 268,562,012</span>
+        </div>
+        <div class="stamp-block">
+          <span class="stamp amber">In Timelock</span>
+          <span class="my-vote">YOU VOTED · <b>FOR</b></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- HISTORICAL BAND -->
+  <div class="band-divider">
+    <span class="num">03</span>
+    <span class="name">Recently Executed · Historical</span>
+    <span class="meta">— 4 OF 91 SHOWN · SCHEDULE Σ FULL HISTORY 20 ROWS BELOW</span>
+  </div>
+  <section class="proposals-wrap" style="padding-top: 10px;">
+    <div class="proposal-bands">
+
+      <div class="proposal executed">
+        <div class="rev-block">
+          <span class="rev-label">Rev.</span>
+          <span class="rev-id"><span class="seq">R-</span>090</span>
+        </div>
+        <div class="change-block">
+          <span class="param-line">Pool 002 · Fee Curve · Base Rate</span>
+          <div class="change-row">
+            <span class="from">2.000 %</span>
+            <span class="arrow">⇢</span>
+            <span class="to">1.800 %</span>
+          </div>
+          <span class="meta">proposer <span style="color: var(--ink);">7nFq…K2mR</span> · executed 2026‑04‑27 · sig 3Hdj…tQ8x</span>
+        </div>
+        <div class="timeline-block">
+          <span class="l">Executed</span>
+          <span class="countdown" style="font-size: var(--t-fine); color: var(--ink);">slot 268,231,400</span>
+          <span class="slot-info">2026‑04‑27 11:24 UTC · effective immediately</span>
+        </div>
+        <div class="vote-block">
+          <span class="l">Final tally · 12.1M voted</span>
+          <div class="tally-row"><span>FOR</span><span class="bar"><i style="width: 74%;"></i></span><span>74.0%</span></div>
+          <div class="tally-row"><span>AGNST</span><span class="bar against"><i style="width: 19%;"></i></span><span>19.4%</span></div>
+          <div class="tally-row"><span>ABST</span><span class="bar abstain"><i style="width: 7%;"></i></span><span>6.6%</span></div>
+          <span class="quorum-line">quorum ✓ · 57.8% turnout</span>
+        </div>
+        <div class="stamp-block">
+          <span class="my-vote" style="position: relative; z-index: 2;">YOU VOTED · <b>FOR</b></span>
+        </div>
+      </div>
+
+      <div class="proposal rejected">
+        <div class="rev-block">
+          <span class="rev-label">Rev.</span>
+          <span class="rev-id"><span class="seq">R-</span>089</span>
+        </div>
+        <div class="change-block">
+          <span class="param-line">New Pool · USDT · Mainnet</span>
+          <div class="change-row">
+            <span class="from">—</span>
+            <span class="arrow">⇢</span>
+            <span class="to">CREATE POOL 003</span>
+          </div>
+          <span class="meta">proposer <span style="color: var(--ink);">kQz1…F9pT</span> · rejected 2026‑04‑22 · sig bN2x…r4Tk</span>
+        </div>
+        <div class="timeline-block">
+          <span class="l">Rejected</span>
+          <span class="countdown" style="font-size: var(--t-fine); color: var(--stamp);">slot 268,012,920</span>
+          <span class="slot-info">2026‑04‑22 09:11 UTC · failed quorum threshold</span>
+        </div>
+        <div class="vote-block">
+          <span class="l">Final tally · 11.4M voted</span>
+          <div class="tally-row"><span>FOR</span><span class="bar"><i style="width: 38%;"></i></span><span>38.0%</span></div>
+          <div class="tally-row"><span>AGNST</span><span class="bar against"><i style="width: 56%;"></i></span><span>56.4%</span></div>
+          <div class="tally-row"><span>ABST</span><span class="bar abstain"><i style="width: 6%;"></i></span><span>5.6%</span></div>
+          <span class="quorum-line">quorum ✓ · majority AGAINST</span>
+        </div>
+        <div class="stamp-block">
+          <span class="my-vote" style="position: relative; z-index: 2;">YOU VOTED · <b>AGAINST</b></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BOTTOM ROW: PARAM EXPLORER + HISTORY DIFF -->
+  <section class="param-row">
+    <div class="param-schedule">
+      <div class="sched-head">
+        <div class="l">
+          <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">D</span>
+          <span class="title">Parameter Schedule · Pool 001</span>
+          <span class="tag">— SPEC SHEET, READ-ONLY</span>
+        </div>
+        <span class="tag">CLICK ROW ⇢ PARAM HISTORY</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Parameter</th>
+            <th class="right">Current</th>
+            <th>Δ since</th>
+            <th>Pinned at</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P1</span></td>
+            <td><span class="param-name">fee curve · base rate</span></td>
+            <td class="right">1.800 %</td>
+            <td>R-090 · 6 d</td>
+            <td><span class="pin">slot 268,231,400</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P1</span></td>
+            <td><span class="param-name">fee curve · slope</span></td>
+            <td class="right">4.500 %</td>
+            <td>R-082 · 41 d</td>
+            <td><span class="pin">slot 264,891,200</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P1</span></td>
+            <td><span class="param-name">fee curve · kink util.</span></td>
+            <td class="right">80.00 %</td>
+            <td>genesis</td>
+            <td><span class="pin">slot 260,001,128</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P1</span></td>
+            <td><span class="param-name">max utilization</span></td>
+            <td class="right">90.00 %</td>
+            <td>R-076 · 78 d</td>
+            <td><span class="pin">slot 263,118,012</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P2</span></td>
+            <td><span class="param-name">reputation · min threshold</span></td>
+            <td class="right">0.620</td>
+            <td>R-068 · 124 d</td>
+            <td><span class="pin">slot 261,720,008</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P2</span></td>
+            <td><span class="param-name">reputation · decay rate</span></td>
+            <td class="right">0.0125 / d</td>
+            <td>R-068 · 124 d</td>
+            <td><span class="pin">slot 261,720,008</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P2</span></td>
+            <td><span class="param-name">advance · max principal</span></td>
+            <td class="right">100,000 USDC</td>
+            <td>R-052 · 224 d</td>
+            <td><span class="pin">slot 256,012,400</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P3</span></td>
+            <td><span class="param-name">timelock · tier 1</span></td>
+            <td class="right">168 h</td>
+            <td>genesis</td>
+            <td><span class="pin">slot 260,001,128</span></td>
+          </tr>
+          <tr>
+            <td><span class="stamp" style="font-family: var(--face-sans); font-size: 8.5px; padding: 2px 6px; border: 0.6px solid var(--ink); letter-spacing: 0.32em; text-transform: uppercase;">P3</span></td>
+            <td><span class="param-name">circuit breaker · default rate</span></td>
+            <td class="right">5.00 %</td>
+            <td>R-040 · 312 d</td>
+            <td><span class="pin">slot 252,108,800</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="history-card">
+      <div class="sched-head">
+        <div class="l">
+          <span class="section-mark" style="width: 18px; height: 18px; font-size: 9.5px;">E</span>
+          <span class="title">Drawing Revisions · Last 8 of 91</span>
+          <span class="tag">— FULL LEDGER ON CLUSTER</span>
+        </div>
+        <span class="tag">SCHEDULE Ε</span>
+      </div>
+      <div class="h-list">
+        <div class="h-row">
+          <span class="rev">R-090</span>
+          <span class="diff">pool 001 · base rate · <span class="from">2.000 %</span> ⇢ <b>1.800 %</b></span>
+          <span class="slot">slot 268,231,400</span>
+          <span class="stamp">Executed</span>
+        </div>
+        <div class="h-row">
+          <span class="rev">R-089</span>
+          <span class="diff">new pool 003 USDT · <b>create</b></span>
+          <span class="slot">slot 268,012,920</span>
+          <span class="stamp danger">Rejected</span>
+        </div>
+        <div class="h-row">
+          <span class="rev">R-088</span>
+          <span class="diff">oracle worker rotation · <span class="from">7nFq…K2mR</span> ⇢ <b>m8jY…3wXn</b></span>
+          <span class="slot">slot 267,912,008</span>
+          <span class="stamp">Executed</span>
+        </div>
+        <div class="h-row">
+          <span class="rev">R-087</span>
+          <span class="diff">treasury sweep · <b>250,000 USDC</b> to staker module</span>
+          <span class="slot">slot 267,801,402</span>
+          <span class="stamp">Executed</span>
+        </div>
+        <div class="h-row">
+          <span class="rev">R-086</span>
+          <span class="diff">circuit breaker · default rate · <span class="from">4.50 %</span> ⇢ <b>5.00 %</b></span>
+          <span class="slot">slot 267,602,128</span>
+          <span class="stamp">Executed</span>
+        </div>
+        <div class="h-row">
+          <span class="rev">R-085</span>
+          <span class="diff">reputation writer rotation · <span class="from">d6Vt…aB4r</span> ⇢ <b>vL3p…tH7q</b></span>
+          <span class="slot">slot 267,498,012</span>
+          <span class="stamp">Executed</span>
+        </div>
+        <div class="h-row">
+          <span class="rev">R-084</span>
+          <span class="diff">decrease emergency exit slippage · <span class="from">2.50 %</span> ⇢ <b>1.50 %</b></span>
+          <span class="slot">slot 267,302,001</span>
+          <span class="stamp">Executed</span>
+        </div>
+        <div class="h-row">
+          <span class="rev">R-083</span>
+          <span class="diff">disable plain-EOA agents · <b>squads-only enforced</b></span>
+          <span class="slot">slot 267,118,400</span>
+          <span class="stamp dim">Withdrawn</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="titleblock">
+      <div class="cell full"><div class="k">Project</div><div class="v">CREDMESH / SOLANA · DAO REVISIONS</div></div>
+      <div class="cell"><div class="k">Sheet</div><div class="v">03 / 12</div></div>
+      <div class="cell"><div class="k">Scale</div><div class="v">1 : 1</div></div>
+      <div class="cell"><div class="k">Drawn</div><div class="v">PROTOCOL</div></div>
+      <div class="cell"><div class="k">Checked</div><div class="v">DAO</div></div>
+      <div class="cell"><div class="k">Date</div><div class="v">2026‑05‑03</div></div>
+      <div class="cell"><div class="k">Rev.</div><div class="v">D</div></div>
+    </div>
+
+    <div class="marginalia">
+      <p class="note">
+        each proposal is a sheet revision —<br>
+        rev. id, scope, stamp.<br>
+        <span class="strike">discord polls</span> on-chain only.<br>
+        timelock is the page's setting time.
+      </p>
+    </div>
+
+    <div class="compass">
+      <svg viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="22" fill="none" stroke="#1B3A6F" stroke-width="0.6"/>
+        <line x1="24" y1="2" x2="24" y2="46" stroke="#1B3A6F" stroke-width="0.5" opacity="0.5"/>
+        <line x1="2" y1="24" x2="46" y2="24" stroke="#1B3A6F" stroke-width="0.5" opacity="0.5"/>
+        <polygon points="24,4 19,26 24,22 29,26" fill="#1B3A6F"/>
+        <polygon points="24,44 19,22 24,26 29,22" fill="none" stroke="#1B3A6F" stroke-width="0.6"/>
+        <text x="24" y="14" font-family="JetBrains Mono" font-size="6.5" text-anchor="middle" fill="#ECE3CD" font-weight="600">N</text>
+      </svg>
+      <div class="compass-label">North<br><b>Consensus</b></div>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>

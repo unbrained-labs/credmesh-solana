@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="#F2EDE0" stroke-linecap="square" stroke-linejoin="miter">
+  <!-- background sheet -->
+  <rect x="0" y="0" width="200" height="200" fill="#1B3A6F"/>
+
+  <!-- registration crosses, top-left and bottom-right -->
+  <g stroke="#F2EDE0" stroke-width="0.6" opacity="0.55">
+    <line x1="10" y1="14" x2="18" y2="14"/>
+    <line x1="14" y1="10" x2="14" y2="18"/>
+    <line x1="182" y1="186" x2="190" y2="186"/>
+    <line x1="186" y1="182" x2="186" y2="190"/>
+  </g>
+
+  <!-- vertical bolt axis, dashed (the shared key that meshes the three plates) -->
+  <line x1="100" y1="22" x2="100" y2="178" stroke="#F2EDE0" stroke-width="0.7" stroke-dasharray="3 2" opacity="0.85"/>
+
+  <!-- three plates, axonometric (60° / 30°), exploded along bolt axis -->
+  <!-- a "plate" is a parallelogram: top face of a thin slab -->
+  <!-- plate 1, top -->
+  <g stroke-width="1.4">
+    <polygon points="60,55 140,55 158,40 78,40" />
+    <line x1="60" y1="55" x2="60" y2="63"/>
+    <line x1="140" y1="55" x2="140" y2="63"/>
+    <line x1="158" y1="40" x2="158" y2="48"/>
+    <line x1="78" y1="40" x2="78" y2="48"/>
+    <polygon points="60,63 140,63 158,48 78,48" />
+    <!-- bolt hole -->
+    <ellipse cx="100" cy="51.5" rx="6" ry="2.4"/>
+  </g>
+
+  <!-- plate 2, middle -->
+  <g stroke-width="1.4">
+    <polygon points="60,108 140,108 158,93 78,93" />
+    <line x1="60" y1="108" x2="60" y2="116"/>
+    <line x1="140" y1="108" x2="140" y2="116"/>
+    <line x1="158" y1="93" x2="158" y2="101"/>
+    <line x1="78" y1="93" x2="78" y2="101"/>
+    <polygon points="60,116 140,116 158,101 78,101" />
+    <ellipse cx="100" cy="104.5" rx="6" ry="2.4"/>
+  </g>
+
+  <!-- plate 3, bottom -->
+  <g stroke-width="1.4">
+    <polygon points="60,161 140,161 158,146 78,146" />
+    <line x1="60" y1="161" x2="60" y2="169"/>
+    <line x1="140" y1="161" x2="140" y2="169"/>
+    <line x1="158" y1="146" x2="158" y2="154"/>
+    <line x1="78" y1="146" x2="78" y2="154"/>
+    <polygon points="60,169 140,169 158,154 78,154" />
+    <ellipse cx="100" cy="157.5" rx="6" ry="2.4"/>
+  </g>
+
+  <!-- dimension witness ticks on the right side, marking spacing -->
+  <g stroke="#F2EDE0" stroke-width="0.5" opacity="0.7">
+    <line x1="166" y1="44" x2="174" y2="44"/>
+    <line x1="166" y1="97" x2="174" y2="97"/>
+    <line x1="166" y1="150" x2="174" y2="150"/>
+    <line x1="170" y1="44" x2="170" y2="150"/>
+    <!-- arrowheads -->
+    <line x1="170" y1="44" x2="168" y2="48"/>
+    <line x1="170" y1="44" x2="172" y2="48"/>
+    <line x1="170" y1="150" x2="168" y2="146"/>
+    <line x1="170" y1="150" x2="172" y2="146"/>
+  </g>
+</svg>

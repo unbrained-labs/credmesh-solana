@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CredMesh — Annex B · Counterparty Dossier · Agent [A-1] 5tQp…m9wK</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* Identity strip — first thing a human watching one agent sees */
+  .id-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: var(--rule-thin) solid var(--ink);
+    border-bottom: var(--rule-thin) solid var(--ink);
+    margin-top: var(--s-2);
+  }
+  .id-strip .cell {
+    padding: var(--s-4) var(--s-5);
+    border-right: var(--rule-hair) solid var(--ink);
+  }
+  .id-strip .cell:last-child { border-right: 0; }
+  .id-strip .lab {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+    margin-bottom: 6px;
+  }
+  .id-strip .pk-full {
+    font-family: var(--font-mono);
+    font-size: var(--t-base);
+    font-weight: var(--w-bold);
+    line-height: 1.3;
+    word-break: break-all;
+  }
+  .id-strip .pk-full .ix { color: var(--red); margin-right: 6px; }
+  .id-strip .meta-line {
+    margin-top: 6px;
+    font-size: var(--t-fine);
+    color: var(--mute);
+    font-weight: var(--w-light);
+  }
+  .id-strip .meta-line a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Vitals — prominent numeric facts */
+  .vitals {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: var(--rule-thin) solid var(--ink);
+  }
+  .vitals .cell {
+    padding: var(--s-5);
+    border-right: var(--rule-hair) solid var(--ink);
+  }
+  .vitals .cell:last-child { border-right: 0; }
+  .vitals .lab {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+  .vitals .unit {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--mute);
+    margin: var(--s-1) 0 var(--s-3);
+  }
+  .vitals .val {
+    font-family: var(--font-sans);
+    font-weight: var(--w-black);
+    font-size: 38px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .vitals .val.mono { font-family: var(--font-mono); font-size: 22px; letter-spacing: 0; word-break: break-all; line-height: 1.1; }
+  .vitals .val .dec { color: var(--mute); font-weight: var(--w-roman); }
+  .vitals .delta {
+    margin-top: var(--s-3);
+    font-size: var(--t-rule);
+    color: var(--mute);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+  }
+  .vitals .delta b { color: var(--ink); font-weight: var(--w-bold); }
+  .vitals .delta .red { color: var(--red); }
+
+  /* dossier two-col layout */
+  .dossier-2 {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: var(--s-6);
+    margin-top: var(--s-2);
+  }
+
+  /* health register, compact */
+  table.bul.dense td, table.bul.dense th { padding: 6px 8px; font-size: var(--t-rule); }
+
+  .stamp-row {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    margin-top: var(--s-3);
+  }
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ============== MASTHEAD ============== -->
+  <header class="masthead">
+    <div class="swatch" aria-hidden="true"></div>
+    <div class="brand">
+      CREDMESH<span class="pipe">|</span><span class="sub">Statistical Bulletin · No. 1 / 2026</span>
+    </div>
+    <div class="stamp"><span class="lab">Issue</span>I · 2026</div>
+    <div class="stamp"><span class="lab">Annex</span>B</div>
+    <div class="stamp"><span class="lab">Compiled</span>03.05.2026 · 14:00 UTC</div>
+    <div class="stamp"><span class="lab">Page</span>02 / 05</div>
+  </header>
+
+  <div class="subhead">
+    <span>Vol. I, Issue 1 — Counterparty Dossier · Agent [A-1] · USDC pool · Solana mainnet-beta</span>
+    <em>Ed.: CredMesh · Frankfurt am Main · Compiled at slot 268 437 902 · Block 9F3a…71B2</em>
+  </div>
+  <div class="heavyrule"></div>
+
+  <!-- ============== ANNEX BAR ============== -->
+  <div class="annex-bar">
+    <div class="label">Bulletin Annexes</div>
+    <nav>
+      <a href="dashboard-frame.html">Annex A — Pool Aggregates</a>
+      <a href="agent-observatory.html" class="is-current">Annex B — Counterparty Dossier</a>
+      <a href="governance.html">Annex C — Resolutions Pending</a>
+      <a href="elements.html">Annex Z — Type Specimen</a>
+    </nav>
+    <div class="meta">Plate <b>B.0</b><br>Counterparty Dossier</div>
+  </div>
+
+  <!-- ============== ANNEX MASTHEAD ============== -->
+  <div class="annex-masthead">
+    <div class="annex-no">B<small>Annex</small></div>
+    <h1>Counterparty dossier
+      <small>This annex describes the on-chain conduct of one Squads-vault agent at the snapshot slot.
+        The bulletin reproduces every advance, receivable, reputation transition, and key-rotation flag.
+        Sealed entries are immutable; pending entries crystallise on the next finalised slot.</small>
+    </h1>
+    <div class="stamp">
+      <span style="color:var(--mute);">Compiled</span><br>
+      <b>03.05.2026 · 14:00 UTC</b><br>
+      <span class="mono">slot 268 437 902</span><br>
+      <span class="mono">block 9F3a…71B2</span>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- §1 IDENTITY STRIP -->
+  <!-- ============================================================ -->
+  <section class="section" id="s1">
+    <div class="section-head">
+      <div class="num">§1</div>
+      <h2>Identity register
+        <small>Squads vault · MPL Agent registry · Owner · Operator-since slot</small>
+      </h2>
+      <div class="meta">Table 1.A<br><b>On-chain</b></div>
+    </div>
+
+    <div class="id-strip">
+      <div class="cell">
+        <div class="lab">Squads vault<sup class="fn-ref">¹</sup></div>
+        <div class="pk-full"><span class="ix">[A-1]</span>5tQp7N3xBcK4mYz1WqL8Pf2vDhJ9sR6n4tBdLhCmVxYz3KqWm9wK</div>
+        <div class="meta-line">Truncated: <b style="color:var(--ink);">5tQp…m9wK</b> · <a href="#">copy</a> · <a href="#">explorer</a> · 3-of-5 multisig</div>
+      </div>
+      <div class="cell">
+        <div class="lab">MPL Agent registry<sup class="fn-ref">²</sup></div>
+        <div class="pk-full"><span class="ix">[R-1]</span>7Hn3jX9pK2mLcQrW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvK4r</div>
+        <div class="meta-line">Truncated: <b style="color:var(--ink);">7Hn3…vK4r</b> · <a href="#">copy</a> · DelegateExecutionV1 active</div>
+      </div>
+      <div class="cell">
+        <div class="lab">Owner (signing authority)<sup class="fn-ref">³</sup></div>
+        <div class="pk-full"><span class="ix">[O-A1]</span>aQ7wRtY8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiVK2p</div>
+        <div class="meta-line">Truncated: <b style="color:var(--ink);">aQ7w…VK2p</b> · <a href="#">copy</a> · Phantom wallet, hardware-backed</div>
+      </div>
+      <div class="cell">
+        <div class="lab">Operator since</div>
+        <div class="pk-full"><span class="ix">slot</span>267 102 884</div>
+        <div class="meta-line">12.04.2026 · 11:42 UTC · vault initialised in tx <code>2qF4P…hL6m</code></div>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <span class="fn"><sup>¹</sup>The Squads v4 vault is the canonical agent identity in v1. CredMesh cannot issue advances to a plain EOA — see DESIGN §1.4. Vault PDA is derived from <code>(b"squads_vault", create_key)</code>.</span>
+      <span class="fn"><sup>²</sup>MPL Agent registry record. The <code>DelegateExecutionV1</code> permission is what authorises the vault to call <code>request_advance</code>; revoking it severs the agent from the protocol within one slot.</span>
+      <span class="fn"><sup>³</sup>Owner is the human-controlled key that signed Squads vault creation. Distinct from the agent's session key. Not the fee-payer.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §2 VITALS -->
+  <!-- ============================================================ -->
+  <section class="section" id="s2">
+    <div class="section-head">
+      <div class="num">§2</div>
+      <h2>Vitals
+        <small>Outstanding debt · current reputation digest · advances active · last on-chain activity</small>
+      </h2>
+      <div class="meta">Table 2.A<br><b>On-chain</b></div>
+    </div>
+
+    <div class="vitals">
+      <div class="cell">
+        <div class="lab">Outstanding debt<sup class="fn-ref">¹</sup></div>
+        <div class="unit">USDC, principal + accrued fee</div>
+        <div class="val">42 318<span class="dec">.7841</span></div>
+        <div class="delta"><b>3</b> advances open · <b class="red">+ 5 720.00 USDC</b> 24 h</div>
+      </div>
+      <div class="cell">
+        <div class="lab">Reputation digest<sup class="fn-ref">²</sup></div>
+        <div class="unit">8004-shape rolling commit · 16 hex</div>
+        <div class="val mono">e8a1 c4f2 9b1d 70b4</div>
+        <div class="delta">▲ <b>2 transitions</b> · 30 d · score <b>992.4 / 1000</b></div>
+      </div>
+      <div class="cell">
+        <div class="lab">Advances active<sup class="fn-ref">³</sup></div>
+        <div class="unit">Open positions · post-issuance</div>
+        <div class="val">3<span class="dec"> / 142</span></div>
+        <div class="delta">142 settled · <b>0 defaults</b> · 1 cranking</div>
+      </div>
+      <div class="cell">
+        <div class="lab">Last activity<sup class="fn-ref">⁴</sup></div>
+        <div class="unit">Most recent finalised tx</div>
+        <div class="val">2 m 41 s</div>
+        <div class="delta">slot <b>268 437 902</b> · <span class="mono">3aPmQ…9rN1k</span></div>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <span class="fn"><sup>¹</sup>Sum of <code>advance.principal_outstanding</code> across all <code>Advance</code> PDAs where <code>state == Open</code> and <code>agent == [A-1]</code>. Fee accrues per the curve in Annex A §2.</span>
+      <span class="fn"><sup>²</sup>The reputation digest is a 64-bit rolling commit over the agent's last 90 d of repayment events. Score is derived from digest distance to the all-perfect commit; not on-chain canonical.</span>
+      <span class="fn"><sup>³</sup>Lifetime advances issued <code>= 142 + 3 = 145</code>. Default-rate <code>= 0 / 145 = 0.00 %</code>; well within the pool's 5 % circuit-breaker threshold.</span>
+      <span class="fn"><sup>⁴</sup>Computed as <code>(now − last_finalised_slot.timestamp)</code>. The slot stamp is canonical; the time-since is derived for human convenience.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §3 REPUTATION TIMELINE (step chart) -->
+  <!-- ============================================================ -->
+  <section class="section" id="s3">
+    <div class="section-head">
+      <div class="num">§3</div>
+      <h2>Reputation timeline, 30 day
+        <small>Discrete rolling-digest transitions — never interpolated. Each step is an on-chain commit at a known slot.</small>
+      </h2>
+      <div class="meta">Chart 3.A<br><b>On-chain · derived</b></div>
+    </div>
+
+    <div style="border-top:var(--rule-thin) solid var(--ink);padding-top:var(--s-3);">
+      <svg viewBox="0 0 1240 200" preserveAspectRatio="none" style="width:100%;height:200px;display:block;">
+        <rect x="40" y="8" width="1180" height="160" fill="none" stroke="#0A0A0A" stroke-width="0.6"/>
+        <g stroke="#0A0A0A" stroke-width="0.3" stroke-dasharray="2 3" opacity="0.55">
+          <line x1="40" y1="40"  x2="1220" y2="40"/>
+          <line x1="40" y1="72"  x2="1220" y2="72"/>
+          <line x1="40" y1="104" x2="1220" y2="104"/>
+          <line x1="40" y1="136" x2="1220" y2="136"/>
+        </g>
+        <g font-family="'Helvetica Neue','Inter',sans-serif" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+          <text x="34" y="43" text-anchor="end">1000</text>
+          <text x="34" y="75" text-anchor="end">980</text>
+          <text x="34" y="107" text-anchor="end">960</text>
+          <text x="34" y="139" text-anchor="end">940</text>
+          <text x="34" y="171" text-anchor="end">920</text>
+        </g>
+        <g font-family="'Helvetica Neue','Inter',sans-serif" font-size="9" fill="#6B6B6B" font-variant-numeric="tabular-nums">
+          <text x="40"   y="186" text-anchor="middle">04.04</text>
+          <text x="236"  y="186" text-anchor="middle">10.04</text>
+          <text x="432"  y="186" text-anchor="middle">16.04</text>
+          <text x="628"  y="186" text-anchor="middle">22.04</text>
+          <text x="824"  y="186" text-anchor="middle">28.04</text>
+          <text x="1020" y="186" text-anchor="middle">02.05</text>
+          <text x="1220" y="186" text-anchor="middle">03.05</text>
+        </g>
+        <!-- step path: 947 -> 962 -> 968 -> 974 -> 981 -> 985 -> 992.4 -->
+        <polyline fill="none" stroke="#0A0A0A" stroke-width="1.4"
+          points="40,124 250,124 250,108 410,108 410,99 580,99 580,89 740,89 740,76 880,76 880,68 1080,68 1080,52 1220,52"/>
+        <g fill="#0A0A0A">
+          <circle cx="250"  cy="108" r="2.5"/>
+          <circle cx="410"  cy="99"  r="2.5"/>
+          <circle cx="580"  cy="89"  r="2.5"/>
+          <circle cx="740"  cy="76"  r="2.5"/>
+          <circle cx="880"  cy="68"  r="2.5"/>
+          <circle cx="1080" cy="52"  r="2.5"/>
+        </g>
+        <!-- annotation: last step in red -->
+        <line x1="1080" y1="52" x2="1220" y2="52" stroke="#C8102E" stroke-width="1.6"/>
+        <rect x="1216.5" y="48.5" width="7" height="7" fill="#C8102E"/>
+        <text x="1214" y="40" text-anchor="end" font-family="'Helvetica Neue','Inter',sans-serif" font-size="11" font-weight="700" fill="#C8102E">992.4</text>
+
+        <!-- transition labels under each step -->
+        <g font-family="'Helvetica Neue','Inter',sans-serif" font-size="8" fill="#6B6B6B">
+          <text x="250"  y="186" text-anchor="middle">+ 15</text>
+          <text x="410"  y="186" text-anchor="middle">+ 6</text>
+          <text x="580"  y="186" text-anchor="middle">+ 10</text>
+          <text x="740"  y="186" text-anchor="middle">+ 13</text>
+          <text x="880"  y="186" text-anchor="middle">+ 8</text>
+          <text x="1080" y="186" text-anchor="middle">+ 16</text>
+        </g>
+      </svg>
+      <p style="font-size:var(--t-fine);font-weight:var(--w-light);font-style:italic;color:var(--ink);padding-top:var(--s-2);border-top:var(--rule-hair) solid var(--ink);margin:var(--s-3) 0 0;">
+        <strong>Chart 3.A.</strong>&nbsp; Reputation digest, discrete-step over 30 days.
+        Six transitions; +68 cumulative. Each tick is a finalised <code>commit_repayment</code> at the slot shown in §4.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §4 RECENT ADVANCES (10 rows) -->
+  <!-- ============================================================ -->
+  <section class="section" id="s4">
+    <div class="section-head">
+      <div class="num">§4</div>
+      <h2>Recent advances
+        <small>Last 10 issued · sorted descending by slot opened · this counterparty only</small>
+      </h2>
+      <div class="meta">Table 4.A<br><b>On-chain</b></div>
+    </div>
+
+    <table class="bul" aria-label="Recent advances for [A-1]">
+      <thead>
+        <tr>
+          <th class="ix">Nº</th>
+          <th>Advance id</th>
+          <th>Pool</th>
+          <th class="num">Principal</th>
+          <th class="num">Fee accrued</th>
+          <th>Recv. status</th>
+          <th class="num">Slot opened</th>
+          <th class="num">Slot settled</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ix">10</td>
+          <td class="mono">adv_05122</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">8 400.0000</td>
+          <td class="num">12.6000</td>
+          <td><span class="mk ok"></span>Consumed</td>
+          <td class="num">268 437 894</td>
+          <td class="num">268 437 902</td>
+        </tr>
+        <tr>
+          <td class="ix">09</td>
+          <td class="mono">adv_05094</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">5 600.0000</td>
+          <td class="num">8.4000</td>
+          <td><span class="mk ok"></span>Consumed</td>
+          <td class="num">268 425 605</td>
+          <td class="num">268 425 614</td>
+        </tr>
+        <tr>
+          <td class="ix">08</td>
+          <td class="mono">adv_05083</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">12 000.0000</td>
+          <td class="num">18.0000</td>
+          <td><span class="mk pend"></span>Pending <span class="pill" style="margin-left:6px;">+12 slots</span></td>
+          <td class="num">268 421 117</td>
+          <td class="num">— open</td>
+        </tr>
+        <tr>
+          <td class="ix">07</td>
+          <td class="mono">adv_05078</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">14 318.7841</td>
+          <td class="num">21.4781</td>
+          <td><span class="mk pend"></span>Cranking <span class="pill" style="margin-left:6px;">+47 slots</span></td>
+          <td class="num">268 418 992</td>
+          <td class="num">— open</td>
+        </tr>
+        <tr>
+          <td class="ix">06</td>
+          <td class="mono">adv_05071</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">16 000.0000</td>
+          <td class="num">24.0000</td>
+          <td><span class="mk pend"></span>Open <span class="pill" style="margin-left:6px;">— issued</span></td>
+          <td class="num">268 415 230</td>
+          <td class="num">— open</td>
+        </tr>
+        <tr>
+          <td class="ix">05</td>
+          <td class="mono">adv_05064</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">3 200.0000</td>
+          <td class="num">4.8000</td>
+          <td><span class="mk ok"></span>Consumed</td>
+          <td class="num">268 412 077</td>
+          <td class="num">268 412 094</td>
+        </tr>
+        <tr>
+          <td class="ix">04</td>
+          <td class="mono">adv_05053</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">7 250.0000</td>
+          <td class="num">10.8750</td>
+          <td><span class="mk ok"></span>Consumed</td>
+          <td class="num">268 408 199</td>
+          <td class="num">268 408 211</td>
+        </tr>
+        <tr>
+          <td class="ix">03</td>
+          <td class="mono">adv_05044</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">2 100.0000</td>
+          <td class="num">3.1500</td>
+          <td><span class="mk ok"></span>Consumed</td>
+          <td class="num">268 405 002</td>
+          <td class="num">268 405 008</td>
+        </tr>
+        <tr>
+          <td class="ix">02</td>
+          <td class="mono">adv_05031</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">9 800.0000</td>
+          <td class="num">14.7000</td>
+          <td><span class="mk ok"></span>Consumed</td>
+          <td class="num">268 401 884</td>
+          <td class="num">268 401 901</td>
+        </tr>
+        <tr>
+          <td class="ix">01</td>
+          <td class="mono">adv_05022</td>
+          <td><span class="pk"><span class="role">[P-1]</span><span class="full mono">cREd…sH11</span></span></td>
+          <td class="num">4 500.0000</td>
+          <td class="num">6.7500</td>
+          <td><span class="mk ok"></span>Consumed</td>
+          <td class="num">268 397 558</td>
+          <td class="num">268 397 561</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+      <span class="fn">Source: <code>credmesh-escrow</code> advance state PDAs filtered by <code>agent == [A-1]</code>. Status mapping: <code>Consumed = receivable closed, advance settled</code>; <code>Cranking = receivable consumed, settle awaits cranker</code>; <code>Open = no receivable yet bound</code>. Fee accrued is the issuance-time fee per Annex A §2.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §5 RECEIVABLE INFLOW LOG (10 rows) -->
+  <!-- ============================================================ -->
+  <section class="section" id="s5">
+    <div class="section-head">
+      <div class="num">§5</div>
+      <h2>Receivable inflow log
+        <small>Last 10 publish_receivable events · ed25519-signed · grep-by-eye design</small>
+      </h2>
+      <div class="meta">Table 5.A<br><b>On-chain</b></div>
+    </div>
+
+    <table class="bul" aria-label="Receivable inflow log for [A-1]">
+      <thead>
+        <tr>
+          <th class="ix">Nº</th>
+          <th>Recv. id</th>
+          <th>Source kind</th>
+          <th>Payer pubkey</th>
+          <th>ed25519 sig</th>
+          <th class="num">Amount</th>
+          <th class="num">Slot</th>
+          <th>Consumed?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ix">10</td>
+          <td class="mono">rcv_8841</td>
+          <td>invoice · stripe-mirror</td>
+          <td><span class="pk"><span class="role">[P-A]</span><span class="full mono">strP…aymR</span></span></td>
+          <td class="mono">5LkX9c…vPq2N</td>
+          <td class="num">8 412.6000</td>
+          <td class="num">268 437 891</td>
+          <td><span class="mk ok"></span>Yes · adv_05122</td>
+        </tr>
+        <tr>
+          <td class="ix">09</td>
+          <td class="mono">rcv_8772</td>
+          <td>invoice · stripe-mirror</td>
+          <td><span class="pk"><span class="role">[P-A]</span><span class="full mono">strP…aymR</span></span></td>
+          <td class="mono">7tQzM4…rW8kJ</td>
+          <td class="num">5 608.4000</td>
+          <td class="num">268 425 600</td>
+          <td><span class="mk ok"></span>Yes · adv_05094</td>
+        </tr>
+        <tr>
+          <td class="ix">08</td>
+          <td class="mono">rcv_8754</td>
+          <td>direct usdc · gov</td>
+          <td><span class="pk"><span class="role">[P-B]</span><span class="full mono">govT…r1xY</span></span></td>
+          <td class="mono">2bGqV9…hJ4mN</td>
+          <td class="num">3 204.8000</td>
+          <td class="num">268 412 070</td>
+          <td><span class="mk ok"></span>Yes · adv_05064</td>
+        </tr>
+        <tr>
+          <td class="ix">07</td>
+          <td class="mono">rcv_8744</td>
+          <td>invoice · enterprise</td>
+          <td><span class="pk"><span class="role">[P-C]</span><span class="full mono">acmE…2pLk</span></span></td>
+          <td class="mono">9hPrA…cZqGt</td>
+          <td class="num">7 260.8750</td>
+          <td class="num">268 408 192</td>
+          <td><span class="mk ok"></span>Yes · adv_05053</td>
+        </tr>
+        <tr>
+          <td class="ix">06</td>
+          <td class="mono">rcv_8731</td>
+          <td>invoice · stripe-mirror</td>
+          <td><span class="pk"><span class="role">[P-A]</span><span class="full mono">strP…aymR</span></span></td>
+          <td class="mono">3rBnT5…kL2qP</td>
+          <td class="num">2 103.1500</td>
+          <td class="num">268 404 998</td>
+          <td><span class="mk ok"></span>Yes · adv_05044</td>
+        </tr>
+        <tr>
+          <td class="ix">05</td>
+          <td class="mono">rcv_8718</td>
+          <td>invoice · marketplace</td>
+          <td><span class="pk"><span class="role">[P-D]</span><span class="full mono">mktP…3vNh</span></span></td>
+          <td class="mono">8sR6N…4tBdL</td>
+          <td class="num">9 814.7000</td>
+          <td class="num">268 401 880</td>
+          <td><span class="mk ok"></span>Yes · adv_05031</td>
+        </tr>
+        <tr>
+          <td class="ix">04</td>
+          <td class="mono">rcv_8702</td>
+          <td>invoice · stripe-mirror</td>
+          <td><span class="pk"><span class="role">[P-A]</span><span class="full mono">strP…aymR</span></span></td>
+          <td class="mono">6pK2L…cQrW4</td>
+          <td class="num">4 506.7500</td>
+          <td class="num">268 397 552</td>
+          <td><span class="mk ok"></span>Yes · adv_05022</td>
+        </tr>
+        <tr>
+          <td class="ix">03</td>
+          <td class="mono">rcv_8688</td>
+          <td>direct usdc · gov</td>
+          <td><span class="pk"><span class="role">[P-B]</span><span class="full mono">govT…r1xY</span></span></td>
+          <td class="mono">4tFvB…8sRzD</td>
+          <td class="num">1 207.0000</td>
+          <td class="num">268 392 110</td>
+          <td><span class="mk defer"></span>No · awaiting</td>
+        </tr>
+        <tr>
+          <td class="ix">02</td>
+          <td class="mono">rcv_8672</td>
+          <td>invoice · enterprise</td>
+          <td><span class="pk"><span class="role">[P-C]</span><span class="full mono">acmE…2pLk</span></span></td>
+          <td class="mono">1vYxK…6gN3j</td>
+          <td class="num">12 000.0000</td>
+          <td class="num">268 387 904</td>
+          <td><span class="mk pend"></span>Pending · adv_05083</td>
+        </tr>
+        <tr>
+          <td class="ix">01</td>
+          <td class="mono">rcv_8651</td>
+          <td>invoice · stripe-mirror</td>
+          <td><span class="pk"><span class="role">[P-A]</span><span class="full mono">strP…aymR</span></span></td>
+          <td class="mono">9pK2m…LcQrW</td>
+          <td class="num">14 318.7841</td>
+          <td class="num">268 384 211</td>
+          <td><span class="mk pend"></span>Pending · adv_05078</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+      <span class="fn">Source: <code>publish_receivable</code> ix on the <code>credmesh-receivable-oracle</code> programme. Each row has a corresponding ed25519-signed payload submitted by the oracle worker [O-1]. Consumed status is derived from the <code>ConsumedPayment</code> PDA — permanent, never closed (AUDIT P0-5).</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §6 HEALTH PANEL + §7 ACTION PANEL -->
+  <!-- ============================================================ -->
+  <section class="section dossier-2" style="padding-top:var(--s-7);">
+
+    <div>
+      <div class="section-head">
+        <div class="num">§6</div>
+        <h2>Health register
+          <small>Oracle freshness · key rotation · idle USDC sweepable · circuit breakers</small>
+        </h2>
+        <div class="meta">Table 6.A</div>
+      </div>
+
+      <table class="bul dense" aria-label="Health register">
+        <thead>
+          <tr><th class="ix">Nº</th><th>Indicator</th><th class="num">Value</th><th>State</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ix">1</td>
+            <td>Oracle staleness · receivables for [A-1]</td>
+            <td class="num">2 slots</td>
+            <td><span class="mk ok"></span>Within tolerance · ≤ 96 slots</td>
+          </tr>
+          <tr>
+            <td class="ix">2</td>
+            <td>Owner key rotation due</td>
+            <td class="num">42 d</td>
+            <td><span class="mk ok"></span>Scheduled 14.06.2026</td>
+          </tr>
+          <tr>
+            <td class="ix">3</td>
+            <td>Squads vault signer set drift</td>
+            <td class="num">0 changes</td>
+            <td><span class="mk ok"></span>3-of-5 stable, 30 d</td>
+          </tr>
+          <tr>
+            <td class="ix">4</td>
+            <td>Idle USDC in vault · sweepable</td>
+            <td class="num">1 244.8200</td>
+            <td><span class="mk defer"></span>Below sweep threshold (10 000)</td>
+          </tr>
+          <tr>
+            <td class="ix">5</td>
+            <td>Circuit breakers tripped against [A-1]</td>
+            <td class="num">0</td>
+            <td><span class="mk ok"></span>None · default-rate 0.00 %</td>
+          </tr>
+          <tr>
+            <td class="ix">6</td>
+            <td>MPL DelegateExecutionV1 grant</td>
+            <td class="num">active</td>
+            <td><span class="mk ok"></span>Granted 12.04.2026 · slot 267 102 884</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+        <span class="fn">Health checks are derived; the canonical record is the on-chain account state. Sweep threshold is a server-side value (10 000 USDC) — not on-chain. Circuit-breaker is a pool-level flag, not per-counterparty.</span>
+      </div>
+    </div>
+
+    <!-- §7 -->
+    <div>
+      <div class="section-head">
+        <div class="num">§7</div>
+        <h2>Counterparty actions
+          <small>Manual repay · Withdraw idle USDC · Emergency exit. Last two are destructive — engrossed.</small>
+        </h2>
+        <div class="meta">Form 7.A · Form 7.B · Form 7.C</div>
+      </div>
+
+      <!-- 7.A — primary -->
+      <div class="action-panel" style="margin-bottom:var(--s-4);">
+        <div>
+          <div class="head">Form 7.A · Manual repay (non-destructive)</div>
+          <h3>Repay outstanding · 42 318.7841 USDC</h3>
+          <p>Closes <b>3 open advances</b> at the prevailing fee curve. Posts a <code>repay_manual</code> ix; finalises in ≤ 32 slots.</p>
+        </div>
+        <div style="display:flex;gap:var(--s-2);align-self:end;">
+          <button class="btn ghost">Review</button>
+          <button class="btn primary">Sign &amp; submit</button>
+        </div>
+      </div>
+
+      <!-- 7.B — destructive -->
+      <div class="action-panel is-destructive" style="margin-bottom:var(--s-4);">
+        <div>
+          <div class="head">Form 7.B · Withdraw idle USDC</div>
+          <h3>Sweep 1 244.8200 USDC to owner</h3>
+          <p>Routes the agent's idle USDC to the owner key [O-A1]. Below sweep threshold; requires explicit engrossment.<sup class="fn-ref red">¹</sup></p>
+        </div>
+        <div class="stamp-row">
+          <span class="stamp-engrossed">Engrossed</span>
+          <button class="btn destructive">Sign &amp; engross</button>
+        </div>
+        <div class="footrule">
+          ¹ Sweep posts an irrevocable transaction; recipient is fixed to the registered owner key. Cannot be redirected by amendment.
+        </div>
+      </div>
+
+      <!-- 7.C — destructive -->
+      <div class="action-panel is-destructive">
+        <div>
+          <div class="head">Form 7.C · Request emergency exit</div>
+          <h3>Crystallise &amp; exit · 42 318.7841 USDC</h3>
+          <p>Forces close of all open advances at last-known fee, freezes the agent's <code>request_advance</code> capability for 36 h, and engrosses a withdrawal of remaining vault USDC. Counter-signature by [O-A1] required.<sup class="fn-ref red">¹</sup></p>
+        </div>
+        <div class="stamp-row">
+          <span class="stamp-engrossed">Engrossed · 36 h</span>
+          <button class="btn destructive">Sign &amp; engross</button>
+        </div>
+        <div class="footrule">
+          ¹ Emergency exit posts a transaction to the canonical ledger and cannot be reverted.
+            The counterparty's <code>DelegateExecutionV1</code> grant is revoked at finalisation.
+            Re-onboarding requires a new vault initialisation.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== REGISTRY INDEX ============== -->
+  <div class="registry">
+    <h4>Registry of pubkeys cited in this annex</h4>
+    <table>
+      <tr><td class="ix">[A-1]</td><td class="role">Agent · Squads vault</td><td class="full">5tQp7N3xBcK4mYz1WqL8Pf2vDhJ9sR6n4tBdLhCmVxYz3KqWm9wK</td></tr>
+      <tr><td class="ix">[R-1]</td><td class="role">MPL Agent registry record</td><td class="full">7Hn3jX9pK2mLcQrW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvK4r</td></tr>
+      <tr><td class="ix">[O-A1]</td><td class="role">Owner · signing authority</td><td class="full">aQ7wRtY8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiVK2p</td></tr>
+      <tr><td class="ix">[P-1]</td><td class="role">Pool · USDC mainnet-beta</td><td class="full">cREdM3hPxKqW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvKiJsH11</td></tr>
+      <tr><td class="ix">[O-1]</td><td class="role">Receivable oracle worker</td><td class="full">orac1KvBxN3jPm9HrAcZqLyTvKiJsH11pK2mLcQrW4tFvB8sR2zR</td></tr>
+      <tr><td class="ix">[F-1]</td><td class="role">Fee-payer · server authority</td><td class="full">FeeP1yer8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiK7p9</td></tr>
+      <tr><td class="ix">[P-A]</td><td class="role">Receivable payer · stripe-mirror gateway</td><td class="full">strPaymR8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiaymR</td></tr>
+      <tr><td class="ix">[P-B]</td><td class="role">Receivable payer · governance treasury</td><td class="full">govT1easuryR8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtr1xY</td></tr>
+      <tr><td class="ix">[P-C]</td><td class="role">Receivable payer · enterprise account</td><td class="full">acmEnter9priseR8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAc2pLk</td></tr>
+      <tr><td class="ix">[P-D]</td><td class="role">Receivable payer · marketplace settlement</td><td class="full">mktPlace3vNhR8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAc3vNh</td></tr>
+    </table>
+  </div>
+
+  <!-- ============== COLOPHON ============== -->
+  <footer class="colophon">
+    <div class="left">
+      Cred&shy;Mesh — Programmable&nbsp;credit&nbsp;registry · Annex&nbsp;B · Counterparty&nbsp;Dossier
+      <p class="blurb">A counterparty dossier reproduces the on-chain conduct of a single Squads-vault agent. Every advance, receivable, reputation transition, and key-rotation flag is sourced from the canonical ledger at the snapshot slot. Sealed entries are immutable; pending entries crystallise on the next finalised slot.</p>
+    </div>
+    <div class="right">
+      <span style="color:var(--mute);">Compiled</span><br>
+      <b>03.05.2026 · 14:00:00 UTC</b><br>
+      <span class="mono">slot 268 437 902</span><br>
+      <span class="mono">block 9F3a…71B2</span><br>
+      <span class="mono">programme cREdM…sH11</span>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CredMesh — Annex C · Resolutions Pending · Statistical Bulletin No. 1 / 2026</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* Resolution card: a numbered, dated, gazetted item.
+     Three states: Active vote → Pending timelock → Engrossed (executed).      */
+
+  .resolution {
+    border-top: var(--rule-thin) solid var(--ink);
+    padding: var(--s-4) 0;
+  }
+  .resolution:last-child { border-bottom: var(--rule-thin) solid var(--ink); }
+
+  .resolution-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--s-5);
+    align-items: baseline;
+    margin-bottom: var(--s-3);
+  }
+  .resolution-head .res-no {
+    font-size: var(--t-display-m);
+    font-weight: var(--w-black);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+  .resolution-head .res-no small {
+    display: block;
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+    font-weight: var(--w-roman);
+    margin-top: 4px;
+  }
+  .resolution-head h3 {
+    margin: 0;
+    font-size: var(--t-head);
+    font-weight: var(--w-bold);
+    letter-spacing: var(--track-head);
+  }
+  .resolution-head h3 small {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--mute);
+    font-weight: var(--w-roman);
+  }
+
+  .resolution-body {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    gap: var(--s-5);
+    align-items: start;
+    border-top: var(--rule-hair) solid var(--ink);
+    padding-top: var(--s-3);
+  }
+
+  .res-section .lab {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+    margin: 0 0 var(--s-2);
+  }
+
+  /* Param old → new — the marquee data on a resolution card */
+  .param-diff {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    gap: var(--s-4);
+    align-items: baseline;
+    font-size: var(--t-rule);
+  }
+  .param-diff .from {
+    font-family: var(--font-mono);
+    font-size: var(--t-display-s);
+    font-weight: var(--w-bold);
+    color: var(--mute);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  .param-diff .to {
+    font-family: var(--font-mono);
+    font-size: var(--t-display-s);
+    font-weight: var(--w-bold);
+    color: var(--ink);
+  }
+  .param-diff .arrow { color: var(--red); font-weight: var(--w-bold); font-size: var(--t-head); }
+  .param-name {
+    font-family: var(--font-mono);
+    font-size: var(--t-rule);
+    color: var(--mute);
+    margin-top: var(--s-2);
+  }
+
+  /* Vote tally bar */
+  .tally {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    font-size: var(--t-rule);
+  }
+  .tally-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 100px;
+    gap: var(--s-3);
+    align-items: center;
+  }
+  .tally-row .lab {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--mute);
+    margin: 0;
+  }
+  .tally-bar { background: var(--paper-2); height: 14px; border: var(--rule-hair) solid var(--ink); position: relative; }
+  .tally-bar > span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); }
+  .tally-bar.against > span { background: var(--red); }
+  .tally-bar.abstain > span { background: var(--mute); }
+  .tally-row .v { font-family: var(--font-mono); font-size: var(--t-rule); text-align: right; font-weight: var(--w-bold); }
+
+  /* Timelock countdown */
+  .timelock {
+    border: var(--rule-thin) solid var(--ink);
+    padding: var(--s-3) var(--s-4);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-3);
+    align-items: end;
+  }
+  .timelock .lab {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+  .timelock .countdown {
+    font-family: var(--font-mono);
+    font-size: var(--t-display-s);
+    font-weight: var(--w-bold);
+    color: var(--ink);
+    line-height: 1;
+  }
+  .timelock .countdown .red { color: var(--red); }
+  .timelock .at {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-caps);
+    text-transform: uppercase;
+    color: var(--mute);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .timelock .at b { color: var(--ink); }
+
+  .res-meta {
+    font-size: var(--t-fine);
+    font-weight: var(--w-light);
+    color: var(--mute);
+    line-height: 1.6;
+  }
+  .res-meta b { color: var(--ink); font-weight: var(--w-bold); }
+  .res-meta code { font-family: var(--font-mono); font-size: var(--t-rule); color: var(--ink); }
+
+  /* my voting power card — bigger, bordered */
+  .vp-card {
+    border: var(--rule-heavy) solid var(--ink);
+    padding: var(--s-5);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-5);
+  }
+
+  .vp-cell .lab {
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    color: var(--mute);
+    margin-bottom: 6px;
+  }
+  .vp-cell .val {
+    font-weight: var(--w-black);
+    font-size: var(--t-display-m);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .vp-cell .val .dec { color: var(--mute); font-weight: var(--w-roman); }
+  .vp-cell .meta {
+    margin-top: var(--s-2);
+    font-size: var(--t-rule);
+    color: var(--mute);
+  }
+  .vp-cell .meta b { color: var(--ink); font-weight: var(--w-bold); }
+
+  /* Status pills, inline */
+  .status-tag {
+    display: inline-block;
+    margin-left: var(--s-2);
+    padding: 2px 7px;
+    font-size: var(--t-foot);
+    letter-spacing: var(--track-microcaps);
+    text-transform: uppercase;
+    font-weight: var(--w-bold);
+    border: var(--rule-thin) solid var(--ink);
+  }
+  .status-tag.active   { background: var(--ink); color: var(--paper); }
+  .status-tag.timelock { background: var(--red); color: #fff; border-color: var(--red); }
+  .status-tag.engrossed { background: var(--paper); color: var(--ink); }
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ============== MASTHEAD ============== -->
+  <header class="masthead">
+    <div class="swatch" aria-hidden="true"></div>
+    <div class="brand">
+      CREDMESH<span class="pipe">|</span><span class="sub">Statistical Bulletin · No. 1 / 2026</span>
+    </div>
+    <div class="stamp"><span class="lab">Issue</span>I · 2026</div>
+    <div class="stamp"><span class="lab">Annex</span>C</div>
+    <div class="stamp"><span class="lab">Compiled</span>03.05.2026 · 14:00 UTC</div>
+    <div class="stamp"><span class="lab">Page</span>03 / 05</div>
+  </header>
+
+  <div class="subhead">
+    <span>Vol. I, Issue 1 — Resolutions Pending · Parameter explorer · USDC pool · Solana mainnet-beta</span>
+    <em>Ed.: CredMesh · Frankfurt am Main · Compiled at slot 268 437 902 · Block 9F3a…71B2</em>
+  </div>
+  <div class="heavyrule"></div>
+
+  <div class="annex-bar">
+    <div class="label">Bulletin Annexes</div>
+    <nav>
+      <a href="dashboard-frame.html">Annex A — Pool Aggregates</a>
+      <a href="agent-observatory.html">Annex B — Counterparty Dossier</a>
+      <a href="governance.html" class="is-current">Annex C — Resolutions Pending</a>
+      <a href="elements.html">Annex Z — Type Specimen</a>
+    </nav>
+    <div class="meta">Plate <b>C.0</b><br>Governance</div>
+  </div>
+
+  <!-- ============== ANNEX MASTHEAD ============== -->
+  <div class="annex-masthead">
+    <div class="annex-no">C<small>Annex</small></div>
+    <h1>Resolutions pending
+      <small>This annex enumerates outstanding governance resolutions, the on-chain parameters they would amend,
+        the timelock window between approval and execution, and the registered voting power held by the bearer.
+        A resolution becomes engrossed only when its timelock has elapsed and the executing instruction has been
+        signed by the multisig threshold.</small>
+    </h1>
+    <div class="stamp">
+      <span style="color:var(--mute);">Compiled</span><br>
+      <b>03.05.2026 · 14:00 UTC</b><br>
+      <span class="mono">slot 268 437 902</span><br>
+      <span class="mono">block 9F3a…71B2</span>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- §1 MY VOTING POWER -->
+  <!-- ============================================================ -->
+  <section class="section" id="s1">
+    <div class="section-head">
+      <div class="num">§1</div>
+      <h2>Voting power · bearer
+        <small>Pool shares × time-weight · derived from LP position [O-A1]</small>
+      </h2>
+      <div class="meta">Form 1.A<br><b>Derived</b></div>
+    </div>
+
+    <div class="vp-card">
+      <div class="vp-cell">
+        <div class="lab">Voting power<sup class="fn-ref">¹</sup></div>
+        <div class="val">12 482<span class="dec">.4811</span></div>
+        <div class="meta">
+          <b>0.297 %</b> of total · rank <b>32 / 188</b><br>
+          Computed from <b>12 200 SHARE</b> × time-weight <b>1.0231</b>.
+        </div>
+      </div>
+      <div class="vp-cell">
+        <div class="lab">Active engagement</div>
+        <div class="val">2 / 4</div>
+        <div class="meta">
+          Voted on <b>R-2026-014 (For)</b> and <b>R-2026-013 (Against)</b>.<br>
+          Outstanding: <b>R-2026-015</b>, <b>R-2026-016</b> — vote window closes in 18 h 22 m.
+        </div>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <span class="fn"><sup>¹</sup>Voting power = <code>shares × min(1.0, age_in_pool / 30 days)</code>. New shares accrue weight linearly over the first 30 days. Rationale: prevents flash-LP governance attacks. See DESIGN §7.2.</span>
+      <span class="fn"><sup>²</sup>Engagement is informational. Quorum is calculated against total time-weighted shares, not against engaged voters.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §2 ACTIVE RESOLUTIONS -->
+  <!-- ============================================================ -->
+  <section class="section" id="s2">
+    <div class="section-head">
+      <div class="num">§2</div>
+      <h2>Active resolutions
+        <small>Vote window open · resolution will move to timelock at quorum</small>
+      </h2>
+      <div class="meta">Schedule 2.A<br><b>On-chain</b></div>
+    </div>
+
+    <!-- R-2026-016 -->
+    <article class="resolution">
+      <div class="resolution-head">
+        <div class="res-no">R-2026-016<small>Resolution №</small></div>
+        <h3>Lower base fee from 0.50 % → 0.40 %
+          <small>credmesh-escrow · Pool [P-1] · piecewise-linear curve</small>
+        </h3>
+        <div>
+          <span class="status-tag active">Active vote</span>
+        </div>
+      </div>
+
+      <div class="resolution-body">
+        <!-- LEFT: param diff + meta -->
+        <div class="res-section">
+          <p class="lab">Parameter amendment</p>
+          <div class="param-diff">
+            <span class="from">0.5000 %</span>
+            <span class="arrow">→</span>
+            <span class="to">0.4000 %</span>
+          </div>
+          <div class="param-name">pool.fee_curve.base_fee_bps</div>
+
+          <p class="res-meta" style="margin-top:var(--s-3);">
+            <b>Proposer:</b> [V-12] <code>4tQp…J2zN</code> &nbsp;·&nbsp;
+            <b>Submitted:</b> 02.05.2026 · 09:14 UTC &nbsp;·&nbsp;
+            <b>Slot:</b> <code>268 384 110</code><br>
+            Rationale: utilisation is well below optimum (67.34 %); reducing base fee is expected to increase agent demand without inverting the slope-below-optimum regime.
+          </p>
+        </div>
+
+        <!-- MIDDLE: tally -->
+        <div class="res-section">
+          <p class="lab">Vote tally · 4 204 219 SHARE outstanding</p>
+          <div class="tally">
+            <div class="tally-row">
+              <span class="lab">For</span>
+              <span class="tally-bar"><span style="width:62.4%;"></span></span>
+              <span class="v">62.40 %</span>
+            </div>
+            <div class="tally-row">
+              <span class="lab">Against</span>
+              <span class="tally-bar against"><span style="width:11.8%;"></span></span>
+              <span class="v">11.80 %</span>
+            </div>
+            <div class="tally-row">
+              <span class="lab">Abstain</span>
+              <span class="tally-bar abstain"><span style="width:2.1%;"></span></span>
+              <span class="v">2.10 %</span>
+            </div>
+            <div class="tally-row">
+              <span class="lab">Quorum</span>
+              <span class="tally-bar"><span style="width:76.3%;"></span></span>
+              <span class="v">76.30 / 50.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: window / timelock -->
+        <div class="res-section">
+          <p class="lab">Vote window closes</p>
+          <div class="timelock">
+            <div>
+              <div class="lab">In</div>
+              <div class="countdown"><span class="red">18 h 22 m</span></div>
+            </div>
+            <div class="at">
+              <span style="color:var(--mute);">at</span><br>
+              <b>04.05.2026<br>08:22 UTC</b><br>
+              <span class="mono" style="font-family:var(--font-mono);font-size:var(--t-rule);">slot 268 596 144</span>
+            </div>
+          </div>
+          <p class="res-meta" style="margin-top:var(--s-3);">
+            On approval, this resolution moves to timelock for <b>36 h</b>; engrossment slot
+            estimated <b>05.05.2026 · 20:22 UTC</b> (<code>slot 268 873 882</code>).
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- R-2026-015 -->
+    <article class="resolution">
+      <div class="resolution-head">
+        <div class="res-no">R-2026-015<small>Resolution №</small></div>
+        <h3>Raise reputation threshold for first advance
+          <small>credmesh-reputation · minimum digest score for newly-onboarded agents</small>
+        </h3>
+        <div>
+          <span class="status-tag active">Active vote</span>
+        </div>
+      </div>
+
+      <div class="resolution-body">
+        <div class="res-section">
+          <p class="lab">Parameter amendment</p>
+          <div class="param-diff">
+            <span class="from">450</span>
+            <span class="arrow">→</span>
+            <span class="to">500</span>
+          </div>
+          <div class="param-name">reputation.thresholds.first_advance_min</div>
+
+          <p class="res-meta" style="margin-top:var(--s-3);">
+            <b>Proposer:</b> [V-04] <code>9pK2…H4pL</code> &nbsp;·&nbsp;
+            <b>Submitted:</b> 01.05.2026 · 17:08 UTC &nbsp;·&nbsp;
+            <b>Slot:</b> <code>268 297 422</code><br>
+            Rationale: two onboarded agents in trailing 30 d failed to settle within 8 epochs of issuance.
+            Tightening the entry threshold is expected to filter ~14 % of new applicants without affecting active counterparties.
+          </p>
+        </div>
+
+        <div class="res-section">
+          <p class="lab">Vote tally</p>
+          <div class="tally">
+            <div class="tally-row"><span class="lab">For</span><span class="tally-bar"><span style="width:38.2%;"></span></span><span class="v">38.20 %</span></div>
+            <div class="tally-row"><span class="lab">Against</span><span class="tally-bar against"><span style="width:31.7%;"></span></span><span class="v">31.70 %</span></div>
+            <div class="tally-row"><span class="lab">Abstain</span><span class="tally-bar abstain"><span style="width:1.4%;"></span></span><span class="v">1.40 %</span></div>
+            <div class="tally-row"><span class="lab">Quorum</span><span class="tally-bar"><span style="width:71.3%;"></span></span><span class="v">71.30 / 50.00</span></div>
+          </div>
+        </div>
+
+        <div class="res-section">
+          <p class="lab">Vote window closes</p>
+          <div class="timelock">
+            <div>
+              <div class="lab">In</div>
+              <div class="countdown">42 h 11 m</div>
+            </div>
+            <div class="at">
+              <span style="color:var(--mute);">at</span><br>
+              <b>05.05.2026<br>08:11 UTC</b><br>
+              <span class="mono" style="font-family:var(--font-mono);font-size:var(--t-rule);">slot 268 884 102</span>
+            </div>
+          </div>
+          <p class="res-meta" style="margin-top:var(--s-3);">
+            Outcome contested; differential <b>+ 6.50 pp</b>. Outcome may invert before close.
+          </p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §3 TIMELOCK -->
+  <!-- ============================================================ -->
+  <section class="section" id="s3">
+    <div class="section-head">
+      <div class="num">§3</div>
+      <h2>Pending engrossment · timelock
+        <small>Approved resolutions awaiting the 36-hour gate</small>
+      </h2>
+      <div class="meta">Schedule 3.A</div>
+    </div>
+
+    <article class="resolution">
+      <div class="resolution-head">
+        <div class="res-no">R-2026-014<small>Resolution №</small></div>
+        <h3>Increase optimum utilisation 80 % → 82 %
+          <small>credmesh-escrow · piecewise-linear inflection point</small>
+        </h3>
+        <div>
+          <span class="status-tag timelock">In timelock</span>
+        </div>
+      </div>
+
+      <div class="resolution-body">
+        <div class="res-section">
+          <p class="lab">Parameter amendment</p>
+          <div class="param-diff">
+            <span class="from">80.00 %</span>
+            <span class="arrow">→</span>
+            <span class="to">82.00 %</span>
+          </div>
+          <div class="param-name">pool.fee_curve.optimum_util_bps</div>
+
+          <p class="res-meta" style="margin-top:var(--s-3);">
+            <b>Approved:</b> 02.05.2026 · 21:48 UTC · <code>slot 268 521 002</code><br>
+            <b>Tally at close:</b> 71.20 % For · 4.10 % Against · quorum 75.30 % (<i>met</i>).<br>
+            Engrossing instruction will call <code>governance::amend_param</code> on the multisig threshold.
+          </p>
+        </div>
+
+        <div class="res-section">
+          <p class="lab">Engrossment in</p>
+          <div class="timelock">
+            <div>
+              <div class="lab">Slots remaining</div>
+              <div class="countdown"><span class="red">+ 86 124</span></div>
+            </div>
+            <div class="at">
+              <span style="color:var(--mute);">at</span><br>
+              <b>04.05.2026<br>09:48 UTC</b><br>
+              <span class="mono" style="font-family:var(--font-mono);font-size:var(--t-rule);">slot 268 524 026</span>
+            </div>
+          </div>
+          <p class="res-meta" style="margin-top:var(--s-3);">
+            The 36-hour timelock window cannot be shortened. A Resolution to revoke must be filed before engrossment slot.
+          </p>
+        </div>
+
+        <div class="res-section">
+          <p class="lab">Bearer record</p>
+          <p class="res-meta">
+            Bearer voted <b>For</b> at slot <code>268 411 902</code> · weight <b>12 482.4811</b>.<br>
+            <b>Cancellation window:</b> bearer may file a counter-resolution before <b>04.05.2026 · 09:48 UTC</b>.
+          </p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §4 PARAMETER EXPLORER -->
+  <!-- ============================================================ -->
+  <section class="section" id="s4">
+    <div class="section-head">
+      <div class="num">§4</div>
+      <h2>Parameter explorer
+        <small>Read-only schedule of pool parameters under governance · click row for amendment history</small>
+      </h2>
+      <div class="meta">Schedule 4.A<br><b>On-chain</b></div>
+    </div>
+
+    <table class="bul" aria-label="Parameter explorer">
+      <thead>
+        <tr>
+          <th class="ix">Nº</th>
+          <th>Parameter</th>
+          <th>Programme</th>
+          <th class="num">Current value</th>
+          <th class="num">Last amended (slot)</th>
+          <th class="num">Resolution</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ix">1</td>
+          <td><code>pool.fee_curve.base_fee_bps</code></td>
+          <td>credmesh-escrow</td>
+          <td class="num">0.5000 %</td>
+          <td class="num">266 102 884</td>
+          <td class="num">R-2026-007</td>
+          <td><span class="mk pend"></span>Amendment pending · R-2026-016</td>
+        </tr>
+        <tr>
+          <td class="ix">2</td>
+          <td><code>pool.fee_curve.optimum_util_bps</code></td>
+          <td>credmesh-escrow</td>
+          <td class="num">80.00 %</td>
+          <td class="num">263 488 102</td>
+          <td class="num">R-2026-002</td>
+          <td><span class="mk pend"></span>In timelock · R-2026-014</td>
+        </tr>
+        <tr>
+          <td class="ix">3</td>
+          <td><code>pool.fee_curve.slope_below_opt_bps</code></td>
+          <td>credmesh-escrow</td>
+          <td class="num">4.0000 %</td>
+          <td class="num">261 902 314</td>
+          <td class="num">R-2026-001</td>
+          <td><span class="mk ok"></span>Stable</td>
+        </tr>
+        <tr>
+          <td class="ix">4</td>
+          <td><code>pool.fee_curve.slope_above_opt_bps</code></td>
+          <td>credmesh-escrow</td>
+          <td class="num">60.0000 %</td>
+          <td class="num">261 902 314</td>
+          <td class="num">R-2026-001</td>
+          <td><span class="mk ok"></span>Stable</td>
+        </tr>
+        <tr>
+          <td class="ix">5</td>
+          <td><code>pool.max_utilisation_bps</code></td>
+          <td>credmesh-escrow</td>
+          <td class="num">95.00 %</td>
+          <td class="num">261 902 314</td>
+          <td class="num">R-2026-001</td>
+          <td><span class="mk ok"></span>Stable</td>
+        </tr>
+        <tr>
+          <td class="ix">6</td>
+          <td><code>reputation.thresholds.first_advance_min</code></td>
+          <td>credmesh-reputation</td>
+          <td class="num">450</td>
+          <td class="num">263 994 410</td>
+          <td class="num">R-2026-003</td>
+          <td><span class="mk pend"></span>Amendment pending · R-2026-015</td>
+        </tr>
+        <tr>
+          <td class="ix">7</td>
+          <td><code>reputation.thresholds.repeat_advance_min</code></td>
+          <td>credmesh-reputation</td>
+          <td class="num">300</td>
+          <td class="num">263 994 410</td>
+          <td class="num">R-2026-003</td>
+          <td><span class="mk ok"></span>Stable</td>
+        </tr>
+        <tr>
+          <td class="ix">8</td>
+          <td><code>oracle.staleness_tolerance_slots</code></td>
+          <td>credmesh-receivable-oracle</td>
+          <td class="num">96</td>
+          <td class="num">261 902 314</td>
+          <td class="num">R-2026-001</td>
+          <td><span class="mk ok"></span>Stable</td>
+        </tr>
+        <tr>
+          <td class="ix">9</td>
+          <td><code>governance.timelock_seconds</code></td>
+          <td>credmesh-escrow</td>
+          <td class="num">129 600</td>
+          <td class="num">261 902 314</td>
+          <td class="num">R-2026-001</td>
+          <td><span class="mk ok"></span>Stable · 36 h</td>
+        </tr>
+        <tr>
+          <td class="ix">10</td>
+          <td><code>governance.quorum_bps</code></td>
+          <td>credmesh-escrow</td>
+          <td class="num">50.00 %</td>
+          <td class="num">261 902 314</td>
+          <td class="num">R-2026-001</td>
+          <td><span class="mk ok"></span>Stable</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footnotes">
+      <span class="fn">Source: pool/programme account state at slot 268 437 902.
+        Parameter values are the on-chain canonical reading; pending resolutions do not affect the live value until engrossment.</span>
+      <span class="fn">No parameter is exempt from the 36-hour timelock. Per AUDIT P0-6, the "no pause on issuance" invariant is load-bearing — there is no governance path to gate <code>request_advance</code> in v1.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- §5 ENGROSSED HISTORY -->
+  <!-- ============================================================ -->
+  <section class="section" id="s5">
+    <div class="section-head">
+      <div class="num">§5</div>
+      <h2>Engrossed resolutions, last 20
+        <small>Executed amendments · sealed · not amendable retroactively</small>
+      </h2>
+      <div class="meta">Schedule 5.A<br><b>On-chain</b></div>
+    </div>
+
+    <table class="bul" aria-label="Engrossed resolutions">
+      <thead>
+        <tr>
+          <th class="ix">Nº</th>
+          <th>Resolution</th>
+          <th>Parameter</th>
+          <th class="num">From</th>
+          <th class="num">To</th>
+          <th class="num">For</th>
+          <th class="num">Engrossed (slot)</th>
+          <th>Sig</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ix">20</td>
+          <td>R-2026-013</td>
+          <td><code>pool.max_utilisation_bps</code></td>
+          <td class="num">94.00 %</td>
+          <td class="num">95.00 %</td>
+          <td class="num">68.40 %</td>
+          <td class="num">268 102 884</td>
+          <td class="mono">2qF4P…hL6m</td>
+        </tr>
+        <tr>
+          <td class="ix">19</td>
+          <td>R-2026-012</td>
+          <td><code>oracle.staleness_tolerance_slots</code></td>
+          <td class="num">128</td>
+          <td class="num">96</td>
+          <td class="num">81.20 %</td>
+          <td class="num">267 884 102</td>
+          <td class="mono">5LkX9c…vPq2N</td>
+        </tr>
+        <tr>
+          <td class="ix">18</td>
+          <td>R-2026-011</td>
+          <td><code>reputation.horizon_days</code></td>
+          <td class="num">120</td>
+          <td class="num">90</td>
+          <td class="num">59.10 %</td>
+          <td class="num">267 412 077</td>
+          <td class="mono">7tQzM4…rW8kJ</td>
+        </tr>
+        <tr>
+          <td class="ix">17</td>
+          <td>R-2026-010</td>
+          <td><code>pool.share_price_seed</code></td>
+          <td class="num">1.0000</td>
+          <td class="num">1.0145</td>
+          <td class="num">— calibration</td>
+          <td class="num">266 102 884</td>
+          <td class="mono">2bGqV9…hJ4mN</td>
+        </tr>
+        <tr>
+          <td class="ix">16</td>
+          <td>R-2026-009</td>
+          <td><code>pool.fee_split_bps</code></td>
+          <td class="num">80 / 20</td>
+          <td class="num">85 / 15</td>
+          <td class="num">72.50 %</td>
+          <td class="num">265 884 102</td>
+          <td class="mono">9hPrA…cZqGt</td>
+        </tr>
+        <tr>
+          <td class="ix">15</td>
+          <td>R-2026-008</td>
+          <td><code>oracle.publisher_authority</code></td>
+          <td class="num">[O-0]</td>
+          <td class="num">[O-1]</td>
+          <td class="num">94.10 %</td>
+          <td class="num">265 102 884</td>
+          <td class="mono">3rBnT5…kL2qP</td>
+        </tr>
+        <tr>
+          <td class="ix">14</td>
+          <td>R-2026-007</td>
+          <td><code>pool.fee_curve.base_fee_bps</code></td>
+          <td class="num">0.6000 %</td>
+          <td class="num">0.5000 %</td>
+          <td class="num">66.80 %</td>
+          <td class="num">266 102 884</td>
+          <td class="mono">8sR6N…4tBdL</td>
+        </tr>
+        <tr>
+          <td class="ix">13</td>
+          <td>R-2026-006</td>
+          <td><code>pool.deposit_cap_usdc</code></td>
+          <td class="num">2 000 000</td>
+          <td class="num">5 000 000</td>
+          <td class="num">88.20 %</td>
+          <td class="num">264 102 884</td>
+          <td class="mono">6pK2L…cQrW4</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footnotes" style="column-count:1;border-bottom:0;padding-bottom:0;">
+      <span class="fn">Engrossed resolutions are sealed at the slot stamped above. Each row's signature column is the multisig <code>execute</code> ix. Resolutions cannot be edited post-engrossment; corrections are filed as new resolutions.</span>
+    </div>
+  </section>
+
+  <!-- ============== REGISTRY INDEX ============== -->
+  <div class="registry">
+    <h4>Registry of pubkeys cited in this annex</h4>
+    <table>
+      <tr><td class="ix">[P-1]</td><td class="role">Pool · USDC mainnet-beta</td><td class="full">cREdM3hPxKqW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvKiJsH11</td></tr>
+      <tr><td class="ix">[O-A1]</td><td class="role">Bearer · LP signing authority</td><td class="full">aQ7wRtY8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiVK2p</td></tr>
+      <tr><td class="ix">[V-04]</td><td class="role">Voter · proposer of R-2026-015</td><td class="full">9pK2mLcQrW4tFvB8sRzD1vYxK6gN3jPm9HrAcZqLyTvKiJsH4pL</td></tr>
+      <tr><td class="ix">[V-12]</td><td class="role">Voter · proposer of R-2026-016</td><td class="full">4tQpR9kT3nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiJ2zN</td></tr>
+      <tr><td class="ix">[O-0]</td><td class="role">Oracle worker · prior</td><td class="full">orac0KvBxN3jPm9HrAcZqLyTvKiJsH11pK2mLcQrW4tFvB8sR1z0</td></tr>
+      <tr><td class="ix">[O-1]</td><td class="role">Oracle worker · current</td><td class="full">orac1KvBxN3jPm9HrAcZqLyTvKiJsH11pK2mLcQrW4tFvB8sR2zR</td></tr>
+      <tr><td class="ix">[F-1]</td><td class="role">Fee-payer · server authority</td><td class="full">FeeP1yer8nMpL2cKqW4dF6sBzX1vJ3yKmN9hPrAcZqGtVxLiK7p9</td></tr>
+    </table>
+  </div>
+
+  <!-- ============== COLOPHON ============== -->
+  <footer class="colophon">
+    <div class="left">
+      Cred&shy;Mesh — Programmable&nbsp;credit&nbsp;registry · Annex&nbsp;C · Resolutions&nbsp;Pending
+      <p class="blurb">Governance amendments to canonical pool parameters. Each resolution carries an immutable proposal-slot, a vote tally weighted by share × time, a 36-hour timelock between approval and engrossment, and a sealed multisig signature at engrossment. Cancellations are filed as counter-resolutions before engrossment slot.</p>
+    </div>
+    <div class="right">
+      <span style="color:var(--mute);">Compiled</span><br>
+      <b>03.05.2026 · 14:00:00 UTC</b><br>
+      <span class="mono">slot 268 437 902</span><br>
+      <span class="mono">block 9F3a…71B2</span><br>
+      <span class="mono">programme cREdM…sH11</span>
+    </div>
+  </footer>
+
+</main>
+
+</body>
+</html>

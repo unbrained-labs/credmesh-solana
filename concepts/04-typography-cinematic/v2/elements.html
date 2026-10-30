@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>CREDMESH — ELEMENTS — FRAME 06 / 47</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* page-local layout for the element showcase */
+  body { padding-bottom: var(--s-8); }
+  .swatch-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: var(--s-6);
+    padding: var(--s-5) 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .swatch-row:last-of-type { border-bottom: 0; }
+  .swatch-row > .meta {
+    border-right: 1px solid var(--rule);
+    padding-right: var(--s-5);
+  }
+  .swatch-row > .meta .name {
+    font-size: var(--t-mid);
+    font-weight: var(--w-display);
+    letter-spacing: -0.025em;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .swatch-row > .meta .role {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    line-height: 1.55;
+  }
+  .swatch-row > .meta .role .red { color: var(--red); }
+
+  /* --- type ladder --- */
+  .ladder {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: var(--s-4) var(--s-5);
+    align-items: baseline;
+    padding-top: var(--s-3);
+  }
+  .ladder .px {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.16em;
+    color: var(--ink-mid);
+    text-transform: uppercase;
+    text-align: right;
+    font-feature-settings: 'tnum';
+  }
+  .ladder .specimen {
+    font-weight: var(--w-display);
+    letter-spacing: -0.04em;
+    line-height: 1;
+    font-feature-settings: 'tnum';
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: clip;
+  }
+  .ladder .specimen .role {
+    color: var(--ink-mid);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: var(--w-bold);
+    margin-left: 12px;
+    vertical-align: middle;
+  }
+
+  /* --- color swatches --- */
+  .colors {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-5);
+  }
+  .colors .chip {
+    border: 1px solid var(--rule);
+  }
+  .colors .chip .fill { height: 110px; }
+  .colors .chip .meta {
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--rule);
+  }
+  .colors .chip .meta .h {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .colors .chip .meta .hex {
+    font-size: 13px;
+    font-feature-settings: 'tnum', 'ss01';
+    letter-spacing: 0.04em;
+    color: var(--ink-mid);
+    margin-top: 4px;
+  }
+  .colors .chip .meta .role {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+    margin-top: 8px;
+    font-weight: var(--w-bold);
+  }
+
+  /* --- spacing scale --- */
+  .spacing {
+    display: grid;
+    grid-template-columns: 60px 1fr 80px;
+    gap: var(--s-3) var(--s-4);
+    align-items: center;
+  }
+  .spacing .name {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mid);
+  }
+  .spacing .bar {
+    background: var(--ink);
+    height: 12px;
+  }
+  .spacing .px {
+    font-size: var(--t-micro);
+    font-weight: var(--w-bold);
+    letter-spacing: 0.04em;
+    color: var(--ink-mid);
+    font-feature-settings: 'tnum';
+  }
+
+  /* --- inline action specimen --- */
+  .actions-row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+
+  /* --- lifecycle stage demo column heads --- */
+  .demo-row { display: grid; gap: var(--s-4); }
+
+  /* --- specimen of stat trio --- */
+  .stat-trio {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+</style>
+</head>
+<body>
+
+  <!-- MASTHEAD ==================================================== -->
+  <header class="masthead">
+    <div class="wordmark">CREDMESH</div>
+    <div class="masthead-line">
+      ELEMENTS &nbsp;·&nbsp; PRIMITIVE SHOWCASE &nbsp;·&nbsp; FOR DESIGNER HANDOFF
+    </div>
+    <div class="masthead-meta">
+      <div>03&nbsp;MAY&nbsp;2026 &nbsp;·&nbsp; 14:22:08&nbsp;UTC</div>
+      <div><span class="dim">FRAME</span>&nbsp;06&nbsp;/&nbsp;47</div>
+    </div>
+  </header>
+
+  <!-- PAGE H ====================================================== -->
+  <section class="section flush-top no-border" style="padding-top:0; padding-bottom: var(--s-3);">
+    <div style="display:grid; grid-template-columns: 1fr auto; align-items: end; gap: var(--s-5);">
+      <div>
+        <div class="label" style="margin-bottom: var(--s-3);">DESIGN SYSTEM SPECIMEN <span class="dim">— EVERY PRIMITIVE, ONCE, LABELED</span></div>
+        <div style="font-weight:var(--w-display); font-size: 120px; line-height: 0.86; letter-spacing: -0.06em; text-transform: uppercase;">
+          PRIMITIVES<span style="color:var(--red);">.</span>
+        </div>
+      </div>
+      <div class="micro">
+        <div>11 / 16 / 24 / 36 / 54 / 80 / 120 / 180 / 240</div>
+        <div style="color:var(--ink-mid); margin-top: 4px;">FIXED 1.5× SCALE &nbsp;·&nbsp; INTER, TWO WEIGHTS</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 · TYPE LADDER ============================================ -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Type ladder</div>
+      <div class="role">
+        Fixed 1.5× scale.<br>
+        No off-scale sizes. No middle weight (600 OR 900).<br>
+        <span class="red">240 → singular hero. ONE per page.</span>
+      </div>
+    </div>
+    <div class="ladder">
+      <div class="px">240</div>
+      <div class="specimen" style="font-size:240px; line-height:0.84; letter-spacing:-0.07em; color:var(--red);">$8.2M</div>
+      <div class="px">180</div>
+      <div class="specimen" style="font-size:180px; line-height:0.84; letter-spacing:-0.06em;">$8,247,031<span class="role">HERO STAT</span></div>
+      <div class="px">120</div>
+      <div class="specimen" style="font-size:120px; line-height:0.86; letter-spacing:-0.05em;">CREDMESH<span class="role">PAGE TITLE</span></div>
+      <div class="px">80</div>
+      <div class="specimen" style="font-size:80px; line-height:0.86; letter-spacing:-0.05em; text-transform:uppercase;">CREDIT,&nbsp;COMPOSED<span style="color:var(--red);">.</span></div>
+      <div class="px">54</div>
+      <div class="specimen" style="font-size:54px; line-height:1; letter-spacing:-0.045em;">1.0234<span class="role">MID-STRIP STAT</span></div>
+      <div class="px">36</div>
+      <div class="specimen" style="font-size:36px; line-height:1; letter-spacing:-0.025em;">PROPOSAL CMP-014<span class="role">SECTION HERO</span></div>
+      <div class="px">24</div>
+      <div class="specimen" style="font-size:24px; line-height:1; letter-spacing:-0.025em; text-transform:uppercase;">RECENT ADVANCES<span class="role">SECTION H</span></div>
+      <div class="px">16</div>
+      <div class="specimen" style="font-size:16px; line-height:1.4; font-weight:var(--w-data); letter-spacing:0;">Body prose, default table data, inline meta.<span class="role" style="margin-left:6px;">BODY</span></div>
+      <div class="px">11</div>
+      <div class="specimen" style="font-size:11px; line-height:1.4; font-weight:var(--w-bold); letter-spacing:0.22em; text-transform:uppercase;">SECTION LABEL · ROLE · STATUS · FRAME COUNTER<span class="role" style="margin-left:6px; letter-spacing:0.18em;">MICRO / LABEL</span></div>
+    </div>
+  </div>
+
+  <!-- 2 · COLOR ================================================== -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Color</div>
+      <div class="role">
+        Three colors only.<br>
+        Greys are low-opacity ink, never an additional hue.<br>
+        <span class="red">Red is reserved. One per zone.</span>
+      </div>
+    </div>
+    <div class="colors">
+      <div class="chip">
+        <div class="fill" style="background:var(--paper); border-bottom:1px solid var(--rule);"></div>
+        <div class="meta">
+          <div class="h">PAPER</div>
+          <div class="hex">#F2EFE7 &nbsp;·&nbsp; --paper</div>
+          <div class="role">CANVAS</div>
+        </div>
+      </div>
+      <div class="chip">
+        <div class="fill" style="background:var(--ink);"></div>
+        <div class="meta">
+          <div class="h">INK</div>
+          <div class="hex">#0A0A0A &nbsp;·&nbsp; --ink</div>
+          <div class="role">TYPE · LINES</div>
+        </div>
+      </div>
+      <div class="chip">
+        <div class="fill" style="background:var(--red);"></div>
+        <div class="meta">
+          <div class="h">RED</div>
+          <div class="hex">#E2231A &nbsp;·&nbsp; --red</div>
+          <div class="role">THE ONE MARK</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 · SPACING ================================================ -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Spacing</div>
+      <div class="role">8px base. Eight named steps.<br>Use tokens; no ad-hoc px.</div>
+    </div>
+    <div class="spacing">
+      <div class="name">--s-1</div><div class="bar" style="width:4px;"></div>  <div class="px">4&nbsp;px</div>
+      <div class="name">--s-2</div><div class="bar" style="width:8px;"></div>  <div class="px">8&nbsp;px</div>
+      <div class="name">--s-3</div><div class="bar" style="width:12px;"></div> <div class="px">12&nbsp;px</div>
+      <div class="name">--s-4</div><div class="bar" style="width:16px;"></div> <div class="px">16&nbsp;px</div>
+      <div class="name">--s-5</div><div class="bar" style="width:24px;"></div> <div class="px">24&nbsp;px</div>
+      <div class="name">--s-6</div><div class="bar" style="width:32px;"></div> <div class="px">32&nbsp;px</div>
+      <div class="name">--s-7</div><div class="bar" style="width:48px;"></div> <div class="px">48&nbsp;px</div>
+      <div class="name">--s-8</div><div class="bar" style="width:64px;"></div> <div class="px">64&nbsp;px</div>
+      <div class="name">--s-9</div><div class="bar" style="width:96px;"></div> <div class="px">96&nbsp;px</div>
+    </div>
+  </div>
+
+  <!-- 4 · WORDMARK ============================================== -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Wordmark</div>
+      <div class="role">No glyph. The wordmark IS the identity.<br>Inter weight 900, all caps, tracking -0.045em.</div>
+    </div>
+    <div>
+      <div style="display:flex; align-items: end; gap: var(--s-7); flex-wrap: wrap;">
+        <div class="wordmark" style="font-size: 96px;">CRED<span class="red">M</span>ESH</div>
+        <div class="wordmark" style="font-size: 56px;">CREDMESH</div>
+        <div class="wordmark" style="font-size: 28px;">CREDMESH</div>
+        <div class="wordmark" style="font-size: 14px;">CREDMESH</div>
+      </div>
+      <div class="micro" style="color:var(--ink-mid); margin-top: var(--s-4);">
+        96 PT · MASTHEAD · &nbsp;·&nbsp; 56 PT · TITLE · &nbsp;·&nbsp; 28 PT · NAV · &nbsp;·&nbsp; 14 PT · FOOT
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 · STAT CARD ============================================== -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Stat card</div>
+      <div class="role">One number, one unit, one delta.<br>The number is the actor. Label is micro.<br><span class="red">Naked numbers are forbidden.</span></div>
+    </div>
+    <div>
+      <div class="stat-trio">
+        <div class="stat" style="border-right: 1px solid var(--rule); padding-right: var(--s-6);">
+          <div class="stat-label">SHARE&nbsp;PRICE</div>
+          <div class="stat-val">1.0234<span class="unit">USDC&nbsp;/&nbsp;SHARE</span></div>
+          <div class="stat-sub">▲&nbsp;0.0017 &nbsp;·&nbsp; LAST&nbsp;24H</div>
+        </div>
+        <div class="stat" style="border-right: 1px solid var(--rule); padding: 0 var(--s-6);">
+          <div class="stat-label">UTILIZATION</div>
+          <div class="stat-val red">67<span class="unit">%</span></div>
+          <div class="stat-sub">KINK&nbsp;@&nbsp;80% &nbsp;·&nbsp; 2.9M&nbsp;HEADROOM</div>
+        </div>
+        <div class="stat" style="padding-left: var(--s-6);">
+          <div class="stat-label">ACTIVE&nbsp;AGENTS</div>
+          <div class="stat-val">47<span class="unit">SQUADS&nbsp;V4</span></div>
+          <div class="stat-sub">▲&nbsp;3&nbsp;THIS&nbsp;WEEK</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 · IDENTITY STRIP ========================================= -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Identity strip</div>
+      <div class="role">Pubkey + role + status.<br>Hex is first-class data, not metadata.<br>Truncation: <span style="color:var(--ink); font-feature-settings:'tnum','ss01'; font-weight:var(--w-bold);">5tQp…m9wK</span> (4&nbsp;+&nbsp;4).</div>
+    </div>
+    <div>
+      <div class="id-strip">
+        <span class="pk">
+          <span class="role">SQUADS&nbsp;VAULT</span>
+          5tQp<span class="dim">…</span>m9wK
+          <span class="copy">COPY</span>
+        </span>
+        <span class="micro" style="color: var(--ink-mid);">DEPLOYED&nbsp;SLOT&nbsp;268,109,402 &nbsp;·&nbsp; OWNER&nbsp;Rk2j<span style="color: var(--ink-mid);">…</span>4eXq</span>
+        <span class="tag-stamp">LIVE</span>
+      </div>
+      <div class="id-strip" style="border-top: 0;">
+        <span class="pk">
+          <span class="role">MPL&nbsp;AGENT&nbsp;ID</span>
+          AGTm<span class="dim">…</span>0011
+          <span class="copy">COPY</span>
+        </span>
+        <span class="micro" style="color: var(--ink-mid);">DELEGATEEXECUTIONV1 &nbsp;·&nbsp; ED25519&nbsp;OK</span>
+        <span class="tag-stamp red">PENDING&nbsp;ROTATION</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 · STATUS PILL / TAG STAMP ================================ -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Status tag</div>
+      <div class="role">Not a pill. No fill.<br>Bare caps, tracked 0.22em, weight 800.<br><span class="red">Red is the SOLE active state.</span></div>
+    </div>
+    <div class="actions-row" style="gap: var(--s-5);">
+      <span class="tag-stamp">SETTLED</span>
+      <span class="tag-stamp red">PENDING</span>
+      <span class="tag-stamp">FINALIZED</span>
+      <span class="tag-stamp dim">OPEN</span>
+      <span class="tag-stamp">CONSUMED</span>
+      <span class="tag-stamp red">DEFAULTED</span>
+      <span class="tag-stamp boxed">SQDS&nbsp;VAULT</span>
+      <span class="tag-stamp boxed" style="color:var(--red); border-color:var(--red);">FROZEN</span>
+    </div>
+  </div>
+
+  <!-- 8 · LIFECYCLE TIMELINE ==================================== -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Lifecycle</div>
+      <div class="role">Three-state tx confirmation.<br>SENT &nbsp;→&nbsp; PENDING &nbsp;→&nbsp; FINALIZED.<br>Each carries its slot.</div>
+    </div>
+    <div>
+      <div class="lifecycle">
+        <div class="step is-done">
+          <div class="step-n">STEP&nbsp;01&nbsp;·&nbsp;DONE</div>
+          <div class="step-name">SENT</div>
+          <div class="step-meta">
+            SLOT&nbsp;<span class="strong">268,403,221</span><br>
+            14:22:08&nbsp;UTC &nbsp;·&nbsp; SIG&nbsp;3ZkW…hP4q
+          </div>
+        </div>
+        <div class="step is-active">
+          <div class="step-n">STEP&nbsp;02&nbsp;·&nbsp;ACTIVE</div>
+          <div class="step-name">PENDING</div>
+          <div class="step-meta">
+            SLOT&nbsp;<span class="strong">268,403,224</span><br>
+            CONFIRMS&nbsp;1&nbsp;/&nbsp;32 &nbsp;·&nbsp; +0.6&nbsp;s
+          </div>
+        </div>
+        <div class="step is-pending">
+          <div class="step-n">STEP&nbsp;03&nbsp;·&nbsp;WAITING</div>
+          <div class="step-name">FINALIZED</div>
+          <div class="step-meta">
+            SLOT&nbsp;<span class="strong">—</span><br>
+            ETA&nbsp;~12&nbsp;s &nbsp;·&nbsp; SIG&nbsp;FOLLOWS
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9 · TIME-SERIES CHART ====================================== -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Time-series chart</div>
+      <div class="role">Single hairline + step-poly.<br>No fill. No legend frame.<br>Hover gives slot + timestamp + value.</div>
+    </div>
+    <div>
+      <div class="trace-wrap">
+        <svg class="trace" viewBox="0 0 800 120" preserveAspectRatio="none" aria-label="share price 30 day">
+          <line x1="0" y1="119" x2="800" y2="119" stroke="rgba(10,10,10,0.18)" stroke-width="1"/>
+          <polyline fill="none" stroke="#0A0A0A" stroke-width="2"
+            points="0,98 30,96 60,93 90,93 120,90 150,86 180,86 210,80 240,76 270,73 300,68 330,68 360,62 390,57 420,52 450,52 480,46 510,42 540,38 570,32 600,28 630,28 660,24 690,18 720,14 750,12 780,8 800,6"/>
+          <line x1="540" y1="0" x2="540" y2="120" stroke="#E2231A" stroke-width="1.5" stroke-dasharray="2 3"/>
+          <text x="544" y="15" font-size="9" fill="#E2231A" font-weight="800" letter-spacing="2">SLOT 268,361,002</text>
+        </svg>
+        <div class="trace-axis">
+          <span>04&nbsp;APR</span><span>11&nbsp;APR</span><span>18&nbsp;APR</span><span>25&nbsp;APR</span><span>03&nbsp;MAY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10 · TABLE ================================================= -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Activity table</div>
+      <div class="role">No borders. Hairlines only.<br>Tabular figures, right-aligned numbers.<br><span class="red">Pending row, red tag — Bass move.</span></div>
+    </div>
+    <div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px">№</th>
+            <th style="width:120px">SLOT</th>
+            <th>AGENT&nbsp;PUBKEY</th>
+            <th>RECEIVABLE</th>
+            <th class="num">PRINCIPAL</th>
+            <th class="num">FEE</th>
+            <th class="num" style="width:130px">STATUS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="idx">01.</td>
+            <td class="time">268,403,221</td>
+            <td class="id">5tQp<span class="dim">…</span>m9wK</td>
+            <td class="id"><span class="dim">JOB</span>&nbsp;CRAFT-1409</td>
+            <td class="num amount">14,500.0000</td>
+            <td class="num">217.5000</td>
+            <td class="tag">SETTLED</td>
+          </tr>
+          <tr>
+            <td class="idx">02.</td>
+            <td class="time">268,403,180</td>
+            <td class="id">4Fk2<span class="dim">…</span>A14E</td>
+            <td class="id"><span class="dim">ORC</span>&nbsp;INDEX-0042</td>
+            <td class="num amount">42,000.0000</td>
+            <td class="num">630.0000</td>
+            <td class="tag red">PENDING</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 11 · ACTION PANEL ========================================= -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Action panel</div>
+      <div class="role">Primary inverted ink.<br>Ghost is a hairline.<br><span class="red">Danger sets the red — the only red button in the system.</span></div>
+    </div>
+    <div class="actions-row">
+      <button class="btn primary">DEPOSIT&nbsp;USDC</button>
+      <button class="btn">WITHDRAW</button>
+      <button class="btn ghost">CANCEL</button>
+      <button class="btn danger">EMERGENCY&nbsp;EXIT</button>
+    </div>
+  </div>
+
+  <!-- 12 · FOOTNOTE ============================================= -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Footnote</div>
+      <div class="role">Numbered red superscript inline.<br>Source line in two-column block.<br>This is editorial, not chrome.</div>
+    </div>
+    <div>
+      <p style="font-size:16px; line-height:1.55; max-width:720px;">
+        The pool is utilized at 67%<sup class="fn">1</sup> against a kink at 80%<sup class="fn">2</sup>. Default rate is 0.21%<sup class="fn">3</sup> over the trailing 30 days, against a recovery pipeline currently processing one collateralized claim<sup class="fn">4</sup>.
+      </p>
+      <div class="footnotes">
+        <div class="fn-row"><span class="n">1.</span><span>Computed as <code>borrowed / total_assets</code>; see escrow program <code>compute_utilization</code>, slot 268,403,221.</span></div>
+        <div class="fn-row"><span class="n">2.</span><span>Fee curve kink param. Last set proposal CMP-014, executed slot 267,961,002.</span></div>
+        <div class="fn-row"><span class="n">3.</span><span>30d defaults / 30d settled-and-pending. Excludes pre-genesis advances.</span></div>
+        <div class="fn-row"><span class="n">4.</span><span>Recovery is in receiver-finalization; see Agent Observatory frame 03.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13 · IRREVERSIBLE GATE ==================================== -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Destructive gate</div>
+      <div class="role">240pt red <span class="red">IRREVERSIBLE</span>.<br>The concept's strongest chrome.<br>No bare modal. The page becomes a poster.</div>
+    </div>
+    <div>
+      <div class="gate">
+        <div class="gate-cap">CAUTION &nbsp;·&nbsp; ON-CHAIN ACTION &nbsp;·&nbsp; CANNOT BE REVERTED</div>
+        <div class="gate-word">IRREVERSIBLE</div>
+        <p class="gate-body">
+          You are about to invoke <strong>request_emergency_exit</strong> on agent <span style="font-feature-settings:'tnum','ss01';">5tQp<span style="color:var(--ink-mid);">…</span>m9wK</span>. This will burn outstanding shares, freeze new advances, and post a finalized transaction at the next slot. <strong>There is no undo.</strong>
+        </p>
+        <div class="gate-foot">
+          <div class="micro" style="color:var(--ink-mid);">
+            FEE-PAYER&nbsp;FpAY<span style="color:var(--ink-faint);">…</span>0001 &nbsp;·&nbsp; EST&nbsp;0.000005&nbsp;SOL &nbsp;·&nbsp; PROGRAM&nbsp;CMshESCw<span style="color:var(--ink-faint);">…</span>v4
+          </div>
+          <div class="action">
+            <button class="btn ghost">CANCEL</button>
+            <button class="btn danger">SIGN &nbsp;&amp;&nbsp; SUBMIT</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14 · COLOPHON / FRAME ====================================== -->
+  <div class="swatch-row">
+    <div class="meta">
+      <div class="name">Colophon</div>
+      <div class="role">Frame counter is mandatory.<br>Bottom-right of every page.<br>Tagline is a block, never a sentence.</div>
+    </div>
+    <div>
+      <footer class="colophon" style="padding-top: 0;">
+        <div class="tagline">CREDIT,<br>COMPOSED<span class="red">.</span></div>
+        <div class="colophon-meta">
+          <div><span class="dim">CREDMESH</span> &nbsp;·&nbsp; ELEMENTS</div>
+          <div><span class="dim">DEVNET</span> &nbsp;·&nbsp; 03&nbsp;MAY&nbsp;2026</div>
+          <div class="fin">FRAME&nbsp;06&nbsp;/&nbsp;47 &nbsp;·&nbsp; FIN.</div>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+</body>
+</html>
